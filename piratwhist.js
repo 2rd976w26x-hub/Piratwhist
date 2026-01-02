@@ -1,24 +1,34 @@
-/* Piratwhist – v0.0.9 (v0.0.8 stable UI + rules page links) */
+/* Piratwhist – v0.1.0 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.0.9";
-const STORAGE_KEY = "piratwhist_v2"; // schema with nulls for incomplete rounds
+const APP_VERSION = "0.1.0";
 
 const el = (id) => document.getElementById(id);
 
-const state = {
-  players: [],
-  rounds: 14,
-  maxByRound: [],
-  data: [], // data[roundIndex][playerIndex] = { bid: number|null, tricks: number|null }
-  currentRound: 0,
-};
+const socket = io({
+  transports: ["websocket", "polling"],
+});
+
+let roomCode = null;
+let state = null; // authoritative state from server
 
 function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
 function isNumber(v){ return typeof v === "number" && Number.isFinite(v); }
 
-/** A round is finished only when EVERY player has BOTH bid and tricks filled (0 is allowed). */
+function show(id, on){ el(id).classList.toggle("hidden", !on); }
+
+function setRoomStatus(text){ el("roomStatus").textContent = text; }
+function setRoomHint(text){ el("roomHint").textContent = text || ""; }
+
+function uppercaseCode(s){ return (s||"").toUpperCase().replace(/\s+/g,"").slice(0,6); }
+
+function pointsFor(bid, tricks){
+  if (!isNumber(bid) || !isNumber(tricks)) return 0;
+  if (tricks === bid) return 10 + bid;
+  return -Math.abs(tricks - bid);
+}
+
 function isRoundComplete(roundIndex){
-  const row = state.data[roundIndex];
+  const row = state?.data?.[roundIndex];
   if (!row) return false;
   for (let i = 0; i < state.players.length; i++) {
     const cell = row[i];
@@ -26,17 +36,6 @@ function isRoundComplete(roundIndex){
     if (!isNumber(cell.bid) || !isNumber(cell.tricks)) return false;
   }
   return true;
-}
-
-/**
- * Points (only for finished rounds):
- * - If tricks === bid => 10 + bid
- * - Else => -abs(tricks - bid)
- */
-function pointsFor(bid, tricks){
-  if (!isNumber(bid) || !isNumber(tricks)) return 0;
-  if (tricks === bid) return 10 + bid;
-  return -Math.abs(tricks - bid);
 }
 
 function totalForPlayer(playerIndex){
@@ -49,97 +48,45 @@ function totalForPlayer(playerIndex){
   return sum;
 }
 
-/** Round max pattern (0 always allowed). */
-function buildMaxByRound(roundCount){
-  const base = [7,6,4,3,2,1,2,3,4,5,6,7];
-  const out = [];
-  for(let i=0;i<roundCount;i++) out.push(base[i % base.length]);
-  return out;
+function render(){
+  if (!state) return;
+
+  // phase visibility
+  show("room", true);
+  show("setup", state.phase === "setup");
+  show("game", state.phase === "game");
+
+  // setup fields sync
+  if (state.phase === "setup") {
+    el("playerCount").value = state.playerCount;
+    el("roundCount").value = state.rounds;
+    renderNameFields();
+  }
+
+  if (state.phase === "game") {
+    renderRound();
+    renderOverview();
+  }
 }
 
-function defaultNames(n){ return Array.from({length:n}, (_,i) => `Spiller ${i+1}`); }
-
-function ensureNameFields(){
-  const n = clamp(parseInt(el("playerCount").value || "4", 10), 2, 8);
-  el("playerCount").value = n;
-
+function renderNameFields(){
   const container = el("nameFields");
   container.innerHTML = "";
-  const names = defaultNames(n);
-
-  for(let i=0;i<n;i++){
+  for (let i=0;i<state.playerCount;i++) {
     const wrap = document.createElement("label");
     wrap.className = "field";
     const span = document.createElement("span");
     span.textContent = `Navn ${i+1}`;
     const inp = document.createElement("input");
     inp.type = "text";
-    inp.value = names[i];
-    inp.id = `name_${i}`;
+    inp.value = state.players[i]?.name || `Spiller ${i+1}`;
+    inp.addEventListener("input", () => {
+      socket.emit("set_name", { room: roomCode, index: i, name: inp.value });
+    });
     wrap.appendChild(span);
     wrap.appendChild(inp);
     container.appendChild(wrap);
   }
-}
-
-function makeEmptyData(rounds, players){
-  return Array.from({length: rounds}, () =>
-    Array.from({length: players.length}, () => ({ bid: null, tricks: null }))
-  );
-}
-
-function save(){
-  const payload = {
-    players: state.players,
-    rounds: state.rounds,
-    maxByRound: state.maxByRound,
-    data: state.data,
-    currentRound: state.currentRound,
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-}
-
-function load(){
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if(!raw) return false;
-  try{
-    const p = JSON.parse(raw);
-    if(!p || !Array.isArray(p.players) || !Array.isArray(p.data)) return false;
-    state.players = p.players;
-    state.rounds = p.rounds;
-    state.maxByRound = p.maxByRound;
-    state.data = p.data;
-    state.currentRound = clamp(p.currentRound ?? 0, 0, (p.rounds ?? 1)-1);
-    return true;
-  }catch{
-    return false;
-  }
-}
-
-function resetStorage(){ localStorage.removeItem(STORAGE_KEY); }
-
-function showSetup(){ el("setup").classList.remove("hidden"); el("game").classList.add("hidden"); }
-function showGame(){ el("setup").classList.add("hidden"); el("game").classList.remove("hidden"); }
-
-function startGameFromSetup(){
-  const playerCount = clamp(parseInt(el("playerCount").value || "4", 10), 2, 8);
-  const roundCount = clamp(parseInt(el("roundCount").value || "14", 10), 4, 14);
-
-  const players = [];
-  for(let i=0;i<playerCount;i++){
-    const name = (el(`name_${i}`)?.value || "").trim() || `Spiller ${i+1}`;
-    players.push({ name });
-  }
-
-  state.players = players;
-  state.rounds = roundCount;
-  state.maxByRound = buildMaxByRound(roundCount);
-  state.data = makeEmptyData(roundCount, players);
-  state.currentRound = 0;
-
-  save();
-  renderAll();
-  showGame();
 }
 
 function renderRoundHeaderStatus() {
@@ -171,7 +118,6 @@ function renderRound(){
   const h3 = document.createElement("div"); h3.className="head"; h3.textContent="Stik taget (0..max)";
   grid.appendChild(h1); grid.appendChild(h2); grid.appendChild(h3);
 
-  // inputs for TAB order: bids first, then tricks
   const bidInputs = [];
   const trickInputs = [];
 
@@ -188,16 +134,12 @@ function renderRound(){
     bid.value = isNumber(bidVal) ? String(bidVal) : "";
     bid.placeholder = "—";
     bid.addEventListener("input", () => {
-      if (bid.value === "") state.data[r][i].bid = null;
-      else {
-        const v = clamp(parseInt(bid.value || "0", 10), 0, max);
-        bid.value = String(v);
-        state.data[r][i].bid = v;
+      let val = null;
+      if (bid.value !== "") {
+        val = clamp(parseInt(bid.value || "0", 10), 0, max);
+        bid.value = String(val);
       }
-      save();
-      renderOverview();
-      renderRoundTotalsLine();
-      renderRoundHeaderStatus();
+      socket.emit("set_cell", { room: roomCode, round: r, player: i, field: "bid", value: val });
     });
 
     const tricks = document.createElement("input");
@@ -208,16 +150,12 @@ function renderRound(){
     tricks.value = isNumber(trVal) ? String(trVal) : "";
     tricks.placeholder = "—";
     tricks.addEventListener("input", () => {
-      if (tricks.value === "") state.data[r][i].tricks = null;
-      else {
-        const v = clamp(parseInt(tricks.value || "0", 10), 0, max);
-        tricks.value = String(v);
-        state.data[r][i].tricks = v;
+      let val = null;
+      if (tricks.value !== "") {
+        val = clamp(parseInt(tricks.value || "0", 10), 0, max);
+        tricks.value = String(val);
       }
-      save();
-      renderOverview();
-      renderRoundTotalsLine();
-      renderRoundHeaderStatus();
+      socket.emit("set_cell", { room: roomCode, round: r, player: i, field: "tricks", value: val });
     });
 
     bidInputs.push(bid);
@@ -312,10 +250,7 @@ function renderOverview(){
 
     tr.style.cursor = "pointer";
     tr.addEventListener("click", () => {
-      state.currentRound = r;
-      save();
-      renderRound();
-      renderOverview();
+      socket.emit("set_current_round", { room: roomCode, round: r });
     });
 
     tbody.appendChild(tr);
@@ -341,50 +276,115 @@ function renderOverview(){
   t.appendChild(tbody);
 }
 
-function renderAll(){ renderRound(); renderOverview(); }
+// --- Socket events ---
+socket.on("connect", () => {
+  setRoomStatus("Forbundet (ikke i rum)");
+  setRoomHint("Opret eller join et rum for at starte.");
+});
 
-function wireUI(){
-  el("playerCount").addEventListener("input", ensureNameFields);
+socket.on("room_created", (msg) => {
+  roomCode = msg.room;
+  el("createdRoomCode").textContent = roomCode;
+  el("createdRoomCode").classList.remove("hidden");
+  setRoomStatus("I rum: " + roomCode);
+  setRoomHint("Del koden med de andre. De kan joine med samme kode.");
+  show("setup", true);
+  show("game", false);
+});
 
-  el("btnStart").addEventListener("click", () => {
-    startGameFromSetup();
-  });
+socket.on("join_ok", (msg) => {
+  roomCode = msg.room;
+  el("joinError").textContent = "";
+  setRoomStatus("I rum: " + roomCode);
+  setRoomHint("Du er joined. Alt synkroniseres i real-time.");
+});
 
-  el("btnPrev").addEventListener("click", () => {
-    state.currentRound = clamp(state.currentRound - 1, 0, state.rounds - 1);
-    save();
-    renderAll();
-  });
+socket.on("join_error", (msg) => {
+  el("joinError").textContent = msg?.error || "Kunne ikke joine rummet.";
+});
 
-  el("btnNext").addEventListener("click", () => {
-    state.currentRound = clamp(state.currentRound + 1, 0, state.rounds - 1);
-    save();
-    renderAll();
-  });
+socket.on("state", (s) => {
+  state = s;
+  // reflect current phase
+  if (state.phase === "setup") {
+    show("setup", true); show("game", false);
+  } else if (state.phase === "game") {
+    show("setup", false); show("game", true);
+  }
+  render();
+});
 
-  el("btnNew").addEventListener("click", () => {
-    showSetup();
-  });
+socket.on("left", () => {
+  roomCode = null;
+  state = null;
+  setRoomStatus("Ikke i rum");
+  setRoomHint("");
+  el("createdRoomCode").classList.add("hidden");
+  el("joinCode").value = "";
+  show("setup", false);
+  show("game", false);
+});
 
-  el("btnReset").addEventListener("click", () => {
-    resetStorage();
-    ensureNameFields();
-    showSetup();
-  });
-}
-
-function init(){
-  // versions
+// --- UI wiring ---
+function initUI(){
   const badge = document.getElementById("appVersion");
   const foot = document.getElementById("footerVersion");
   if (badge) badge.textContent = `v${APP_VERSION}`;
   if (foot) foot.textContent = APP_VERSION;
 
-  wireUI();
-  ensureNameFields();
+  el("btnCreateRoom").addEventListener("click", () => {
+    socket.emit("create_room");
+  });
 
-  if(load()){ renderAll(); showGame(); }
-  else { showSetup(); }
+  el("btnJoinRoom").addEventListener("click", () => {
+    const code = uppercaseCode(el("joinCode").value);
+    el("joinCode").value = code;
+    socket.emit("join_room", { room: code });
+  });
+
+  el("joinCode").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") el("btnJoinRoom").click();
+  });
+
+  el("btnLeaveRoom").addEventListener("click", () => {
+    socket.emit("leave_room", { room: roomCode });
+  });
+
+  el("btnResetRoom").addEventListener("click", () => {
+    if (!roomCode) return;
+    socket.emit("reset_room", { room: roomCode });
+  });
+
+  // setup
+  el("playerCount").addEventListener("input", () => {
+    if (!roomCode) return;
+    const n = clamp(parseInt(el("playerCount").value || "4", 10), 2, 8);
+    el("playerCount").value = n;
+    socket.emit("set_player_count", { room: roomCode, playerCount: n });
+  });
+
+  el("roundCount").addEventListener("input", () => {
+    if (!roomCode) return;
+    const n = clamp(parseInt(el("roundCount").value || "14", 10), 4, 14);
+    el("roundCount").value = n;
+    socket.emit("set_rounds", { room: roomCode, rounds: n });
+  });
+
+  el("btnStart").addEventListener("click", () => {
+    if (!roomCode) return;
+    socket.emit("start_game", { room: roomCode });
+  });
+
+  // nav
+  el("btnPrev").addEventListener("click", () => {
+    if (!roomCode || !state) return;
+    socket.emit("set_current_round", { room: roomCode, round: clamp(state.currentRound - 1, 0, state.rounds - 1) });
+  });
+
+  el("btnNext").addEventListener("click", () => {
+    if (!roomCode || !state) return;
+    socket.emit("set_current_round", { room: roomCode, round: clamp(state.currentRound + 1, 0, state.rounds - 1) });
+  });
 }
 
-init();
+initUI();

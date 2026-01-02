@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist – Score v0.0.9</title>
+  <title>Piratwhist – Score v0.1.0</title>
   <link rel="stylesheet" href="piratwhist.css" />
 </head>
 <body>
@@ -12,21 +12,51 @@
       Piratwhist <span id="appVersion" class="badge"></span>
     </div>
     <div class="actions">
-      <a href="rules.html" class="ghost linkbtn" aria-label="Regler">Regler</a>
-      <button id="btnNew" class="ghost">Nyt spil</button>
-      <button id="btnReset" class="danger ghost">Nulstil (slet gemt)</button>
+      <a href="rules.html" class="ghost linkbtn">Regler</a>
+      <button id="btnLeaveRoom" class="ghost">Forlad rum</button>
+      <button id="btnResetRoom" class="danger ghost" title="Nulstil spil i rummet">Nulstil rum</button>
     </div>
   </header>
 
   <main class="wrap">
-    <!-- SETUP -->
-    <section id="setup" class="card">
-      <h2>Opsætning</h2>
-
+    <!-- ROOM -->
+    <section id="room" class="card">
+      <h2>Rum</h2>
       <p class="sub" style="margin-top:-6px">
-        Appen hjælper med bud, stik og point.
-        <a href="rules.html">Læs reglerne →</a>
+        Opret et rum eller join et eksisterende, så flere kan spille samtidig.
       </p>
+
+      <div class="grid" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+        <div class="card" style="background: rgba(0,0,0,.12);">
+          <h3>Opret rum</h3>
+          <p class="sub">Lav et nyt rum og del koden med de andre.</p>
+          <button id="btnCreateRoom" class="primary">Opret rum</button>
+          <div id="createdRoomCode" class="roomCode hidden"></div>
+        </div>
+
+        <div class="card" style="background: rgba(0,0,0,.12);">
+          <h3>Join rum</h3>
+          <p class="sub">Indtast rumkode for at joine.</p>
+          <div class="row">
+            <input id="joinCode" type="text" inputmode="text" maxlength="6" placeholder="Fx A1B2C3" style="max-width:220px" />
+            <button id="btnJoinRoom" class="primary">Join</button>
+          </div>
+          <div id="joinError" class="sub" style="color:#ffd4d9"></div>
+        </div>
+      </div>
+
+      <hr style="border-color: rgba(255,255,255,.10)" />
+
+      <div class="row">
+        <div class="sub">Status:</div>
+        <div id="roomStatus" class="badge">Ikke i rum</div>
+        <div class="sub" id="roomHint"></div>
+      </div>
+    </section>
+
+    <!-- SETUP -->
+    <section id="setup" class="card hidden">
+      <h2>Opsætning (deles i rummet)</h2>
 
       <div class="grid">
         <label class="field">
@@ -76,6 +106,7 @@
     </footer>
   </main>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script src="piratwhist.js"></script>
 </body>
 </html>
