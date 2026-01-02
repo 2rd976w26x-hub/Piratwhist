@@ -2,21 +2,21 @@ from __future__ import annotations
 
 import os
 import random
-import string
 from typing import Any, Dict, List, Optional
 
-from flask import Flask, send_from_directory, request
+from flask import Flask, send_from_directory
 from flask_socketio import SocketIO, join_room, leave_room, emit
 
 # --- App setup ---
 app = Flask(__name__, static_folder=".", static_url_path="")
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "piratwhist-secret")
 
-# eventlet is recommended on Render for websockets
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+# IMPORTANT (Render + Python 3.13):
+# eventlet currently breaks on Python 3.13 (threading API change).
+# We run Socket.IO in "threading" mode (long-polling; works reliably).
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
-# --- In-memory room state (simple + fast) ---
-# NOTE: Resets on redeploy. This matches typical "musikspil" simple room behavior.
+# --- In-memory room state (resets on redeploy) ---
 rooms: Dict[str, Dict[str, Any]] = {}
 
 
@@ -31,7 +31,6 @@ def _build_max_by_round(rounds: int) -> List[int]:
 
 
 def _default_room_state() -> Dict[str, Any]:
-    # "setup" phase is shared. Once started -> "game".
     player_count = 4
     rounds = 14
     players = [{"name": f"Spiller {i+1}"} for i in range(player_count)]
@@ -47,13 +46,8 @@ def _default_room_state() -> Dict[str, Any]:
     }
 
 
-def _ensure_room(room: str) -> Optional[Dict[str, Any]]:
-    return rooms.get(room)
-
-
 def _broadcast_state(room: str) -> None:
-    state = rooms[room]
-    socketio.emit("state", state, to=room)
+    socketio.emit("state", rooms[room], to=room)
 
 
 @app.get("/")
@@ -120,7 +114,7 @@ def on_set_player_count(payload: Dict[str, Any]):
     n = max(2, min(8, n))
 
     s["playerCount"] = n
-    # resize players
+
     players = s["players"]
     if len(players) < n:
         for i in range(len(players), n):
@@ -129,7 +123,6 @@ def on_set_player_count(payload: Dict[str, Any]):
         del players[n:]
     s["players"] = players
 
-    # resize data columns for each round
     rounds = int(s["rounds"])
     data = s["data"]
     for r in range(rounds):
@@ -248,5 +241,4 @@ def on_set_cell(payload: Dict[str, Any]):
 
 
 if __name__ == "__main__":
-    # local dev
     socketio.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=True)
