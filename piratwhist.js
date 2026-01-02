@@ -1,6 +1,6 @@
-/* Piratwhist – v0.1.1 (multiplayer rooms) */
+/* Piratwhist – v0.1.3 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.1.1";
+const APP_VERSION = "0.1.3";
 
 const el = (id) => document.getElementById(id);
 
@@ -9,6 +9,33 @@ const socket = io({
 });
 
 let roomCode = null;
+// Connection diagnostics (Render often needs threaded worker for long-polling)
+function setConnectedUI(connected){
+  const c = document.getElementById("btnCreateRoom");
+  const j = document.getElementById("btnJoinRoom");
+  if (c) c.disabled = !connected;
+  if (j) j.disabled = !connected;
+}
+setConnectedUI(false);
+
+socket.on("connect", () => {
+  setConnectedUI(true);
+});
+
+socket.on("disconnect", () => {
+  setConnectedUI(false);
+  setRoomStatus("Frakoblet");
+  setRoomHint("Forbindelsen blev afbrudt. Genindlæs siden.");
+});
+
+socket.on("connect_error", () => {
+  setConnectedUI(false);
+  setRoomStatus("Forbindelsesfejl");
+  setRoomHint("Socket.IO kunne ikke forbinde. På Render skal Start Command være: gunicorn -w 1 -k gthread --threads 8 app:app");
+  const je = document.getElementById("joinError");
+  if (je) je.textContent = "Kunne ikke forbinde til realtime-serveren.";
+});
+
 let state = null; // authoritative state from server
 
 function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
