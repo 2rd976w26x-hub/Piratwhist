@@ -1,11 +1,8 @@
-# Piratwhist (v0.0.6)
+# Piratwhist – Scorekeeper (v0.0.8)
 
-Denne version indeholder nu en separat **regelside**.
-
-## Nyt i v0.0.6
-- Tekst om regler på forsiden
-- Link til separat regelside (`rules.html`)
+Denne version ruller UI og knap-logik tilbage til den stabile stil fra v0.0.4
+(den mørke/sorte UI), så spillet kan startes igen via knapperne.
 
 ## Render
-Build: `pip install -r requirements.txt`  
+Build: `pip install -r requirements.txt`
 Start: `gunicorn app:app`
