@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist – Score v0.0.4</title>
+  <title>Piratwhist – Score v0.0.6</title>
   <link rel="stylesheet" href="piratwhist.css" />
 </head>
 <body>
@@ -12,15 +12,20 @@
       Piratwhist <span id="appVersion" class="badge"></span>
     </div>
     <div class="actions">
+      <a href="rules.html" class="ghost buttonlink">Regler</a>
       <button id="btnNew" class="ghost">Nyt spil</button>
-      <button id="btnReset" class="danger ghost">Nulstil (slet gemt)</button>
+      <button id="btnReset" class="danger ghost">Nulstil</button>
     </div>
   </header>
 
   <main class="wrap">
-    <!-- SETUP -->
     <section id="setup" class="card">
       <h2>Opsætning</h2>
+      <p class="sub">
+        Piratwhist er et stikspil hvor man gætter (byder) hvor mange stik man tager i hver runde.
+        <br />
+        <a href="rules.html">Læs de fulde regler for Piratwhist →</a>
+      </p>
 
       <div class="grid">
         <label class="field">
@@ -38,11 +43,10 @@
 
       <div class="row">
         <button id="btnStart" class="primary">Start spil</button>
-        <div class="hint">0 er altid tilladt som bud. Tomt felt = runden er ikke færdig og tæller ikke med.</div>
+        <div class="hint">0 er altid tilladt som bud. Tomt felt = runden er ikke færdig.</div>
       </div>
     </section>
 
-    <!-- GAME -->
     <section id="game" class="card hidden">
       <div class="gameHeader">
         <div>

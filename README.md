@@ -1,15 +1,11 @@
-# Piratwhist – Scorekeeper (v0.0.4)
+# Piratwhist (v0.0.6)
 
-## Rettelse
-- **Der tælles ikke point fra omgange som ikke er færdige.**
-  - En runde tæller først, når alle spillere har udfyldt både **bud** og **stik** (0 er ok). Tomt felt = ikke færdig.
-- Point pr. spiller pr. færdig runde:
-  - Rammer man bud præcist: **10 + bud**
-  - Ellers: **-abs(stik - bud)**
+Denne version indeholder nu en separat **regelside**.
 
-## Deploy på Render (Python Web Service)
-**Build Command:**
-- `pip install -r requirements.txt`
+## Nyt i v0.0.6
+- Tekst om regler på forsiden
+- Link til separat regelside (`rules.html`)
 
-**Start Command:**
-- `gunicorn app:app`
+## Render
+Build: `pip install -r requirements.txt`  
+Start: `gunicorn app:app`
