@@ -3,14 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist – Regler</title>
+  <title>Piratwhist – Regler v0.0.9</title>
   <link rel="stylesheet" href="piratwhist.css" />
 </head>
 <body>
   <header class="topbar">
-    <div class="title">Piratwhist – Regler</div>
+    <div class="title">
+      Piratwhist – Regler <span class="badge">v0.0.9</span>
+    </div>
     <div class="actions">
-      <a href="piratwhist.html" class="ghost buttonlink">← Tilbage til spil</a>
+      <a href="piratwhist.html" class="ghost linkbtn">← Tilbage</a>
     </div>
   </header>
 
@@ -18,51 +20,52 @@
     <section class="card">
       <h2>Grundidé</h2>
       <p>
-        Piratwhist er et stikspil for 2–8 spillere. I hver runde skal hver spiller
-        <strong>byde</strong> på, hvor mange stik de forventer at tage i runden.
-        Når runden er spillet færdig, noteres hvor mange stik hver spiller
-        <strong>faktisk</strong> tog.
+        Piratwhist er et stikspil for <strong>2–8 spillere</strong>.
+        I hver runde afgiver hver spiller et <strong>bud</strong> på, hvor mange stik de forventer at tage.
+        Når runden er spillet færdig, indtastes hvor mange stik hver spiller <strong>faktisk</strong> tog,
+        og der beregnes point.
       </p>
 
-      <h2>Runder</h2>
+      <h2>Opsætning</h2>
       <ul>
-        <li>Der spilles mellem <strong>4 og 14 runder</strong> (standard er 14).</li>
-        <li>Antallet af mulige stik varierer fra runde til runde.</li>
-        <li>0 er altid et gyldigt bud.</li>
+        <li>Vælg antal spillere (2–8) og indtast navne.</li>
+        <li>Vælg antal runder (4–14). Appen viser rundens maksimum for stik.</li>
+        <li><strong>0</strong> er altid et gyldigt bud.</li>
       </ul>
 
-      <h2>Bud</h2>
-      <ul>
-        <li>Alle spillere afgiver ét bud pr. runde.</li>
-        <li>Buddet er antallet af stik, man tror man vil tage.</li>
-        <li>Bud afgives før runden spilles.</li>
-      </ul>
+      <h2>Runde-forløb</h2>
+      <ol>
+        <li>Alle spillere indtaster deres <strong>bud</strong> (0..max).</li>
+        <li>Runden spilles med fysiske kort.</li>
+        <li>Alle spillere indtaster deres <strong>stik</strong> (0..max).</li>
+      </ol>
+      <p class="sub">
+        Tip: I runde-skærmen tabber du først gennem alle <strong>bud</strong>, og derefter gennem alle <strong>stik</strong>.
+      </p>
 
-      <h2>Stik</h2>
-      <ul>
-        <li>Når runden er spillet færdig, noteres antal stik hver spiller tog.</li>
-        <li>En runde tæller først med i point, når <strong>alle spillere</strong>
-            har indtastet både bud og stik.</li>
-      </ul>
+      <h2>Hvornår tæller en runde?</h2>
+      <p>
+        En runde tæller først med i point, når <strong>alle spillere</strong> har indtastet både bud og stik.
+        Hvis et felt er tomt for nogen spiller, regnes runden som <em>ikke færdig</em> og giver 0 point til alle
+        indtil den er udfyldt.
+      </p>
 
       <h2>Point</h2>
       <ul>
         <li>Hvis du rammer dit bud præcist: <strong>10 point + dit bud</strong>.</li>
-        <li>Hvis du ikke rammer dit bud: <strong>-1 point</strong> for hvert stik
-            du rammer ved siden af.</li>
-        <li>Ufærdige runder giver <strong>0 point</strong>.</li>
+        <li>Hvis du ikke rammer dit bud: <strong>-1 point</strong> for hvert stik du er fra det aktuelle bud
+          (<code>-abs(stik - bud)</code>).</li>
       </ul>
 
       <h2>Vinder</h2>
       <p>
-        Når alle runder er færdigspillet, vinder den spiller med
-        <strong>flest samlede point</strong>.
+        Efter sidste runde vinder den spiller med <strong>flest samlede point</strong>.
       </p>
     </section>
   </main>
 
   <footer class="footer">
-    Piratwhist v0.0.6
+    Piratwhist v0.0.9
   </footer>
 </body>
 </html>

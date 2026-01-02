@@ -30,7 +30,7 @@ body{
   top: 0;
 }
 .title{ font-weight:800; letter-spacing:.3px; display:flex; align-items:center; gap:10px; }
-.actions{ display:flex; gap:10px; }
+.actions{ display:flex; gap:10px; flex-wrap:wrap; }
 
 .badge{
   font-size:.82rem;
@@ -104,15 +104,21 @@ input[type="number"], input[type="text"]{
 }
 .hint{ color:var(--muted); font-size:.9rem; }
 
-button{
+button,
+a.linkbtn{
   border:1px solid var(--line);
   background: rgba(255,255,255,.06);
   color:var(--text);
   padding:10px 12px;
   border-radius:12px;
   cursor:pointer;
+  text-decoration:none;
+  display:inline-flex;
+  align-items:center;
 }
-button:hover{ background: rgba(255,255,255,.10); }
+button:hover,
+a.linkbtn:hover{ background: rgba(255,255,255,.10); }
+
 button.primary{
   background: rgba(90,167,255,.20);
   border-color: rgba(90,167,255,.45);
@@ -121,9 +127,8 @@ button.danger{
   border-color: rgba(255,90,106,.45);
   color: #ffd4d9;
 }
-button.ghost{
-  background: transparent;
-}
+button.ghost,
+a.ghost{ background: transparent; }
 
 .gameHeader{
   display:flex;
@@ -190,3 +195,6 @@ th{
   font-size: .9rem;
   text-align: center;
 }
+
+a{ color: var(--primary); }
+code{ color: #cfe3ff; }

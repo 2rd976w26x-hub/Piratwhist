@@ -1,6 +1,6 @@
-/* Piratwhist – v0.0.8 (restored v0.0.4 UI + working buttons) */
+/* Piratwhist – v0.0.9 (v0.0.8 stable UI + rules page links) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.0.8";
+const APP_VERSION = "0.0.9";
 const STORAGE_KEY = "piratwhist_v2"; // schema with nulls for incomplete rounds
 
 const el = (id) => document.getElementById(id);
