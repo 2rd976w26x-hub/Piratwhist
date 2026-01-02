@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Piratwhist – Score v0.0.2</title>
+  <link rel="stylesheet" href="piratwhist.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="title">
+      Piratwhist <span id="appVersion" class="badge"></span>
+    </div>
+    <div class="actions">
+      <button id="btnNew" class="ghost">Nyt spil</button>
+      <button id="btnReset" class="danger ghost">Nulstil (slet gemt)</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- SETUP -->
+    <section id="setup" class="card">
+      <h2>Opsætning</h2>
+
+      <div class="grid">
+        <label class="field">
+          <span>Antal spillere (2–8)</span>
+          <input id="playerCount" type="number" min="2" max="8" value="4" />
+        </label>
+
+        <label class="field">
+          <span>Antal runder (4–14)</span>
+          <input id="roundCount" type="number" min="4" max="14" value="14" />
+        </label>
+      </div>
+
+      <div id="nameFields" class="names"></div>
+
+      <div class="row">
+        <button id="btnStart" class="primary">Start spil</button>
+        <div class="hint">0 er altid tilladt som bud.</div>
+      </div>
+    </section>
+
+    <!-- GAME -->
+    <section id="game" class="card hidden">
+      <div class="gameHeader">
+        <div>
+          <h2>Spil</h2>
+          <div id="roundInfo" class="sub"></div>
+        </div>
+        <div class="row">
+          <button id="btnPrev" class="ghost">◀ Forrige</button>
+          <button id="btnNext" class="ghost">Næste ▶</button>
+        </div>
+      </div>
+
+      <div id="roundCard" class="roundCard"></div>
+
+      <hr />
+
+      <h3>Oversigt (alle runder)</h3>
+      <div class="tableWrap">
+        <table id="overview"></table>
+      </div>
+    </section>
+
+    <footer class="footer">
+      Piratwhist v<span id="footerVersion"></span>
+    </footer>
+  </main>
+
+  <script src="piratwhist.js"></script>
+</body>
+</html>
