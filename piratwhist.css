@@ -182,6 +182,7 @@ th{
   top: 0;
 }
 .small{ color:var(--muted); font-size:.9rem; }
+.muted{ color:var(--muted); }
 
 .footer{
   margin-top: 14px;

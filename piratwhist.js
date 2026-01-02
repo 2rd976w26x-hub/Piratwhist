@@ -1,7 +1,7 @@
 /* Piratwhist – offline scorekeeper (bids + tricks + points). */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.0.3";
-const STORAGE_KEY = "piratwhist_v1"; // storage namespace
+const APP_VERSION = "0.0.4";
+const STORAGE_KEY = "piratwhist_v2"; // bumped schema: supports nulls for incomplete rounds
 
 const el = (id) => document.getElementById(id);
 
@@ -9,7 +9,7 @@ const state = {
   players: [],
   rounds: 14,
   maxByRound: [],
-  data: [], // data[roundIndex][playerIndex] = { bid, tricks }
+  data: [], // data[roundIndex][playerIndex] = { bid: number|null, tricks: number|null }
   currentRound: 0,
 };
 
@@ -17,21 +17,39 @@ function clamp(n, min, max){
   return Math.max(min, Math.min(max, n));
 }
 
+function isNumber(v){
+  return typeof v === "number" && Number.isFinite(v);
+}
+
 /**
- * Points:
- * - If tricks === bid => +10
+ * A round is finished only when EVERY player has BOTH bid and tricks filled (0 is allowed).
+ */
+function isRoundComplete(roundIndex){
+  const row = state.data[roundIndex];
+  if (!row) return false;
+  for (let i = 0; i < state.players.length; i++) {
+    const cell = row[i];
+    if (!cell) return false;
+    if (!isNumber(cell.bid) || !isNumber(cell.tricks)) return false;
+  }
+  return true;
+}
+
+/**
+ * Points (only for finished rounds):
+ * - If tricks === bid => 10 + bid
  * - Else => -abs(tricks - bid)
  */
 function pointsFor(bid, tricks){
-  bid = parseInt(bid ?? 0, 10);
-  tricks = parseInt(tricks ?? 0, 10);
-  if (tricks === bid) return 10;
+  if (!isNumber(bid) || !isNumber(tricks)) return 0;
+  if (tricks === bid) return 10 + bid;
   return -Math.abs(tricks - bid);
 }
 
 function totalForPlayer(playerIndex){
   let sum = 0;
-  for (let r = 0; r < state.rounds; r++){
+  for (let r = 0; r < state.rounds; r++) {
+    if (!isRoundComplete(r)) continue;
     const row = state.data[r][playerIndex];
     sum += pointsFor(row.bid, row.tricks);
   }
@@ -52,8 +70,6 @@ function totalForPlayer(playerIndex){
  * 10: 5
  * 11: 6
  * 12: 7
- *
- * For 4–14 runder: vi tager starten af sekvensen og gentager hvis nødvendigt.
  */
 function buildMaxByRound(roundCount){
   const base = [7,6,4,3,2,1,2,3,4,5,6,7];
@@ -93,7 +109,7 @@ function ensureNameFields(){
 
 function makeEmptyData(rounds, players){
   return Array.from({length: rounds}, () =>
-    Array.from({length: players.length}, () => ({ bid: 0, tricks: 0 }))
+    Array.from({length: players.length}, () => ({ bid: null, tricks: null }))
   );
 }
 
@@ -160,17 +176,25 @@ function startGameFromSetup(){
   showGame();
 }
 
-function renderRound(){
+function renderRoundHeaderStatus() {
   const r = state.currentRound;
   const max = state.maxByRound[r];
-  el("roundInfo").textContent = `Runde ${r+1} / ${state.rounds}  ·  Max (1..${max}) + 0 tilladt`;
+  const complete = isRoundComplete(r);
+  el("roundInfo").textContent = `Runde ${r+1} / ${state.rounds}  ·  Max (1..${max}) + 0 tilladt  ·  ${complete ? "FÆRDIG" : "ikke færdig"}`;
+}
+
+function renderRound(){
+  renderRoundHeaderStatus();
+
+  const r = state.currentRound;
+  const max = state.maxByRound[r];
 
   const card = el("roundCard");
   card.innerHTML = "";
 
   const title = document.createElement("div");
   title.className = "sub";
-  title.textContent = "Udfyld bud og stik for denne runde:";
+  title.textContent = "Udfyld bud og stik for denne runde (tomt felt = runden tæller ikke endnu):";
   card.appendChild(title);
 
   const grid = document.createElement("div");
@@ -191,28 +215,42 @@ function renderRound(){
     bid.type = "number";
     bid.min = "0";
     bid.max = String(max);
-    bid.value = String(state.data[r][i].bid ?? 0);
+    const bidVal = state.data[r][i].bid;
+    bid.value = isNumber(bidVal) ? String(bidVal) : "";
+    bid.placeholder = "—";
     bid.addEventListener("input", () => {
-      const v = clamp(parseInt(bid.value || "0", 10), 0, max);
-      bid.value = String(v);
-      state.data[r][i].bid = v;
+      if (bid.value === "") {
+        state.data[r][i].bid = null;
+      } else {
+        const v = clamp(parseInt(bid.value || "0", 10), 0, max);
+        bid.value = String(v);
+        state.data[r][i].bid = v;
+      }
       save();
       renderOverview();
       renderRoundTotalsLine();
+      renderRoundHeaderStatus();
     });
 
     const tricks = document.createElement("input");
     tricks.type = "number";
     tricks.min = "0";
     tricks.max = String(max);
-    tricks.value = String(state.data[r][i].tricks ?? 0);
+    const trVal = state.data[r][i].tricks;
+    tricks.value = isNumber(trVal) ? String(trVal) : "";
+    tricks.placeholder = "—";
     tricks.addEventListener("input", () => {
-      const v = clamp(parseInt(tricks.value || "0", 10), 0, max);
-      tricks.value = String(v);
-      state.data[r][i].tricks = v;
+      if (tricks.value === "") {
+        state.data[r][i].tricks = null;
+      } else {
+        const v = clamp(parseInt(tricks.value || "0", 10), 0, max);
+        tricks.value = String(v);
+        state.data[r][i].tricks = v;
+      }
       save();
       renderOverview();
       renderRoundTotalsLine();
+      renderRoundHeaderStatus();
     });
 
     grid.appendChild(name);
@@ -222,7 +260,6 @@ function renderRound(){
 
   card.appendChild(grid);
 
-  // Totals line (live)
   const totalsLine = document.createElement("div");
   totalsLine.id = "totalsLine";
   totalsLine.className = "sub";
@@ -237,16 +274,21 @@ function renderRound(){
 function renderRoundTotalsLine(){
   const totalsLine = document.getElementById("totalsLine");
   if(!totalsLine) return;
-  totalsLine.textContent = "Total lige nu: " + state.players
-    .map((p,i) => `${p.name}: ${totalForPlayer(i)}`)
-    .join(" · ");
+
+  let finishedCount = 0;
+  for (let r = 0; r < state.rounds; r++) {
+    if (isRoundComplete(r)) finishedCount++;
+  }
+
+  totalsLine.textContent =
+    `Total (kun færdige runder: ${finishedCount}): ` +
+    state.players.map((p,i) => `${p.name}: ${totalForPlayer(i)}`).join(" · ");
 }
 
 function renderOverview(){
   const t = el("overview");
   t.innerHTML = "";
 
-  // Header
   const thead = document.createElement("thead");
   const hr = document.createElement("tr");
 
@@ -267,23 +309,29 @@ function renderOverview(){
   thead.appendChild(hr);
   t.appendChild(thead);
 
-  // Body
   const tbody = document.createElement("tbody");
 
   for(let r=0;r<state.rounds;r++){
     const tr = document.createElement("tr");
+    const complete = isRoundComplete(r);
 
     const tdR = document.createElement("td");
-    tdR.innerHTML = `<strong>${r+1}</strong> <span class="small">${r === state.currentRound ? "(nu)" : ""}</span>`;
+    tdR.innerHTML = `<strong>${r+1}</strong> <span class="small">${r === state.currentRound ? "(nu)" : ""}</span> <span class="small muted">${complete ? "" : "· (ikke færdig)"}</span>`;
     tr.appendChild(tdR);
 
-    // spiller-celler: bud / stik / point
     for(let i=0;i<state.players.length;i++){
       const cell = document.createElement("td");
-      const b = state.data[r][i].bid ?? 0;
-      const s = state.data[r][i].tricks ?? 0;
-      const pts = pointsFor(b, s);
-      cell.textContent = `${b} / ${s}  (${pts >= 0 ? "+" : ""}${pts})`;
+      const b = state.data[r][i].bid;
+      const s = state.data[r][i].tricks;
+
+      if (!complete) {
+        const bTxt = isNumber(b) ? b : "—";
+        const sTxt = isNumber(s) ? s : "—";
+        cell.innerHTML = `<span class="muted">${bTxt} / ${sTxt}  (—)</span>`;
+      } else {
+        const pts = pointsFor(b, s);
+        cell.textContent = `${b} / ${s}  (${pts >= 0 ? "+" : ""}${pts})`;
+      }
       tr.appendChild(cell);
     }
 
@@ -291,7 +339,6 @@ function renderOverview(){
     tdM.textContent = String(state.maxByRound[r]);
     tr.appendChild(tdM);
 
-    // klik på række -> gå til runden
     tr.style.cursor = "pointer";
     tr.addEventListener("click", () => {
       state.currentRound = r;
@@ -303,16 +350,14 @@ function renderOverview(){
     tbody.appendChild(tr);
   }
 
-  // Totals række nederst
   const trSum = document.createElement("tr");
   const tdLabel = document.createElement("td");
-  tdLabel.innerHTML = "<strong>Totals</strong>";
+  tdLabel.innerHTML = "<strong>Totals (kun færdige runder)</strong>";
   trSum.appendChild(tdLabel);
 
   for(let i=0;i<state.players.length;i++){
     const td = document.createElement("td");
-    const tot = totalForPlayer(i);
-    td.innerHTML = `<strong>${tot}</strong>`;
+    td.innerHTML = `<strong>${totalForPlayer(i)}</strong>`;
     trSum.appendChild(td);
   }
 
@@ -361,7 +406,6 @@ function wireUI(){
 }
 
 function init(){
-  // show version in UI
   const badge = document.getElementById("appVersion");
   const foot = document.getElementById("footerVersion");
   if (badge) badge.textContent = `v${APP_VERSION}`;
