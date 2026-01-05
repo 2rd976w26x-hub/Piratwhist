@@ -1,6 +1,6 @@
-/* Piratwhist – v0.2.0 (multiplayer rooms) */
+/* Piratwhist – v0.2.1 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.2.0";
+const APP_VERSION = "0.2.1";
 
 const el = (id) => document.getElementById(id);
 
@@ -89,6 +89,19 @@ function setRoomStatus(text){ el("roomStatus").textContent = text; }
 function setRoomHint(text){ el("roomHint").textContent = text || ""; }
 
 function uppercaseCode(s){ return (s||"").toUpperCase().replace(/\s+/g,"").slice(0,6); }
+
+function enterToNextRound(e){
+  if (e.key !== "Enter") return;
+  const a = e.target;
+  if (!a || a.tagName !== "INPUT") return;
+  const field = a.getAttribute("data-field");
+  const player = parseInt(a.getAttribute("data-player") || "0", 10);
+  if (field === "tricks" && state && player === state.players.length - 1){
+    e.preventDefault();
+    const btnN = document.getElementById("btnNext");
+    if (btnN) btnN.focus();
+  }
+}
 
 function focusFirstBid(){
   const sel = `input[data-round="${localCurrentRound}"][data-player="0"][data-field="bid"]`;
@@ -263,6 +276,7 @@ function renderRound(){
     bid.setAttribute("data-round", String(localCurrentRound));
     bid.setAttribute("data-player", String(i));
     bid.setAttribute("data-field", "bid");
+    bid.addEventListener("keydown", enterToNextRound);
     bid.addEventListener("input", () => {
       let val = null;
       if (bid.value !== "") {
@@ -282,6 +296,7 @@ function renderRound(){
     tricks.setAttribute("data-round", String(localCurrentRound));
     tricks.setAttribute("data-player", String(i));
     tricks.setAttribute("data-field", "tricks");
+    tricks.addEventListener("keydown", enterToNextRound);
     tricks.addEventListener("input", () => {
       let val = null;
       if (tricks.value !== "") {
@@ -302,7 +317,14 @@ function renderRound(){
   bidInputs.forEach((inp, idx) => inp.tabIndex = 1 + idx);
   trickInputs.forEach((inp, idx) => inp.tabIndex = 1 + bidInputs.length + idx);
 
-  card.appendChild(grid);
+  
+  // After last tricks input, tab should go to Next round button
+  const nextTab = 1 + bidInputs.length + trickInputs.length;
+  const btnN = document.getElementById(\"btnNext\");
+  const btnP = document.getElementById(\"btnPrev\");
+  if (btnN) btnN.tabIndex = nextTab;
+  if (btnP) btnP.tabIndex = nextTab + 1;
+card.appendChild(grid);
 
   const totalsLine = document.createElement("div");
   totalsLine.id = "totalsLine";
