@@ -1,6 +1,6 @@
-/* Piratwhist – v0.1.5 (multiplayer rooms) */
+/* Piratwhist – v0.1.6 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.1.5";
+const APP_VERSION = "0.1.6";
 
 const el = (id) => document.getElementById(id);
 
@@ -40,6 +40,19 @@ let state = null; // authoritative state from server
 
 function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
 function isNumber(v){ return typeof v === "number" && Number.isFinite(v); }
+
+function setCurrentRound(round){
+  if (!state) return;
+  const r = clamp(round, 0, state.rounds - 1);
+  // Optimistic UI update
+  state.currentRound = r;
+  render();
+  // Sync to server when connected + in a room
+  if (roomCode && socket && socket.connected){
+    setCurrentRound(r);
+  }
+}
+
 
 function show(id, on){ el(id).classList.toggle("hidden", !on); }
 
