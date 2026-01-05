@@ -1,6 +1,6 @@
-/* Piratwhist – v0.1.7 (multiplayer rooms) */
+/* Piratwhist – v0.1.8 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.1.7";
+const APP_VERSION = "0.1.8";
 
 const el = (id) => document.getElementById(id);
 
@@ -43,6 +43,9 @@ function isNumber(v){ return typeof v === "number" && Number.isFinite(v); }
 
 function setCurrentRound(round){
   if (!state) return;
+  // Warn if current round has full tricks but sum != max
+  const warn = validateRoundTricksSum(state.currentRound);
+  if (warn) showRoundWarning(warn);
   const r = clamp(round, 0, state.rounds - 1);
   // Optimistic UI update
   state.currentRound = r;
@@ -60,6 +63,43 @@ function setRoomStatus(text){ el("roomStatus").textContent = text; }
 function setRoomHint(text){ el("roomHint").textContent = text || ""; }
 
 function uppercaseCode(s){ return (s||"").toUpperCase().replace(/\s+/g,"").slice(0,6); }
+
+function sumTricksForRound(roundIndex){
+  if (!state) return null;
+  const row = state.data?.[roundIndex];
+  if (!row) return null;
+  let sum = 0;
+  let anyMissing = false;
+  for (let i=0;i<state.players.length;i++){
+    const t = row[i]?.tricks;
+    if (isNumber(t)) sum += t;
+    else anyMissing = true;
+  }
+  return { sum, anyMissing, max: state.maxByRound[roundIndex] };
+}
+
+function showRoundWarning(msg){
+  const w = document.getElementById("roundWarning");
+  if (!w) return;
+  if (!msg){
+    w.classList.add("hidden");
+    w.textContent = "";
+    return;
+  }
+  w.textContent = msg;
+  w.classList.remove("hidden");
+}
+
+function validateRoundTricksSum(roundIndex){
+  const info = sumTricksForRound(roundIndex);
+  if (!info) return null;
+  // Only warn when all tricks are filled in (otherwise round isn't finished anyway)
+  if (info.anyMissing) return null;
+  if (info.sum !== info.max){
+    return `Advarsel: Sum af stik i runde ${roundIndex+1} er ${info.sum}, men skal være ${info.max}. (Du må gerne skifte runde.)`;
+  }
+  return null;
+}
 
 function pointsFor(bid, tricks){
   if (!isNumber(bid) || !isNumber(tricks)) return 0;
@@ -133,7 +173,11 @@ function renderRoundHeaderStatus() {
   const r = state.currentRound;
   const max = state.maxByRound[r];
   const complete = isRoundComplete(r);
-  el("roundInfo").textContent = `Runde ${r+1} / ${state.rounds}  ·  Max (1..${max}) + 0 tilladt  ·  ${complete ? "FÆRDIG" : "ikke færdig"}`;
+  const sumInfo = sumTricksForRound(r);
+  const sumTxt = sumInfo ? ` · Sum stik: ${sumInfo.sum}${sumInfo.anyMissing ? " (ufuldst.)" : ""} / ${sumInfo.max}` : "";
+  el("roundInfo").textContent = `Runde ${r+1} / ${state.rounds}  ·  Max (1..${max}) + 0 tilladt${sumTxt}  ·  ${complete ? "FÆRDIG" : "ikke færdig"}`;
+  // Update warning while viewing this round
+  showRoundWarning(validateRoundTricksSum(r));
 }
 
 function renderRound(){
