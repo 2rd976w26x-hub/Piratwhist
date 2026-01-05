@@ -26,7 +26,7 @@ def _room_code() -> str:
 
 
 def _build_max_by_round(rounds: int) -> List[int]:
-    base = [7, 6, 4, 3, 2, 1, 2, 3, 4, 5, 6, 7]
+    base = [7, 6, 5, 4, 3, 2, 1, 1, 2, 3, 4, 5, 6, 7]
     return [base[i % len(base)] for i in range(rounds)]
 
 
