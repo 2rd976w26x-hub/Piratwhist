@@ -1,6 +1,6 @@
-/* Piratwhist – v0.1.3 (multiplayer rooms) */
+/* Piratwhist – v0.1.4 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.1.3";
+const APP_VERSION = "0.1.4";
 
 const el = (id) => document.getElementById(id);
 
@@ -277,7 +277,7 @@ function renderOverview(){
 
     tr.style.cursor = "pointer";
     tr.addEventListener("click", () => {
-      socket.emit("set_current_round", { room: roomCode, round: r });
+      setCurrentRound(r);
     });
 
     tbody.appendChild(tr);
@@ -404,14 +404,15 @@ function initUI(){
 
   // nav
   el("btnPrev").addEventListener("click", () => {
-    if (!roomCode || !state) return;
-    socket.emit("set_current_round", { room: roomCode, round: clamp(state.currentRound - 1, 0, state.rounds - 1) });
+    if (!state) return;
+    setCurrentRound(state.currentRound - 1);
   });
 
   el("btnNext").addEventListener("click", () => {
-    if (!roomCode || !state) return;
-    socket.emit("set_current_round", { room: roomCode, round: clamp(state.currentRound + 1, 0, state.rounds - 1) });
+    if (!state) return;
+    setCurrentRound(state.currentRound + 1);
   });
+});
 }
 
 initUI();
