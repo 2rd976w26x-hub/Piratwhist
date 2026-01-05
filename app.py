@@ -41,9 +41,7 @@ def _default_room_state() -> Dict[str, Any]:
         "rounds": rounds,
         "players": players,
         "maxByRound": _build_max_by_round(rounds),
-        "data": data,
-        "currentRound": 0,
-    }
+        "data": data,    }
 
 
 def _broadcast_state(room: str) -> None:
@@ -159,7 +157,6 @@ def on_set_rounds(payload: Dict[str, Any]):
     else:
         del data[rounds:]
     s["data"] = data
-    s["currentRound"] = max(0, min(int(s["currentRound"]), rounds - 1))
 
     _broadcast_state(room)
 
@@ -187,21 +184,6 @@ def on_start_game(payload: Dict[str, Any]):
         return
     s = rooms[room]
     s["phase"] = "game"
-    s["currentRound"] = 0
-    _broadcast_state(room)
-
-
-@socketio.on("set_current_round")
-def on_set_current_round(payload: Dict[str, Any]):
-    room = (payload.get("room") or "").strip().upper()
-    if room not in rooms:
-        return
-    s = rooms[room]
-    if s.get("phase") != "game":
-        return
-    r = int(payload.get("round") or 0)
-    r = max(0, min(int(s["rounds"]) - 1, r))
-    s["currentRound"] = r
     _broadcast_state(room)
 
 

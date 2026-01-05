@@ -1,6 +1,6 @@
-/* Piratwhist – v0.1.8 (multiplayer rooms) */
+/* Piratwhist – v0.1.9 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.1.8";
+const APP_VERSION = "0.1.9";
 
 const el = (id) => document.getElementById(id);
 
@@ -36,24 +36,48 @@ socket.on("connect_error", () => {
   if (je) je.textContent = "Kunne ikke forbinde til realtime-serveren.";
 });
 
-let state = null; // authoritative state from server
+let state = null; // authoritative shared state from server
+let localCurrentRound = 0; // local view only (not shared in room)
 
 function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
 function isNumber(v){ return typeof v === "number" && Number.isFinite(v); }
 
+function captureFocusKey(){
+  const a = document.activeElement;
+  if (!a) return null;
+  if (a.tagName !== "INPUT") return null;
+  const player = a.getAttribute("data-player");
+  const field = a.getAttribute("data-field");
+  const round = a.getAttribute("data-round");
+  if (player === null || field === null || round === null) return null;
+  return {
+    player: parseInt(player, 10),
+    field,
+    round: parseInt(round, 10),
+    start: a.selectionStart,
+    end: a.selectionEnd
+  };
+}
+function restoreFocusKey(key){
+  if (!key) return;
+  const sel = `input[data-round="${key.round}"][data-player="${key.player}"][data-field="${key.field}"]`;
+  const a = document.querySelector(sel);
+  if (!a) return;
+  a.focus({ preventScroll: true });
+  try {
+    if (typeof key.start === "number" && typeof key.end === "number") {
+      a.setSelectionRange(key.start, key.end);
+    }
+  } catch (_) {}
+}
+
 function setCurrentRound(round){
   if (!state) return;
-  // Warn if current round has full tricks but sum != max
-  const warn = validateRoundTricksSum(state.currentRound);
+  const warn = validateRoundTricksSum(localCurrentRound);
   if (warn) showRoundWarning(warn);
   const r = clamp(round, 0, state.rounds - 1);
-  // Optimistic UI update
-  state.currentRound = r;
+  localCurrentRound = r;
   render();
-  // Sync to server when connected + in a room
-  if (roomCode && socket && socket.connected){
-    setCurrentRound(r);
-  }
 }
 
 
@@ -129,7 +153,9 @@ function totalForPlayer(playerIndex){
 }
 
 function render(){
-  if (!state) return;
+  const __focusKey = captureFocusKey();
+  if (!state) { return; }
+
 
   // phase visibility
   show("room", true);
@@ -147,6 +173,7 @@ function render(){
     renderRound();
     renderOverview();
   }
+  restoreFocusKey(__focusKey);
 }
 
 function renderNameFields(){
@@ -170,7 +197,7 @@ function renderNameFields(){
 }
 
 function renderRoundHeaderStatus() {
-  const r = state.currentRound;
+  const r = localCurrentRound;
   const max = state.maxByRound[r];
   const complete = isRoundComplete(r);
   const sumInfo = sumTricksForRound(r);
@@ -183,7 +210,7 @@ function renderRoundHeaderStatus() {
 function renderRound(){
   renderRoundHeaderStatus();
 
-  const r = state.currentRound;
+  const r = localCurrentRound;
   const max = state.maxByRound[r];
   const card = el("roundCard");
   card.innerHTML = "";
@@ -217,6 +244,9 @@ function renderRound(){
     const bidVal = state.data[r][i].bid;
     bid.value = isNumber(bidVal) ? String(bidVal) : "";
     bid.placeholder = "—";
+    bid.setAttribute("data-round", String(localCurrentRound));
+    bid.setAttribute("data-player", String(i));
+    bid.setAttribute("data-field", "bid");
     bid.addEventListener("input", () => {
       let val = null;
       if (bid.value !== "") {
@@ -233,6 +263,9 @@ function renderRound(){
     const trVal = state.data[r][i].tricks;
     tricks.value = isNumber(trVal) ? String(trVal) : "";
     tricks.placeholder = "—";
+    tricks.setAttribute("data-round", String(localCurrentRound));
+    tricks.setAttribute("data-player", String(i));
+    tricks.setAttribute("data-field", "tricks");
     tricks.addEventListener("input", () => {
       let val = null;
       if (tricks.value !== "") {
@@ -262,8 +295,8 @@ function renderRound(){
   card.appendChild(totalsLine);
   renderRoundTotalsLine();
 
-  el("btnPrev").disabled = (state.currentRound === 0);
-  el("btnNext").disabled = (state.currentRound === state.rounds - 1);
+  el("btnPrev").disabled = (localCurrentRound === 0);
+  el("btnNext").disabled = (localCurrentRound === state.rounds - 1);
 }
 
 function renderRoundTotalsLine(){
@@ -309,7 +342,7 @@ function renderOverview(){
     const complete = isRoundComplete(r);
 
     const tdR = document.createElement("td");
-    tdR.innerHTML = `<strong>${r+1}</strong> <span class="small">${r === state.currentRound ? "(nu)" : ""}</span> <span class="small muted">${complete ? "" : "· (ikke færdig)"}</span>`;
+    tdR.innerHTML = `<strong>${r+1}</strong> <span class="small">${r === localCurrentRound ? "(nu)" : ""}</span> <span class="small muted">${complete ? "" : "· (ikke færdig)"}</span>`;
     tr.appendChild(tdR);
 
     for(let i=0;i<state.players.length;i++){
@@ -389,6 +422,7 @@ socket.on("join_error", (msg) => {
 
 socket.on("state", (s) => {
   state = s;
+  localCurrentRound = clamp(localCurrentRound, 0, (state.rounds || 1) - 1);
   // reflect current phase
   if (state.phase === "setup") {
     show("setup", true); show("game", false);
@@ -461,13 +495,15 @@ function initUI(){
 
   // nav
   el("btnPrev").addEventListener("click", () => {
-    if (!state) return;
-    setCurrentRound(state.currentRound - 1);
+    if (!state) { return; }
+
+    setCurrentRound(localCurrentRound - 1);
   });
 
   el("btnNext").addEventListener("click", () => {
-    if (!state) return;
-    setCurrentRound(state.currentRound + 1);
+    if (!state) { return; }
+
+    setCurrentRound(localCurrentRound + 1);
   });
 }
 
