@@ -1,6 +1,6 @@
-/* Piratwhist – v0.1.4 (multiplayer rooms) */
+/* Piratwhist – v0.1.5 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.1.4";
+const APP_VERSION = "0.1.5";
 
 const el = (id) => document.getElementById(id);
 
@@ -412,7 +412,6 @@ function initUI(){
     if (!state) return;
     setCurrentRound(state.currentRound + 1);
   });
-});
 }
 
 initUI();
