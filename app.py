@@ -385,8 +385,10 @@ def _online_schedule_auto_next_trick(code: str, round_index: int):
                 return
             if st.get("roundIndex") != round_index:
                 return
+            # auto-advance only if there are bots
             if len(st.get("botSeats", set())) == 0:
                 return
+
             n = st["n"]
             st["leader"] = st["winner"]
             st["turn"] = st["leader"]
@@ -394,19 +396,15 @@ def _online_schedule_auto_next_trick(code: str, round_index: int):
             st["table"] = [None for _ in range(n)]
             st["winner"] = None
             st["phase"] = "playing"
-        _online_emit_full_state(code, room)
-        if st.get("turn") in st.get("botSeats", set()):
-            _online_schedule_bot_turn(code)
-        return
+
             _online_emit_full_state(code, room)
-    if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
-        _online_schedule_bot_turn(code)
-            if st["turn"] in st.get("botSeats", set()):
+
+            if st.get("turn") in st.get("botSeats", set()):
                 _online_schedule_bot_turn(code)
         except Exception:
             return
-    socketio.start_background_task(_task)
 
+    socketio.start_background_task(_task)
 def _online_internal_play_card(code: str, room, seat: int, card_key: str):
     st = room["state"]
     if st.get("phase") != "playing":
@@ -748,8 +746,8 @@ def online_play_card(data):
         emit("error", {"message": "Det er ikke din tur."})
         return
 
-            _online_internal_play_card(code, room, seat, card_key)
-        return
+    _online_internal_play_card(code, room, seat, card_key)
+    return
 
 @socketio.on("online_next")
 def online_next(data):
