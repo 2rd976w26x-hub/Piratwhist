@@ -1,6 +1,6 @@
-/* Piratwhist – v0.1.9 (multiplayer rooms) */
+/* Piratwhist – v0.2.4 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.1.9";
+const APP_VERSION = "0.2.4";
 
 const el = (id) => document.getElementById(id);
 
@@ -286,7 +286,12 @@ function renderRound(){
   bidInputs.forEach((inp, idx) => inp.tabIndex = 1 + idx);
   trickInputs.forEach((inp, idx) => inp.tabIndex = 1 + bidInputs.length + idx);
 
-  card.appendChild(grid);
+  
+  // After last tricks input, tab should go to Next round button
+  const nextTab = 1 + bidInputs.length + trickInputs.length;
+  const btnN = document.getElementById(\"btnNext\");
+  if (btnN) btnN.tabIndex = nextTab;
+card.appendChild(grid);
 
   const totalsLine = document.createElement("div");
   totalsLine.id = "totalsLine";
