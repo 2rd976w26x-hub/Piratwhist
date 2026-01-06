@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.1.12 · Spil online</title>
+  <title>Piratwhist v0.1.14 · Spil online</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
 </head>
@@ -22,8 +22,8 @@
     <section class="card">
       <h2>Online spil (trick-taking)</h2>
       <p class="sub">
-        Regler (i denne prototype): Hver runde spilles ét kort pr. spiller. <b>Højeste kort vinder</b> runden.
-        Man skal <b>bekende kulør</b> hvis muligt. <b>Spar er trumf</b>.
+        Prototype: Hver runde spilles <b>Antal kort pr. spiller</b> som i Piratwhist-runderne (14 runder: 7→1→7).
+        I hver stik-runde vinder det højeste kort. Man skal bekende kulør hvis muligt. Spar (♠) er trumf.
       </p>
 
       <div class="grid2">
@@ -41,8 +41,10 @@
 
       <div class="row gap">
         <button id="olNewGame" class="btn primary">Nyt spil (giv kort)</button>
-        <button id="olNextTrick" class="btn">Næste runde</button>
+        <button id="olNextRound" class="btn">Næste runde</button>
         <div class="pill" id="olInfo">Ikke startet</div>
+        <div class="pill">Runde: <span id="olRound">-</span></div>
+        <div class="pill">Kort pr. spiller: <span id="olCardsPer">-</span></div>
       </div>
     </section>
 

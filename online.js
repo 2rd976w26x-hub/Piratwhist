@@ -1,8 +1,9 @@
-// Piratwhist Online (prototype) - local pass-and-play, no networking yet.
-const SUITS = ["♠","♥","♦","♣"]; // spades trump
+// Piratwhist Online (prototype) - local pass-and-play (no networking yet).
+const SUITS = ["♠","♥","♦","♣"]; // spar is trump
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const RANKS = ["2","3","4","5","6","7","8","9","10","J","Q","K","A"];
 const RANK_VALUE = Object.fromEntries(RANKS.map((r,i)=>[r,i+2]));
+const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7]; // 14 rounds
 
 function el(id){ return document.getElementById(id); }
 function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
@@ -23,30 +24,23 @@ function shuffle(a){
   }
   return a;
 }
-function cardText(c){ return `${c.rank}${c.suit}`; }
 function cardKey(c){ return `${c.rank}${c.suit}`; }
 
 function compareCards(a,b,leadSuit){
-  // return 1 if a beats b, -1 if b beats a
   const aTrump = a.suit === "♠";
   const bTrump = b.suit === "♠";
   if (aTrump && !bTrump) return 1;
   if (!aTrump && bTrump) return -1;
 
-  // Both trump or both non-trump
   if (a.suit === b.suit){
     return Math.sign(RANK_VALUE[a.rank] - RANK_VALUE[b.rank]);
   }
-  // Neither is trump and suits differ: only cards of lead suit are eligible
   const aLead = a.suit === leadSuit;
   const bLead = b.suit === leadSuit;
   if (aLead && !bLead) return 1;
   if (!aLead && bLead) return -1;
-  // otherwise neither matches lead (shouldn't happen if follow suit exists), compare by rank fallback
   return Math.sign(RANK_VALUE[a.rank] - RANK_VALUE[b.rank]);
 }
-
-let state = null;
 
 function defaultNames(n){
   return Array.from({length:n}, (_,i)=>`Spiller ${i+1}`);
@@ -71,12 +65,14 @@ function renderNames(){
   }
 }
 
-function dealHands(n){
+function dealHandsForRound(n, roundIndex){
+  const cardsPer = ROUND_CARDS[roundIndex];
+  const needed = cardsPer * n;
   const deck = shuffle(makeDeck());
-  const per = Math.floor(deck.length / n);
+  const take = deck.slice(0, needed);
   const hands = Array.from({length:n}, ()=>[]);
-  for (let i=0;i<per*n;i++){
-    hands[i % n].push(deck[i]);
+  for (let i=0;i<take.length;i++){
+    hands[i % n].push(take[i]);
   }
   // sort hands for readability: suit then rank
   for (const h of hands){
@@ -86,7 +82,7 @@ function dealHands(n){
       return RANK_VALUE[a.rank] - RANK_VALUE[b.rank];
     });
   }
-  return hands;
+  return {hands, cardsPer};
 }
 
 function canFollowSuit(hand, leadSuit){
@@ -113,6 +109,30 @@ function showWarn(msg){
   }
   w.textContent = msg;
   w.classList.remove("hidden");
+}
+
+// Graphical card element
+function makeCardEl(card){
+  const btn = document.createElement("button");
+  btn.className = "cardbtn";
+  const div = document.createElement("div");
+  const red = (card.suit === "♥" || card.suit === "♦");
+  div.className = "playingcard" + (red ? " red" : "");
+  const c1 = document.createElement("div");
+  c1.className = "corner";
+  c1.textContent = card.rank + card.suit;
+  const mid = document.createElement("div");
+  mid.className = "center";
+  mid.textContent = card.suit;
+  const c2 = document.createElement("div");
+  c2.className = "corner";
+  c2.style.alignSelf = "flex-end";
+  c2.textContent = card.rank + card.suit;
+  div.appendChild(c1);
+  div.appendChild(mid);
+  div.appendChild(c2);
+  btn.appendChild(div);
+  return btn;
 }
 
 function playCard(playerIndex, cardKeyStr){
@@ -163,60 +183,92 @@ function playCard(playerIndex, cardKeyStr){
     }
     state.winner = winner;
     state.tricksWon[winner] += 1;
-    state.phase = "done";
+
+    // finish trick
+    state.phase = "between_tricks";
+  }
+
+  // If all hands empty, round finished
+  if (state.hands.every(h => h.length === 0)){
+    state.phase = "round_finished";
   }
 
   render();
 }
 
-function nextTrick(){
-  if (!state) return;
-  // allow next trick even if previous not completed? we'll require completion.
-  if (state.phase !== "done"){
-    showWarn("Runden er ikke færdig endnu.");
-    return;
-  }
-  showWarn("");
-  state.trickIndex += 1;
-
-  // if hands empty: end game
-  const anyCards = state.hands.some(h => h.length>0);
-  if (!anyCards){
-    state.phase = "finished";
-    render();
-    return;
-  }
-
-  state.leader = state.winner;
+function startTrickFromLeader(){
   state.turn = state.leader;
   state.leadSuit = null;
   state.table = Array.from({length:state.n}, ()=>null);
   state.winner = null;
   state.phase = "playing";
+}
+
+function nextTrick(){
+  if (!state) return;
+  if (state.phase !== "between_tricks"){
+    return;
+  }
+  // leader becomes previous winner
+  state.leader = state.winner;
+  startTrickFromLeader();
+  render();
+}
+
+function nextRound(){
+  if (!state) return;
+
+  // If we're mid-trick, don't allow advancing
+  if (state.phase === "playing"){
+    showWarn("Afslut stikket før du går til næste runde.");
+    return;
+  }
+  showWarn("");
+
+  if (state.roundIndex >= 13){
+    state.phase = "game_finished";
+    render();
+    return;
+  }
+
+  state.roundIndex += 1;
+  const dealt = dealHandsForRound(state.n, state.roundIndex);
+  state.hands = dealt.hands;
+  state.cardsPerPlayer = dealt.cardsPer;
+  state.tricksWonRound = Array.from({length:state.n}, ()=>0);
+  state.trickNumber = 1;
+
+  // rotate leader each round (simple): player 0 always starts, or keep previous?
+  state.leader = 0;
+  startTrickFromLeader();
   render();
 }
 
 function newGame(){
   const n = parseInt(el("olPlayerCount").value, 10);
   const names = [];
-  // collect current name inputs
   const inputs = el("olNames").querySelectorAll("input");
   for (let i=0;i<n;i++){
     const v = inputs[i]?.value?.trim();
     names.push(v || `Spiller ${i+1}`);
   }
+
+  const dealt = dealHandsForRound(n, 0);
   state = {
     n,
     names,
-    hands: dealHands(n),
-    tricksWon: Array.from({length:n}, ()=>0),
-    trickIndex: 1,
+    roundIndex: 0,
+    cardsPerPlayer: dealt.cardsPer,
+    hands: dealt.hands,
+    tricksWon: Array.from({length:n}, ()=>0), // total across game
+    tricksWonRound: Array.from({length:n}, ()=>0),
+    trickNumber: 1,
     leader: 0,
     turn: 0,
     leadSuit: null,
     table: Array.from({length:n}, ()=>null),
     winner: null,
-    phase: "playing"
+    phase: "playing" // playing | between_tricks | round_finished | game_finished
   };
   render();
 }
@@ -225,20 +277,36 @@ function render(){
   renderNames();
 
   const info = el("olInfo");
+  const roundSpan = el("olRound");
+  const cardsPer = el("olCardsPer");
+
   if (!state){
     info.textContent = "Ikke startet";
+    if (roundSpan) roundSpan.textContent = "-";
+    if (cardsPer) cardsPer.textContent = "-";
     el("olLeader").textContent = "-";
     el("olLeadSuit").textContent = "-";
     el("olWinner").textContent = "-";
     el("olTable").innerHTML = "";
     el("olHands").innerHTML = "";
+    el("olNextRound").disabled = true;
     return;
   }
 
-  const totalTricks = Math.max(...state.hands.map(h=>h.length)) + (state.trickIndex-1);
-  info.textContent = state.phase === "finished"
-    ? `Færdig · ${totalTricks} runder`
-    : `Runde ${state.trickIndex} · Tur: ${state.names[state.turn]}`;
+  const rNo = state.roundIndex + 1;
+  if (roundSpan) roundSpan.textContent = String(rNo);
+  if (cardsPer) cardsPer.textContent = String(state.cardsPerPlayer);
+
+  // status text
+  if (state.phase === "game_finished"){
+    info.textContent = `Spil færdigt · 14 runder`;
+  } else if (state.phase === "round_finished"){
+    info.textContent = `Runde ${rNo} færdig · Klik “Næste runde”`;
+  } else if (state.phase === "between_tricks"){
+    info.textContent = `Runde ${rNo} · Stik ${state.trickNumber} færdig · Vinder: ${state.names[state.winner]}`;
+  } else {
+    info.textContent = `Runde ${rNo} · Stik ${state.trickNumber} · Tur: ${state.names[state.turn]}`;
+  }
 
   el("olLeader").textContent = state.names[state.leader];
   el("olLeadSuit").textContent = state.leadSuit ? `${state.leadSuit} (${SUIT_NAME[state.leadSuit]})` : "-";
@@ -247,17 +315,22 @@ function render(){
   // table
   const table = el("olTable");
   table.innerHTML = "";
-  // adapt columns based on player count
   table.style.gridTemplateColumns = `repeat(${Math.min(4,state.n)}, minmax(140px, 1fr))`;
   for (let i=0;i<state.n;i++){
     const slot = document.createElement("div");
     slot.className = "slot";
     const nm = document.createElement("div");
     nm.className = "name";
-    nm.textContent = `${state.names[i]} · stik: ${state.tricksWon[i]}`;
+    nm.textContent = `${state.names[i]} · total stik: ${state.tricksWon[i]}`;
     const cd = document.createElement("div");
     cd.className = "card";
-    cd.textContent = state.table[i] ? cardText(state.table[i]) : "—";
+    if (state.table[i]){
+      const ce = makeCardEl(state.table[i]);
+      ce.disabled = true;
+      cd.appendChild(ce.firstChild); // append just card graphic
+    } else {
+      cd.textContent = "—";
+    }
     slot.appendChild(nm);
     slot.appendChild(cd);
     table.appendChild(slot);
@@ -282,10 +355,8 @@ function render(){
     const cards = document.createElement("div");
     cards.className = "cards";
     for (const c of state.hands[i]){
-      const b = document.createElement("button");
-      b.className = "cardbtn";
-      b.textContent = cardText(c);
-      b.disabled = !isPlayable(i, c);
+      const b = makeCardEl(c);
+      b.disabled = !(state.phase==="playing" && isPlayable(i, c));
       b.addEventListener("click", ()=>playCard(i, cardKey(c)));
       cards.appendChild(b);
     }
@@ -295,9 +366,50 @@ function render(){
     hands.appendChild(h);
   }
 
-  // next trick button enabled only when done/finished
-  el("olNextTrick").disabled = !(state.phase === "done" || state.phase === "finished");
+  // When trick finished, allow continuing (auto-next trick button not shown; user keeps playing by clicking Next Round?)
+  // We'll auto-start next trick only when user clicks "Næste runde"? Instead, we keep a simple flow:
+  // If between_tricks, clicking "Næste runde" advances to next trick if cards remain; if round finished, it advances round.
+  const btn = el("olNextRound");
+  if (state.phase === "between_tricks"){
+    btn.disabled = false;
+    btn.textContent = "Næste stik";
+  } else if (state.phase === "round_finished"){
+    btn.disabled = false;
+    btn.textContent = "Næste runde";
+  } else if (state.phase === "game_finished"){
+    btn.disabled = true;
+    btn.textContent = "Færdig";
+  } else {
+    btn.disabled = true;
+    btn.textContent = "Næste stik/runde";
+  }
 }
+
+function onNext(){
+  if (!state) return;
+  if (state.phase === "between_tricks"){
+    // move to next trick in same round
+    state.tricksWon[state.winner] += 1; // count trick for total when trick finishes
+    state.tricksWonRound[state.winner] += 1;
+    state.trickNumber += 1;
+
+    // if more cards remain, continue; else round finished is already set by playCard, but double-check
+    if (state.hands.every(h => h.length === 0)){
+      state.phase = "round_finished";
+      render();
+      return;
+    }
+
+    nextTrick();
+    return;
+  }
+  if (state.phase === "round_finished"){
+    nextRound();
+    return;
+  }
+}
+
+let state = null;
 
 el("olPlayerCount").addEventListener("change", () => {
   renderNames();
@@ -305,7 +417,7 @@ el("olPlayerCount").addEventListener("change", () => {
 });
 
 el("olNewGame").addEventListener("click", newGame);
-el("olNextTrick").addEventListener("click", nextTrick);
+el("olNextRound").addEventListener("click", onNext);
 
 renderNames();
 render();

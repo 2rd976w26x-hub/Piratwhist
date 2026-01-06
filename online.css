@@ -12,7 +12,7 @@
 .hands{display:flex; flex-direction:column; gap:14px;}
 .hand{border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:12px; background: rgba(255,255,255,.02);}
 .hand .head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
-.cards{display:flex; flex-wrap:wrap; gap:8px;}
+.cards{display:flex; flex-wrap:wrap; gap:10px;}
 .cardbtn{border:1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.04); color:inherit; padding:8px 10px; border-radius:12px; cursor:pointer;}
 .cardbtn:disabled{opacity:.35; cursor:not-allowed;}
 .warn{margin-top:10px; padding:10px 12px; border:1px solid rgba(255,210,122,.45); background: rgba(255,210,122,.08); border-radius:14px; color:#ffd27a;}
@@ -21,3 +21,37 @@
   .grid2{grid-template-columns: 1fr;}
   .table{grid-template-columns: 1fr 1fr;}
 }
+
+.playingcard{
+  width:56px; height:78px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,.25);
+  background: rgba(255,255,255,.95);
+  color:#111;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  padding:6px 6px 6px 6px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.25);
+}
+.playingcard.red{ color:#b00020; }
+.playingcard .corner{
+  font-weight:800;
+  font-size:14px;
+  line-height:1;
+}
+.playingcard .center{
+  font-size:22px;
+  font-weight:900;
+  line-height:1;
+  text-align:center;
+  margin-top:6px;
+}
+.cardbtn{
+  padding:0;
+  border:none;
+  background:transparent;
+}
+.cardbtn:disabled{opacity:.35;}
+.cardbtn:disabled .playingcard{filter: grayscale(.4);}
+.slot .playingcard{transform: scale(.95); transform-origin: left top;}
