@@ -1,16 +1,8 @@
-/* Piratwhist – v0.2.2 (multiplayer rooms) */
+/* Piratwhist – v0.2.3 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.2.2";
+const APP_VERSION = "0.2.3";
 
 const el = (id) => document.getElementById(id);
-
-window.addEventListener("error", (ev) => {
-  try {
-    const msg = (ev && ev.message) ? ev.message : "Ukendt fejl";
-    const w = document.getElementById("roundWarning");
-    if (w){ w.textContent = `FEJL: ${msg}`; w.classList.remove("hidden"); }
-  } catch (_) {}
-});
 
 const socket = io({
   transports: ["websocket", "polling"],
@@ -97,19 +89,6 @@ function setRoomStatus(text){ el("roomStatus").textContent = text; }
 function setRoomHint(text){ el("roomHint").textContent = text || ""; }
 
 function uppercaseCode(s){ return (s||"").toUpperCase().replace(/\s+/g,"").slice(0,6); }
-
-function enterToNextRound(e){
-  if (e.key !== "Enter") return;
-  const a = e.target;
-  if (!a || a.tagName !== "INPUT") return;
-  const field = a.getAttribute("data-field");
-  const player = parseInt(a.getAttribute("data-player") || "0", 10);
-  if (field === "tricks" && state && player === state.players.length - 1){
-    e.preventDefault();
-    const btnN = document.getElementById("btnNext");
-    if (btnN) btnN.focus();
-  }
-}
 
 function focusFirstBid(){
   const sel = `input[data-round="${localCurrentRound}"][data-player="0"][data-field="bid"]`;
@@ -284,7 +263,6 @@ function renderRound(){
     bid.setAttribute("data-round", String(localCurrentRound));
     bid.setAttribute("data-player", String(i));
     bid.setAttribute("data-field", "bid");
-    bid.addEventListener("keydown", enterToNextRound);
     bid.addEventListener("input", () => {
       let val = null;
       if (bid.value !== "") {
@@ -304,7 +282,6 @@ function renderRound(){
     tricks.setAttribute("data-round", String(localCurrentRound));
     tricks.setAttribute("data-player", String(i));
     tricks.setAttribute("data-field", "tricks");
-    tricks.addEventListener("keydown", enterToNextRound);
     tricks.addEventListener("input", () => {
       let val = null;
       if (tricks.value !== "") {
@@ -329,9 +306,7 @@ function renderRound(){
   // After last tricks input, tab should go to Next round button
   const nextTab = 1 + bidInputs.length + trickInputs.length;
   const btnN = document.getElementById(\"btnNext\");
-  const btnP = document.getElementById(\"btnPrev\");
   if (btnN) btnN.tabIndex = nextTab;
-  if (btnP) btnP.tabIndex = nextTab + 1;
 card.appendChild(grid);
 
   const totalsLine = document.createElement("div");
@@ -496,53 +471,45 @@ function initUI(){
   if (badge) badge.textContent = `v${APP_VERSION}`;
   if (foot) foot.textContent = APP_VERSION;
 
-  const __btnCreateRoom = el("btnCreateRoom");
-  if (__btnCreateRoom) __btnCreateRoom.addEventListener("click", () => {
+  el("btnCreateRoom").addEventListener("click", () => {
     socket.emit("create_room");
   });
 
-  const __btnJoinRoom = el("btnJoinRoom");
-  if (__btnJoinRoom) __btnJoinRoom.addEventListener("click", () => {
+  el("btnJoinRoom").addEventListener("click", () => {
     const code = uppercaseCode(el("joinCode").value);
     el("joinCode").value = code;
     socket.emit("join_room", { room: code });
   });
 
-  const __joinCode = el("joinCode");
-  if (__joinCode) __joinCode.addEventListener("keydown", (e) => {
+  el("joinCode").addEventListener("keydown", (e) => {
     if (e.key === "Enter") el("btnJoinRoom").click();
   });
 
-  const __btnLeaveRoom = el("btnLeaveRoom");
-  if (__btnLeaveRoom) __btnLeaveRoom.addEventListener("click", () => {
+  el("btnLeaveRoom").addEventListener("click", () => {
     socket.emit("leave_room", { room: roomCode });
   });
 
-  const __btnResetRoom = el("btnResetRoom");
-  if (__btnResetRoom) __btnResetRoom.addEventListener("click", () => {
+  el("btnResetRoom").addEventListener("click", () => {
     if (!roomCode) return;
     socket.emit("reset_room", { room: roomCode });
   });
 
   // setup
-  const __playerCount = el("playerCount");
-  if (__playerCount) __playerCount.addEventListener("input", () => {
+  el("playerCount").addEventListener("input", () => {
     if (!roomCode) return;
     const n = clamp(parseInt(el("playerCount").value || "4", 10), 2, 8);
     el("playerCount").value = n;
     socket.emit("set_player_count", { room: roomCode, playerCount: n });
   });
 
-  const __roundCount = el("roundCount");
-  if (__roundCount) __roundCount.addEventListener("input", () => {
+  el("roundCount").addEventListener("input", () => {
     if (!roomCode) return;
     const n = clamp(parseInt(el("roundCount").value || "14", 10), 4, 14);
     el("roundCount").value = n;
     socket.emit("set_rounds", { room: roomCode, rounds: n });
   });
 
-  const __btnStart = el("btnStart");
-  if (__btnStart) __btnStart.addEventListener("click", () => {
+  el("btnStart").addEventListener("click", () => {
     if (!roomCode) return;
     localCurrentRound = 0;
     forceFocusFirstBid = true;
@@ -550,21 +517,17 @@ function initUI(){
   });
 
   // nav
-  const __btnPrev = el("btnPrev");
-  if (__btnPrev) __btnPrev.addEventListener("click", () => {
+  el("btnPrev").addEventListener("click", () => {
     if (!state) { return; }
 
     setCurrentRound(localCurrentRound - 1);
   });
 
-  const __btnNext = el("btnNext");
-  if (__btnNext) __btnNext.addEventListener("click", () => {
+  el("btnNext").addEventListener("click", () => {
     if (!state) { return; }
 
     setCurrentRound(localCurrentRound + 1);
   });
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  try { initUI(); } catch (e) { console.error(e); }
-});
+initUI();
