@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.1.17)
+// Piratwhist Online Multiplayer (v0.1.18)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
@@ -78,6 +78,8 @@ socket.on("online_state", (payload) => {
   const sl = el("olSeatLabel"); if (sl) sl.textContent = (mySeat===null || mySeat===undefined) ? "-" : `Spiller ${mySeat+1}`;
   showRoomWarn("");
   showWarn("");
+  syncPlayerCount();
+  syncPlayerCount();
   render();
 });
 
@@ -96,6 +98,19 @@ socket.on("online_left", () => {
 
 function myName(){ return (el("olMyName")?.value || "").trim() || "Spiller"; }
 function playerCount(){ return parseInt(el("olPlayerCount")?.value || "4", 10); }
+
+
+function syncPlayerCount(){
+  const sel = el("olPlayerCount");
+  if (!sel) return;
+  if (state && typeof state.n === "number"){
+    sel.value = String(state.n);
+    sel.disabled = true; // room decides player count
+  } else {
+    sel.disabled = false;
+  }
+}
+
 
 function createRoom(){ socket.emit("online_create_room", { name: myName(), players: playerCount() }); }
 function joinRoom(){ socket.emit("online_join_room", { room: normalizeCode(el("olRoomCode")?.value), name: myName() }); }
