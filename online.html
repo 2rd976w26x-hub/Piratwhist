@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.1.14 · Spil online</title>
+  <title>Piratwhist v0.1.15 · Spil online</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
 </head>
@@ -18,6 +18,32 @@
         <a class="btn" href="/">Tilbage</a>
       </div>
     </header>
+
+    <section class="card">
+      <h2>Online rum</h2>
+
+      <div class="grid2">
+        <div>
+          <label class="label">Dit navn</label>
+          <input id="olMyName" class="input" placeholder="Dit navn" value="Spiller 1" />
+        </div>
+        <div>
+          <label class="label">Rumkode (4 tal)</label>
+          <input id="olRoomCode" class="input" placeholder="1234" inputmode="numeric" />
+        </div>
+      </div>
+
+      <div class="row gap wrap">
+        <button id="olCreateRoom" class="btn primary">Opret online-rum</button>
+        <button id="olJoinRoom" class="btn">Join online-rum</button>
+        <button id="olLeaveRoom" class="btn">Forlad rum</button>
+        <div class="pill">Rum: <span id="olRoomLabel">-</span></div>
+        <div class="pill">Du er: <span id="olSeatLabel">-</span></div>
+      </div>
+
+      <div id="olRoomStatus" class="sub"></div>
+      <div id="olRoomWarn" class="warn hidden"></div>
+    </section>
 
     <section class="card">
       <h2>Online spil (trick-taking)</h2>
@@ -40,7 +66,7 @@
       </div>
 
       <div class="row gap">
-        <button id="olNewGame" class="btn primary">Nyt spil (giv kort)</button>
+        <button id="olStartOnline" class="btn primary">Start online spil (giv kort)</button>
         <button id="olNextRound" class="btn">Næste runde</button>
         <div class="pill" id="olInfo">Ikke startet</div>
         <div class="pill">Runde: <span id="olRound">-</span></div>
@@ -71,6 +97,7 @@
     </footer>
   </div>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script src="/online.js"></script>
 </body>
 </html>
