@@ -245,6 +245,7 @@ ONLINE_RANK_VALUE = {r: i+2 for i, r in enumerate(ONLINE_RANKS)}
 ONLINE_ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7]
 
 def _online_room_code() -> str:
+    # 4 digits to keep it simple
     return f"{random.randint(0, 9999):04d}"
 
 def _online_make_deck():
@@ -254,7 +255,7 @@ def _online_card_key(c):
     return f"{c['rank']}{c['suit']}"
 
 def _online_compare_cards(a, b, lead_suit):
-    # 1 if a beats b, -1 if b beats a
+    # returns 1 if a beats b, -1 if b beats a, 0 if equal
     a_trump = a["suit"] == "♠"
     b_trump = b["suit"] == "♠"
     if a_trump and not b_trump:
@@ -274,7 +275,7 @@ def _online_compare_cards(a, b, lead_suit):
     if not a_lead and b_lead:
         return -1
 
-    # fallback (shouldn't matter)
+    # fallback
     av = ONLINE_RANK_VALUE[a["rank"]]
     bv = ONLINE_RANK_VALUE[b["rank"]]
     return (av > bv) - (av < bv)
@@ -294,8 +295,14 @@ def _online_deal(n_players, round_index):
         h.sort(key=lambda c: (suit_order[c["suit"]], ONLINE_RANK_VALUE[c["rank"]]))
     return hands, cards_per
 
+def _online_points_for_round(bid: int, taken: int) -> int:
+    if bid == taken:
+        return 10 + bid
+    return -abs(taken - bid)
+
 def _online_public_state(room):
     st = room["state"]
+    # do NOT expose other players' hands
     return {
         "n": st["n"],
         "names": st["names"],
@@ -306,8 +313,23 @@ def _online_public_state(room):
         "table": st["table"],
         "winner": st["winner"],
         "phase": st["phase"],
+        "bids": st["bids"],
+        "tricksRound": st["tricksRound"],
         "tricksTotal": st["tricksTotal"],
+        "pointsTotal": st["pointsTotal"],
+        "history": st["history"],
     }
+
+def _online_emit_full_state(code: str, room):
+    st = room["state"]
+    # broadcast public state
+    socketio.emit("online_state", {"room": code, "seat": None, "state": _online_public_state(room)}, room=code)
+    # send private hand to each member
+    for sid, seat in list(room["members"].items()):
+        hand = st["hands"][seat] if st["hands"][seat] else []
+        payload_state = dict(_online_public_state(room))
+        payload_state["hands"] = [hand if i == seat else None for i in range(st["n"])]
+        socketio.emit("online_state", {"room": code, "seat": seat, "state": payload_state}, to=sid)
 
 def _online_cleanup_sid(sid):
     for code, room in list(ONLINE_ROOMS.items()):
@@ -319,10 +341,11 @@ def _online_cleanup_sid(sid):
                 pass
             st = room["state"]
             st["names"][seat] = None
+            # if room empty, delete it
             if not room["members"]:
                 ONLINE_ROOMS.pop(code, None)
             else:
-                socketio.emit("online_state", {"room": code, "seat": None, "state": _online_public_state(room)}, room=code)
+                _online_emit_full_state(code, room)
 
 # ---------- Online multiplayer socket events ----------
 @socketio.on("online_create_room")
@@ -353,16 +376,20 @@ def online_create_room(data):
             "winner": None,
             "phase": "lobby",
             "hands": [None for _ in range(n_players)],
+            "bids": [None for _ in range(n_players)],
+            "tricksRound": [0 for _ in range(n_players)],
             "tricksTotal": [0 for _ in range(n_players)],
+            "pointsTotal": [0 for _ in range(n_players)],
+            "history": [],
         }
     }
     ONLINE_ROOMS[code] = room
     join_room(code)
-    emit("online_state", {
-        "room": code,
-        "seat": 0,
-        "state": {**_online_public_state(room), "hands": [None]*n_players}
-    })
+
+    # send state (seat 0)
+    st = dict(_online_public_state(room))
+    st["hands"] = [[]] + [None for _ in range(n_players-1)]
+    emit("online_state", {"room": code, "seat": 0, "state": st})
 
 @socketio.on("online_join_room")
 def online_join_room(data):
@@ -388,14 +415,7 @@ def online_join_room(data):
     st["names"][seat] = name
     join_room(code)
 
-    socketio.emit("online_state", {"room": code, "seat": None, "state": _online_public_state(room)}, room=code)
-
-    hand = st["hands"][seat] if st["hands"][seat] else []
-    emit("online_state", {
-        "room": code,
-        "seat": seat,
-        "state": {**_online_public_state(room), "hands": [hand if i==seat else None for i in range(n)]}
-    })
+    _online_emit_full_state(code, room)
 
 @socketio.on("online_leave_room")
 def online_leave_room(data):
@@ -414,7 +434,7 @@ def online_leave_room(data):
         if not room["members"]:
             ONLINE_ROOMS.pop(code, None)
         else:
-            socketio.emit("online_state", {"room": code, "seat": None, "state": _online_public_state(room)}, room=code)
+            _online_emit_full_state(code, room)
 
     emit("online_left")
 
@@ -443,17 +463,50 @@ def online_start_game(data):
     st["leadSuit"] = None
     st["table"] = [None for _ in range(st["n"])]
     st["winner"] = None
-    st["phase"] = "playing"
+    st["bids"] = [None for _ in range(st["n"])]
+    st["tricksRound"] = [0 for _ in range(st["n"])]
+    st["phase"] = "bidding"
 
-    socketio.emit("online_state", {"room": code, "seat": None, "state": _online_public_state(room)}, room=code)
+    _online_emit_full_state(code, room)
 
-    for sid, seat in list(room["members"].items()):
-        hand = st["hands"][seat]
-        socketio.emit("online_state", {
-            "room": code,
-            "seat": seat,
-            "state": {**_online_public_state(room), "hands": [hand if i==seat else None for i in range(st["n"])]}
-        }, to=sid)
+@socketio.on("online_set_bid")
+def online_set_bid(data):
+    code = (data.get("room") or "").strip()
+    room = ONLINE_ROOMS.get(code)
+    if not room:
+        emit("error", {"message": "Rum ikke fundet."})
+        return
+
+    st = room["state"]
+    if st["phase"] != "bidding":
+        return
+
+    seat = room["members"].get(request.sid, None)
+    if seat is None:
+        emit("error", {"message": "Du er ikke i rummet."})
+        return
+
+    if st["bids"][seat] is not None:
+        emit("error", {"message": "Dit bud er allerede gemt."})
+        return
+
+    max_bid = ONLINE_ROUND_CARDS[st["roundIndex"]]
+    try:
+        bid = int(data.get("bid"))
+    except Exception:
+        bid = 0
+    if bid < 0 or bid > max_bid:
+        emit("error", {"message": f"Bud skal være mellem 0 og {max_bid}."})
+        return
+
+    st["bids"][seat] = bid
+
+    # when all bids submitted -> start playing
+    if all(b is not None for b in st["bids"]):
+        st["phase"] = "playing"
+        st["turn"] = st["leader"]
+
+    _online_emit_full_state(code, room)
 
 @socketio.on("online_play_card")
 def online_play_card(data):
@@ -477,7 +530,7 @@ def online_play_card(data):
         return
 
     hand = st["hands"][seat]
-    idx = next((i for i,c in enumerate(hand) if _online_card_key(c)==card_key), None)
+    idx = next((i for i, c in enumerate(hand) if _online_card_key(c) == card_key), None)
     if idx is None:
         emit("error", {"message": "Kort ikke fundet i din hånd."})
         return
@@ -513,23 +566,33 @@ def online_play_card(data):
             if _online_compare_cards(c, best, st["leadSuit"]) > 0:
                 best = c
                 winner = i
+
         st["winner"] = winner
+        st["tricksRound"][winner] += 1
         st["tricksTotal"][winner] += 1
 
         # round finished when all hands empty
         if all(len(h) == 0 for h in st["hands"]):
+            # compute points for this round
+            bids = [int(b or 0) for b in st["bids"]]
+            taken = list(st["tricksRound"])
+            points = [_online_points_for_round(bids[i], taken[i]) for i in range(n)]
+            for i in range(n):
+                st["pointsTotal"][i] += points[i]
+
+            st["history"].append({
+                "round": st["roundIndex"] + 1,
+                "cardsPer": ONLINE_ROUND_CARDS[st["roundIndex"]],
+                "bids": bids,
+                "taken": taken,
+                "points": points,
+            })
+
             st["phase"] = "round_finished"
         else:
             st["phase"] = "between_tricks"
 
-    socketio.emit("online_state", {"room": code, "seat": None, "state": _online_public_state(room)}, room=code)
-    for sid, s_seat in list(room["members"].items()):
-        hand2 = st["hands"][s_seat]
-        socketio.emit("online_state", {
-            "room": code,
-            "seat": s_seat,
-            "state": {**_online_public_state(room), "hands": [hand2 if i==s_seat else None for i in range(n)]}
-        }, to=sid)
+    _online_emit_full_state(code, room)
 
 @socketio.on("online_next")
 def online_next(data):
@@ -562,20 +625,16 @@ def online_next(data):
             st["leadSuit"] = None
             st["table"] = [None for _ in range(n)]
             st["winner"] = None
-            st["phase"] = "playing"
+            st["bids"] = [None for _ in range(n)]
+            st["tricksRound"] = [0 for _ in range(n)]
+            st["phase"] = "bidding"
 
-    socketio.emit("online_state", {"room": code, "seat": None, "state": _online_public_state(room)}, room=code)
-    for sid, s_seat in list(room["members"].items()):
-        hand2 = st["hands"][s_seat] if st["hands"][s_seat] else []
-        socketio.emit("online_state", {
-            "room": code,
-            "seat": s_seat,
-            "state": {**_online_public_state(room), "hands": [hand2 if i==s_seat else None for i in range(n)]}
-        }, to=sid)
+    _online_emit_full_state(code, room)
 
 @socketio.on("disconnect")
 def online_disconnect():
     _online_cleanup_sid(request.sid)
+
 
 if __name__ == "__main__":
     socketio.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=True)

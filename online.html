@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.1.16 · Spil online</title>
+  <title>Piratwhist v0.1.17 · Online</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
 </head>
@@ -12,7 +12,7 @@
     <header class="top">
       <div>
         <div class="title">Piratwhist</div>
-        <div class="sub">Spil online · v0.1.12</div>
+        <div class="sub">Spil online · v0.1.17</div>
       </div>
       <div class="topRight">
         <a class="btn" href="/">Tilbage</a>
@@ -43,6 +43,19 @@
 
       <div id="olRoomStatus" class="sub"></div>
       <div id="olRoomWarn" class="warn hidden"></div>
+    </section>
+
+<section class="card">
+      <h2>Bud</h2>
+      <div class="row gap">
+        <div>
+          <label class="label">Dit bud (0–<span id="olBidMax">-</span>)</label>
+          <select id="olBidSelect" class="input"></select>
+        </div>
+        <button id="olBidSubmit" class="btn primary">Gem bud</button>
+        <div class="pill">Status: <span id="olBidStatus">-</span></div>
+      </div>
+      <div id="olBidsList" class="sub"></div>
     </section>
 
     <section class="card">
@@ -92,7 +105,23 @@
       <div id="olWarn" class="warn hidden"></div>
     </section>
 
-    <footer class="foot sub">
+    <section class="card" id="olScores">
+      <h2>Resultater</h2>
+      <div class="row gap">
+        <div class="pill">Runde: <span id="olResRound">-</span></div>
+        <div class="pill">Kort pr. spiller: <span id="olResCards">-</span></div>
+      </div>
+      <div class="tableWrap">
+        <table class="t" id="olScoreTable"></table>
+      </div>
+      <div class="hsep"></div>
+      <div class="tableWrap">
+        <table class="t" id="olHistoryTable"></table>
+      </div>
+      <div class="sub">Point pr. runde: Rammer du dit bud: <b>10 + bud</b>. Ellers: <b>-1 pr. stik</b> du er fra.</div>
+    </section>
+
+<footer class="foot sub">
       Tip: Klik et kort for at spille det. Du må kun spille kort som matcher kuløren, hvis du har den.
     </footer>
   </div>

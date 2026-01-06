@@ -1,11 +1,26 @@
-// Piratwhist Online Multiplayer (v0.1.16)
+// Piratwhist Online Multiplayer (v0.1.17)
+// Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 function el(id){ return document.getElementById(id); }
 
+function setHidden(id, hidden){
+  const e = el(id);
+  if (!e) return;
+  e.classList.toggle("hidden", !!hidden);
+}
+
 function showRoomWarn(msg){
   const w = el("olRoomWarn");
+  if (!w) return;
+  if (!msg){ w.classList.add("hidden"); w.textContent=""; return; }
+  w.textContent = msg;
+  w.classList.remove("hidden");
+}
+
+function showWarn(msg){
+  const w = el("olWarn");
   if (!w) return;
   if (!msg){ w.classList.add("hidden"); w.textContent=""; return; }
   w.textContent = msg;
@@ -62,6 +77,7 @@ socket.on("online_state", (payload) => {
   const rl = el("olRoomLabel"); if (rl) rl.textContent = roomCode || "-";
   const sl = el("olSeatLabel"); if (sl) sl.textContent = (mySeat===null || mySeat===undefined) ? "-" : `Spiller ${mySeat+1}`;
   showRoomWarn("");
+  showWarn("");
   render();
 });
 
@@ -74,6 +90,7 @@ socket.on("online_left", () => {
   const s = el("olRoomStatus");
   if (s) s.textContent = "Forlod rum.";
   showRoomWarn("");
+  showWarn("");
   render();
 });
 
@@ -85,6 +102,11 @@ function joinRoom(){ socket.emit("online_join_room", { room: normalizeCode(el("o
 function leaveRoom(){ if (roomCode) socket.emit("online_leave_room", { room: roomCode }); }
 function startOnline(){ if (roomCode) socket.emit("online_start_game", { room: roomCode }); }
 function onNext(){ if (roomCode) socket.emit("online_next", { room: roomCode }); }
+function submitBid(){ 
+  if (!roomCode) return;
+  const v = parseInt(el("olBidSelect")?.value || "0", 10);
+  socket.emit("online_set_bid", { room: roomCode, bid: v });
+}
 function playCard(cardKey){ if (roomCode) socket.emit("online_play_card", { room: roomCode, card: cardKey }); }
 
 function isPlayable(card){
@@ -101,7 +123,109 @@ function isPlayable(card){
   return card.suit === state.leadSuit;
 }
 
+function renderBidUI(cardsPer){
+  const max = cardsPer ?? 0;
+  const maxEl = el("olBidMax");
+  if (maxEl) maxEl.textContent = String(max);
+
+  const sel = el("olBidSelect");
+  if (sel){
+    sel.innerHTML = "";
+    for (let i=0;i<=max;i++){
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = String(i);
+      sel.appendChild(opt);
+    }
+  }
+
+  const bids = state?.bids || [];
+  const myBid = (mySeat!==null && mySeat!==undefined) ? bids[mySeat] : null;
+  const status = el("olBidStatus");
+  if (status){
+    if (state.phase === "lobby") status.textContent = "Lobby";
+    else if (state.phase === "bidding") status.textContent = "Afgiv bud";
+    else status.textContent = "Bud låst";
+  }
+
+  const btn = el("olBidSubmit");
+  if (btn){
+    const canBid = (state.phase === "bidding") && (mySeat!==null && mySeat!==undefined) && (myBid===null || myBid===undefined);
+    btn.disabled = !canBid;
+  }
+  if (sel){
+    sel.disabled = !((state.phase==="bidding") && (mySeat!==null && mySeat!==undefined) && (myBid===null || myBid===undefined));
+  }
+
+  // bids list
+  const list = el("olBidsList");
+  if (list){
+    const n = state?.n || playerCount();
+    const names = state?.names || Array.from({length:n}, (_,i)=>`Spiller ${i+1}`);
+    const parts = [];
+    for (let i=0;i<n;i++){
+      const b = bids[i];
+      parts.push(`<b>${names[i] || ("Spiller " + (i+1))}</b>: ${(b===null||b===undefined) ? "—" : b}`);
+    }
+    list.innerHTML = parts.join(" · ");
+  }
+}
+
+function renderScores(){
+  const n = state?.n || playerCount();
+  const names = state?.names || Array.from({length:n}, (_,i)=>`Spiller ${i+1}`);
+  const total = state?.pointsTotal || Array.from({length:n}, ()=>0);
+  const bids = state?.bids || [];
+  const taken = state?.tricksRound || Array.from({length:n}, ()=>0);
+
+  const rNo = (state?.roundIndex ?? 0) + 1;
+  const cardsPer = ROUND_CARDS[state?.roundIndex ?? 0] ?? "-";
+  if (el("olResRound")) el("olResRound").textContent = String(rNo);
+  if (el("olResCards")) el("olResCards").textContent = String(cardsPer);
+
+  // Score table (current round snapshot)
+  const t = el("olScoreTable");
+  if (t){
+    t.innerHTML = "";
+    const thead = document.createElement("thead");
+    thead.innerHTML = `<tr><th>Spiller</th><th>Bud</th><th>Aktuelle stik</th><th>Total point</th></tr>`;
+    const tbody = document.createElement("tbody");
+    for (let i=0;i<n;i++){
+      const tr = document.createElement("tr");
+      const b = bids[i];
+      tr.innerHTML = `<td>${names[i] || ("Spiller " + (i+1))}</td>
+                      <td>${(b===null||b===undefined) ? "—" : b}</td>
+                      <td>${taken[i] ?? 0}</td>
+                      <td><b>${total[i] ?? 0}</b></td>`;
+      tbody.appendChild(tr);
+    }
+    t.appendChild(thead);
+    t.appendChild(tbody);
+  }
+
+  // History table (per round)
+  const h = el("olHistoryTable");
+  if (h){
+    const hist = state?.history || [];
+    h.innerHTML = "";
+    const thead = document.createElement("thead");
+    thead.innerHTML = `<tr><th>Runde</th><th>Kort</th><th>Bud</th><th>Stik</th><th>Point (runde)</th></tr>`;
+    const tbody = document.createElement("tbody");
+    for (const row of hist){
+      const bidsStr = row.bids.map((x,i)=>`${names[i]||("S"+(i+1))}:${x}`).join(" · ");
+      const takeStr = row.taken.map((x,i)=>`${names[i]||("S"+(i+1))}:${x}`).join(" · ");
+      const ptsStr  = row.points.map((x,i)=>`${names[i]||("S"+(i+1))}:${x}`).join(" · ");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${row.round}</td><td>${row.cardsPer}</td><td>${bidsStr}</td><td>${takeStr}</td><td>${ptsStr}</td>`;
+      tbody.appendChild(tr);
+    }
+    h.appendChild(thead);
+    h.appendChild(tbody);
+  }
+}
+
 function render(){
+  // lobby names view
   const namesWrap = el("olNames");
   if (namesWrap){
     namesWrap.innerHTML = "";
@@ -118,12 +242,12 @@ function render(){
 
   const info = el("olInfo");
   const roundSpan = el("olRound");
-  const cardsPer = el("olCardsPer");
+  const cardsPerEl = el("olCardsPer");
 
   if (!state){
     if (info) info.textContent = "Ikke startet";
     if (roundSpan) roundSpan.textContent = "-";
-    if (cardsPer) cardsPer.textContent = "-";
+    if (cardsPerEl) cardsPerEl.textContent = "-";
     if (el("olLeader")) el("olLeader").textContent = "-";
     if (el("olLeadSuit")) el("olLeadSuit").textContent = "-";
     if (el("olWinner")) el("olWinner").textContent = "-";
@@ -131,21 +255,28 @@ function render(){
     if (el("olHands")) el("olHands").innerHTML = "";
     if (el("olNextRound")) el("olNextRound").disabled = true;
     if (el("olStartOnline")) el("olStartOnline").disabled = !roomCode;
+    setHidden("olScores", true);
     return;
   }
 
-  const rNo = (state.roundIndex ?? 0) + 1;
-  if (roundSpan) roundSpan.textContent = String(rNo);
-  if (cardsPer) cardsPer.textContent = String(ROUND_CARDS[state.roundIndex ?? 0] ?? "-");
+  setHidden("olScores", false);
 
+  const rNo = (state.roundIndex ?? 0) + 1;
+  const cardsPer = ROUND_CARDS[state.roundIndex ?? 0] ?? 0;
+  if (roundSpan) roundSpan.textContent = String(rNo);
+  if (cardsPerEl) cardsPerEl.textContent = String(cardsPer);
+
+  // top info
   if (info){
     if (state.phase === "lobby"){
       const joined = state.names.filter(Boolean).length;
       info.textContent = `Lobby · ${joined}/${state.n} spillere`;
+    } else if (state.phase === "bidding"){
+      info.textContent = `Runde ${rNo} · Afgiv bud`;
     } else if (state.phase === "game_finished"){
       info.textContent = "Spil færdigt · 14 runder";
     } else if (state.phase === "round_finished"){
-      info.textContent = `Runde ${rNo} færdig · Klik “Næste”`;
+      info.textContent = `Runde ${rNo} færdig · Klik “Næste runde”`;
     } else if (state.phase === "between_tricks"){
       info.textContent = `Stik færdig · Vinder: ${state.names[state.winner]}`;
     } else {
@@ -157,6 +288,10 @@ function render(){
   if (el("olLeadSuit")) el("olLeadSuit").textContent = state.leadSuit ? `${state.leadSuit} (${SUIT_NAME[state.leadSuit]})` : "-";
   if (el("olWinner")) el("olWinner").textContent = (state.winner===null || state.winner===undefined) ? "-" : (state.names[state.winner] ?? "-");
 
+  // bidding UI
+  renderBidUI(cardsPer);
+
+  // table
   const table = el("olTable");
   if (table){
     table.innerHTML = "";
@@ -167,8 +302,9 @@ function render(){
 
       const nm = document.createElement("div");
       nm.className = "name";
-      const total = (state.tricksTotal && state.tricksTotal[i] !== undefined) ? state.tricksTotal[i] : 0;
-      nm.textContent = `${state.names[i] || ("Spiller " + (i+1))} · total stik: ${total}`;
+      const totalTricks = (state.tricksTotal && state.tricksTotal[i] !== undefined) ? state.tricksTotal[i] : 0;
+      const roundTricks = (state.tricksRound && state.tricksRound[i] !== undefined) ? state.tricksRound[i] : 0;
+      nm.textContent = `${state.names[i] || ("Spiller " + (i+1))} · runde: ${roundTricks} · total: ${totalTricks}`;
 
       const cd = document.createElement("div");
       cd.className = "card";
@@ -187,6 +323,7 @@ function render(){
     }
   }
 
+  // my hand only
   const hands = el("olHands");
   if (hands){
     hands.innerHTML = "";
@@ -225,6 +362,7 @@ function render(){
     }
   }
 
+  // buttons
   if (el("olStartOnline")) el("olStartOnline").disabled = !(state.phase === "lobby");
   if (el("olNextRound")){
     el("olNextRound").disabled = !(state.phase === "between_tricks" || state.phase === "round_finished");
@@ -232,6 +370,8 @@ function render(){
     else if (state.phase === "round_finished") el("olNextRound").textContent = "Næste runde";
     else el("olNextRound").textContent = "Næste";
   }
+
+  renderScores();
 }
 
 el("olCreateRoom")?.addEventListener("click", createRoom);
@@ -239,6 +379,7 @@ el("olJoinRoom")?.addEventListener("click", joinRoom);
 el("olLeaveRoom")?.addEventListener("click", leaveRoom);
 el("olStartOnline")?.addEventListener("click", startOnline);
 el("olNextRound")?.addEventListener("click", onNext);
+el("olBidSubmit")?.addEventListener("click", submitBid);
 el("olPlayerCount")?.addEventListener("change", () => render());
 
 render();
