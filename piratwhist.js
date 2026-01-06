@@ -1,6 +1,6 @@
-/* Piratwhist – v0.1.9 (multiplayer rooms) */
+/* Piratwhist – v0.1.10 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.1.9";
+const APP_VERSION = "0.1.10";
 
 const el = (id) => document.getElementById(id);
 
@@ -38,6 +38,7 @@ socket.on("connect_error", () => {
 
 let state = null; // authoritative shared state from server
 let localCurrentRound = 0; // local view only (not shared in room)
+let forceFocusFirstBid = false; // when true, focus bid for player 1 after render
 
 function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
 function isNumber(v){ return typeof v === "number" && Number.isFinite(v); }
@@ -77,6 +78,7 @@ function setCurrentRound(round){
   if (warn) showRoundWarning(warn);
   const r = clamp(round, 0, state.rounds - 1);
   localCurrentRound = r;
+  forceFocusFirstBid = true;
   render();
 }
 
@@ -87,6 +89,16 @@ function setRoomStatus(text){ el("roomStatus").textContent = text; }
 function setRoomHint(text){ el("roomHint").textContent = text || ""; }
 
 function uppercaseCode(s){ return (s||"").toUpperCase().replace(/\s+/g,"").slice(0,6); }
+
+function focusFirstBid(){
+  // Focus bid input for player 1 in current round
+  const sel = `input[data-round="${localCurrentRound}"][data-player="0"][data-field="bid"]`;
+  const a = document.querySelector(sel);
+  if (a){
+    a.focus({ preventScroll: true });
+    try { a.select(); } catch (_) {}
+  }
+}
 
 function sumTricksForRound(roundIndex){
   if (!state) return null;
@@ -173,7 +185,12 @@ function render(){
     renderRound();
     renderOverview();
   }
-  restoreFocusKey(__focusKey);
+  if (forceFocusFirstBid) {
+    focusFirstBid();
+    forceFocusFirstBid = false;
+  } else {
+    restoreFocusKey(__focusKey);
+  }
 }
 
 function renderNameFields(){
@@ -495,6 +512,8 @@ function initUI(){
 
   el("btnStart").addEventListener("click", () => {
     if (!roomCode) return;
+    localCurrentRound = 0;
+    forceFocusFirstBid = true;
     socket.emit("start_game", { room: roomCode });
   });
 
