@@ -1,8 +1,16 @@
-/* Piratwhist – v0.2.1 (multiplayer rooms) */
+/* Piratwhist – v0.2.2 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.2.1";
+const APP_VERSION = "0.2.2";
 
 const el = (id) => document.getElementById(id);
+
+window.addEventListener("error", (ev) => {
+  try {
+    const msg = (ev && ev.message) ? ev.message : "Ukendt fejl";
+    const w = document.getElementById("roundWarning");
+    if (w){ w.textContent = `FEJL: ${msg}`; w.classList.remove("hidden"); }
+  } catch (_) {}
+});
 
 const socket = io({
   transports: ["websocket", "polling"],
@@ -488,45 +496,53 @@ function initUI(){
   if (badge) badge.textContent = `v${APP_VERSION}`;
   if (foot) foot.textContent = APP_VERSION;
 
-  el("btnCreateRoom").addEventListener("click", () => {
+  const __btnCreateRoom = el("btnCreateRoom");
+  if (__btnCreateRoom) __btnCreateRoom.addEventListener("click", () => {
     socket.emit("create_room");
   });
 
-  el("btnJoinRoom").addEventListener("click", () => {
+  const __btnJoinRoom = el("btnJoinRoom");
+  if (__btnJoinRoom) __btnJoinRoom.addEventListener("click", () => {
     const code = uppercaseCode(el("joinCode").value);
     el("joinCode").value = code;
     socket.emit("join_room", { room: code });
   });
 
-  el("joinCode").addEventListener("keydown", (e) => {
+  const __joinCode = el("joinCode");
+  if (__joinCode) __joinCode.addEventListener("keydown", (e) => {
     if (e.key === "Enter") el("btnJoinRoom").click();
   });
 
-  el("btnLeaveRoom").addEventListener("click", () => {
+  const __btnLeaveRoom = el("btnLeaveRoom");
+  if (__btnLeaveRoom) __btnLeaveRoom.addEventListener("click", () => {
     socket.emit("leave_room", { room: roomCode });
   });
 
-  el("btnResetRoom").addEventListener("click", () => {
+  const __btnResetRoom = el("btnResetRoom");
+  if (__btnResetRoom) __btnResetRoom.addEventListener("click", () => {
     if (!roomCode) return;
     socket.emit("reset_room", { room: roomCode });
   });
 
   // setup
-  el("playerCount").addEventListener("input", () => {
+  const __playerCount = el("playerCount");
+  if (__playerCount) __playerCount.addEventListener("input", () => {
     if (!roomCode) return;
     const n = clamp(parseInt(el("playerCount").value || "4", 10), 2, 8);
     el("playerCount").value = n;
     socket.emit("set_player_count", { room: roomCode, playerCount: n });
   });
 
-  el("roundCount").addEventListener("input", () => {
+  const __roundCount = el("roundCount");
+  if (__roundCount) __roundCount.addEventListener("input", () => {
     if (!roomCode) return;
     const n = clamp(parseInt(el("roundCount").value || "14", 10), 4, 14);
     el("roundCount").value = n;
     socket.emit("set_rounds", { room: roomCode, rounds: n });
   });
 
-  el("btnStart").addEventListener("click", () => {
+  const __btnStart = el("btnStart");
+  if (__btnStart) __btnStart.addEventListener("click", () => {
     if (!roomCode) return;
     localCurrentRound = 0;
     forceFocusFirstBid = true;
@@ -534,17 +550,21 @@ function initUI(){
   });
 
   // nav
-  el("btnPrev").addEventListener("click", () => {
+  const __btnPrev = el("btnPrev");
+  if (__btnPrev) __btnPrev.addEventListener("click", () => {
     if (!state) { return; }
 
     setCurrentRound(localCurrentRound - 1);
   });
 
-  el("btnNext").addEventListener("click", () => {
+  const __btnNext = el("btnNext");
+  if (__btnNext) __btnNext.addEventListener("click", () => {
     if (!state) { return; }
 
     setCurrentRound(localCurrentRound + 1);
   });
 }
 
-initUI();
+window.addEventListener("DOMContentLoaded", () => {
+  try { initUI(); } catch (e) { console.error(e); }
+});
