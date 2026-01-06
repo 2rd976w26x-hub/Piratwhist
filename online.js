@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.1.15)
+// Piratwhist Online Multiplayer (v0.1.16)
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
