@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.1.21 · Online</title>
+  <title>Piratwhist v0.1.22 · Online</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
 </head>
@@ -12,7 +12,7 @@
     <header class="top">
       <div>
         <div class="title">Piratwhist</div>
-        <div class="sub">Spil online · v0.1.21</div>
+        <div class="sub">Spil online · v0.1.22</div>
       </div>
       <div class="topRight">
         <a class="ghost" href="/">Tilbage</a>
@@ -101,7 +101,13 @@
         <div class="pill">Vinder: <span id="olWinner">-</span></div>
       </div>
 
-      <div id="olTable" class="table"></div>
+      <div id="olBoard" class="board">
+  <div id="olCenter" class="center">
+    <div class="deck" id="olDeck" title="Kortbunke"></div>
+    <div class="pile" id="olPile" title="Stik-pulje"></div>
+  </div>
+  <div id="olTable" class="table"></div>
+</div>
     </section>
 
     <section class="card">
@@ -138,7 +144,7 @@
     <div class="brand">
       <div class="logo">🏴‍☠️</div>
       <div>
-        <div class="title">Piratwhist <span class="ver">v0.1.21</span></div>
+        <div class="title">Piratwhist <span class="ver">v0.1.22</span></div>
         <div class="sub">Online spil · spar er trumf · bekend kulør</div>
       </div>
     </div>

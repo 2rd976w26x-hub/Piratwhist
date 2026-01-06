@@ -257,3 +257,100 @@ table.t{ width:100%; border-collapse:collapse; min-width:520px; }
 table.t th, table.t td{ padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.10); text-align:left; white-space:nowrap; }
 table.t th{ font-weight:800; color:var(--text); background: rgba(255,255,255,.04); position:sticky; top:0; }
 .hsep{ height:12px; }
+
+
+/* ---- Online table / animations ---- */
+.board{
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 12px;
+  background: rgba(255,255,255,.03);
+  overflow: hidden;
+}
+.center{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:16px;
+  padding: 8px 0 14px;
+  border-bottom: 1px dashed rgba(255,255,255,.10);
+  margin-bottom: 10px;
+}
+.deck, .pile{
+  width: 64px;
+  height: 90px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(0,0,0,.25);
+  box-shadow: 0 12px 30px rgba(0,0,0,.30);
+  position: relative;
+}
+.deck::before{
+  content:"";
+  position:absolute;
+  inset:8px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.10);
+  background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.02));
+}
+.pile::before{
+  content:"STIK";
+  position:absolute;
+  inset:auto 8px 8px 8px;
+  font-size:11px;
+  color: var(--muted);
+  letter-spacing:.18em;
+  text-align:center;
+  opacity:.7;
+}
+.flycard{
+  position: fixed;
+  z-index: 9999;
+  width: 64px;
+  height: 90px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(0,0,0,.35);
+  box-shadow: 0 14px 35px rgba(0,0,0,.45);
+  transform: translate3d(0,0,0) scale(1);
+  transition: transform 520ms cubic-bezier(.2,.9,.2,1), opacity 520ms ease;
+  pointer-events: none;
+}
+.flycard.back::after{
+  content:"🏴‍☠️";
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  font-size:22px;
+  opacity:.9;
+}
+.cardface{
+  position: relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:900;
+}
+.cardface .badge{
+  position:absolute;
+  top:6px;
+  right:6px;
+  font-size:10px;
+  padding:2px 6px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.20);
+  background: rgba(0,0,0,.35);
+  color: rgba(255,255,255,.90);
+  letter-spacing:.08em;
+}
+.winnerGlow{
+  animation: winnerGlow 900ms ease-in-out 1;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.18), 0 18px 45px rgba(0,0,0,.55);
+}
+@keyframes winnerGlow{
+  0%{ transform: translateY(0); filter: brightness(1); }
+  30%{ transform: translateY(-3px); filter: brightness(1.2); }
+  100%{ transform: translateY(0); filter: brightness(1); }
+}

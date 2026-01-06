@@ -1,9 +1,95 @@
-// Piratwhist Online Multiplayer (v0.1.21)
+// Piratwhist Online Multiplayer (v0.1.22)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 function el(id){ return document.getElementById(id); }
+
+function rectCenter(elm){
+  const r = elm.getBoundingClientRect();
+  return { x: r.left + r.width/2, y: r.top + r.height/2, w: r.width, h: r.height };
+}
+
+function spawnFlyCard(x, y, faceText, isBack){
+  const d = document.createElement("div");
+  d.className = "flycard" + (isBack ? " back" : " cardface");
+  d.style.left = (x - 32) + "px";
+  d.style.top  = (y - 45) + "px";
+  if (!isBack){
+    d.textContent = faceText;
+    // add trump badge if spade
+    if (faceText.includes("♠")){
+      const b = document.createElement("div");
+      b.className = "badge";
+      b.textContent = "TRUMF";
+      d.appendChild(b);
+    }
+  }
+  document.body.appendChild(d);
+  return d;
+}
+
+function flyTo(elm, tx, ty, scale, opacity){
+  const dx = tx - (parseFloat(elm.style.left) + 32);
+  const dy = ty - (parseFloat(elm.style.top) + 45);
+  elm.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(${scale})`;
+  if (opacity !== undefined) elm.style.opacity = String(opacity);
+}
+
+function runDealAnimation(){
+  const deck = el("olDeck");
+  if (!deck) return;
+  const deckC = rectCenter(deck);
+  const n = state?.n || 0;
+  // Find player cards/areas on screen
+  const targets = [];
+  for (let i=0;i<n;i++){
+    const target = document.querySelector(`[data-seat="${i}"]`);
+    if (target) targets.push({seat:i, el:target});
+  }
+  if (!targets.length) return;
+
+  const cardsPer = (state?.hands && state.hands[0] ? state.hands[0].length : null);
+  const per = (typeof cardsPer === "number") ? cardsPer : 1;
+
+  // deal: per rounds, to each seat
+  let t = 0;
+  for (let c=0;c<per;c++){
+    for (const tg of targets){
+      setTimeout(() => {
+        const cc = rectCenter(tg.el);
+        const fc = spawnFlyCard(deckC.x, deckC.y, "", true);
+        // trigger transition
+        requestAnimationFrame(()=> flyTo(fc, cc.x, cc.y, 0.92, 0.98));
+        setTimeout(()=> { fc.style.opacity="0"; setTimeout(()=> fc.remove(), 240); }, 560);
+      }, t);
+      t += 70;
+    }
+  }
+}
+
+function runPlayAnimation(seat, cardText){
+  const pile = el("olPile");
+  const deck = el("olDeck");
+  if (!pile) return;
+  const srcEl = document.querySelector(`[data-seat="${seat}"]`) || deck;
+  if (!srcEl) return;
+  const sc = rectCenter(srcEl);
+  const pc = rectCenter(pile);
+  const fc = spawnFlyCard(sc.x, sc.y, cardText, false);
+  requestAnimationFrame(()=> flyTo(fc, pc.x, pc.y, 0.96, 1));
+  setTimeout(()=> { fc.style.opacity="0"; setTimeout(()=> fc.remove(), 240); }, 620);
+}
+
+function highlightWinner(){
+  const w = state?.winner;
+  if (w === null || w === undefined) return;
+  const cardEl = document.querySelector(`#olTable [data-seat-card="${w}"]`);
+  if (!cardEl) return;
+  cardEl.classList.add("winnerGlow");
+  setTimeout(()=> cardEl.classList.remove("winnerGlow"), 950);
+}
+
 
 function setHidden(id, hidden){
   const e = el(id);
@@ -59,6 +145,7 @@ const socket = io({ transports: ["websocket", "polling"] });
 let roomCode = null;
 let mySeat = null;
 let state = null;
+let prevState = null;
 
 socket.on("connect", () => {
   const s = el("olRoomStatus");
@@ -72,6 +159,7 @@ socket.on("error", (data) => {
 socket.on("online_state", (payload) => {
   roomCode = payload.room;
   if (payload.seat !== null && payload.seat !== undefined) mySeat = payload.seat;
+  prevState = state;
   state = payload.state;
 
   const rl = el("olRoomLabel"); if (rl) rl.textContent = roomCode || "-";
@@ -81,6 +169,7 @@ socket.on("online_state", (payload) => {
   syncPlayerCount();
   syncPlayerCount();
   syncBotCount();
+  maybeRunAnimations();
   render();
 });
 
@@ -269,6 +358,39 @@ function renderScores(){
     }
     h.appendChild(thead);
     h.appendChild(tbody);
+  }
+}
+
+function maybeRunAnimations(){
+  if (!state) return;
+
+  // Deal animation: when roundIndex changes OR phase enters bidding and previous wasn't bidding for same round
+  const pr = prevState?.roundIndex;
+  const cr = state.roundIndex;
+  const dealKey = `dealDone_${cr}`;
+  if (!window.__pwDealDone) window.__pwDealDone = {};
+  const shouldDeal = (pr !== cr) || (prevState?.phase !== "bidding" && state.phase === "bidding");
+  if (shouldDeal && !window.__pwDealDone[dealKey] && state.hands){
+    window.__pwDealDone[dealKey] = true;
+    setTimeout(runDealAnimation, 260);
+  }
+
+  // Play animations: detect newly placed cards on table
+  if (prevState && Array.isArray(prevState.table) && Array.isArray(state.table)){
+    for (let i=0;i<state.table.length;i++){
+      const a = prevState.table[i];
+      const b = state.table[i];
+      if (!a && b){
+        runPlayAnimation(i, `${b.rank}${b.suit}`);
+      }
+    }
+  }
+
+  // Winner highlight when trick completes
+  if (prevState && prevState.phase !== state.phase){
+    if (state.phase === "between_tricks" || state.phase === "round_finished"){
+      setTimeout(highlightWinner, 120);
+    }
   }
 }
 
