@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Piratwhist v0.1.12 · Spil online</title>
+  <link rel="stylesheet" href="/piratwhist.css" />
+  <link rel="stylesheet" href="/online.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div>
+        <div class="title">Piratwhist</div>
+        <div class="sub">Spil online · v0.1.12</div>
+      </div>
+      <div class="topRight">
+        <a class="btn" href="/">Tilbage</a>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Online spil (trick-taking)</h2>
+      <p class="sub">
+        Regler (i denne prototype): Hver runde spilles ét kort pr. spiller. <b>Højeste kort vinder</b> runden.
+        Man skal <b>bekende kulør</b> hvis muligt. <b>Spar er trumf</b>.
+      </p>
+
+      <div class="grid2">
+        <div>
+          <label class="label">Antal spillere</label>
+          <select id="olPlayerCount" class="input">
+            <option value="2" >2</option><option value="3" >3</option><option value="4" selected>4</option><option value="5" >5</option><option value="6" >6</option><option value="7" >7</option><option value="8" >8</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Navne</label>
+          <div id="olNames" class="stack"></div>
+        </div>
+      </div>
+
+      <div class="row gap">
+        <button id="olNewGame" class="btn primary">Nyt spil (giv kort)</button>
+        <button id="olNextTrick" class="btn">Næste runde</button>
+        <div class="pill" id="olInfo">Ikke startet</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Runde</h2>
+      <div class="row gap wrap">
+        <div class="pill">Fører: <span id="olLeader">-</span></div>
+        <div class="pill">Kulør: <span id="olLeadSuit">-</span></div>
+        <div class="pill">Trumf: <span>♠</span></div>
+        <div class="pill">Vinder: <span id="olWinner">-</span></div>
+      </div>
+
+      <div id="olTable" class="table"></div>
+    </section>
+
+    <section class="card">
+      <h2>Hænder</h2>
+      <div id="olHands" class="hands"></div>
+      <div id="olWarn" class="warn hidden"></div>
+    </section>
+
+    <footer class="foot sub">
+      Tip: Klik et kort for at spille det. Du må kun spille kort som matcher kuløren, hvis du har den.
+    </footer>
+  </div>
+
+  <script src="/online.js"></script>
+</body>
+</html>

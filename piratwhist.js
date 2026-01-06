@@ -1,6 +1,6 @@
-/* Piratwhist – v0.1.10 (multiplayer rooms) */
+/* Piratwhist – v0.1.12 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.1.10";
+const APP_VERSION = "0.1.12";
 
 const el = (id) => document.getElementById(id);
 
@@ -219,7 +219,7 @@ function renderRoundHeaderStatus() {
   const complete = isRoundComplete(r);
   const sumInfo = sumTricksForRound(r);
   const sumTxt = sumInfo ? ` · Sum stik: ${sumInfo.sum}${sumInfo.anyMissing ? " (ufuldst.)" : ""} / ${sumInfo.max}` : "";
-  el("roundInfo").textContent = `Runde ${r+1} / ${state.rounds}  ·  Max (1..${max}) + 0 tilladt${sumTxt}  ·  ${complete ? "FÆRDIG" : "ikke færdig"}`;
+  el("roundInfo").textContent = `Runde ${r+1} / ${state.rounds}  ·  Antal stik (0..${max})${sumTxt}  ·  ${complete ? "FÆRDIG" : "ikke færdig"}`;
   // Update warning while viewing this round
   showRoundWarning(validateRoundTricksSum(r));
 }
@@ -351,7 +351,7 @@ function renderOverview(){
   });
 
   const thMax = document.createElement("th");
-  thMax.textContent = "Max";
+  thMax.textContent = "Antal stik";
   hr.appendChild(thMax);
 
   thead.appendChild(hr);

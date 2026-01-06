@@ -52,6 +52,18 @@ def _broadcast_state(room: str) -> None:
 def index():
     return send_from_directory(".", "piratwhist.html")
 
+@app.get("/online.html")
+def online_page():
+    return send_from_directory(".", "online.html")
+
+@app.get("/online.js")
+def online_js():
+    return send_from_directory(".", "online.js")
+
+@app.get("/online.css")
+def online_css():
+    return send_from_directory(".", "online.css")
+
 
 @app.get("/<path:path>")
 def static_files(path: str):

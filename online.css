@@ -1,0 +1,23 @@
+/* Small additions; base theme comes from piratwhist.css */
+.grid2{display:grid;grid-template-columns: 220px 1fr; gap:16px; align-items:start;}
+.stack{display:flex;flex-direction:column; gap:8px;}
+.row{display:flex; align-items:center;}
+.gap{gap:10px;}
+.wrap{flex-wrap:wrap;}
+.pill{display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid rgba(255,255,255,.12); border-radius:999px; background: rgba(255,255,255,.03);}
+.table{display:grid; grid-template-columns: repeat(4, minmax(140px, 1fr)); gap:10px; margin-top:12px;}
+.slot{border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:10px; background: rgba(255,255,255,.02); min-height:68px;}
+.slot .name{font-weight:700; margin-bottom:6px;}
+.slot .card{font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:18px;}
+.hands{display:flex; flex-direction:column; gap:14px;}
+.hand{border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:12px; background: rgba(255,255,255,.02);}
+.hand .head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+.cards{display:flex; flex-wrap:wrap; gap:8px;}
+.cardbtn{border:1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.04); color:inherit; padding:8px 10px; border-radius:12px; cursor:pointer;}
+.cardbtn:disabled{opacity:.35; cursor:not-allowed;}
+.warn{margin-top:10px; padding:10px 12px; border:1px solid rgba(255,210,122,.45); background: rgba(255,210,122,.08); border-radius:14px; color:#ffd27a;}
+.hidden{display:none;}
+@media (max-width: 900px){
+  .grid2{grid-template-columns: 1fr;}
+  .table{grid-template-columns: 1fr 1fr;}
+}
