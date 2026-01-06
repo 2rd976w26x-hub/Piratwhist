@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.1.18 · Online</title>
+  <title>Piratwhist v0.1.20 · Online</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
 </head>
@@ -12,10 +12,10 @@
     <header class="top">
       <div>
         <div class="title">Piratwhist</div>
-        <div class="sub">Spil online · v0.1.18</div>
+        <div class="sub">Spil online · v0.1.20</div>
       </div>
       <div class="topRight">
-        <a class="btn" href="/">Tilbage</a>
+        <a class="ghost" href="/">Tilbage</a>
       </div>
     </header>
 
@@ -34,9 +34,9 @@
       </div>
 
       <div class="row gap wrap">
-        <button id="olCreateRoom" class="btn primary">Opret online-rum</button>
-        <button id="olJoinRoom" class="btn">Join online-rum</button>
-        <button id="olLeaveRoom" class="btn">Forlad rum</button>
+        <button id="olCreateRoom" class="primary">Opret online-rum</button>
+        <button id="olJoinRoom" class="ghost">Join online-rum</button>
+        <button id="olLeaveRoom" class="danger">Forlad rum</button>
         <div class="pill">Rum: <span id="olRoomLabel">-</span></div>
         <div class="pill">Du er: <span id="olSeatLabel">-</span></div>
       </div>
@@ -52,7 +52,7 @@
           <label class="label">Dit bud (0–<span id="olBidMax">-</span>)</label>
           <select id="olBidSelect" class="input"></select>
         </div>
-        <button id="olBidSubmit" class="btn primary">Gem bud</button>
+        <button id="olBidSubmit" class="primary">Gem bud</button>
         <div class="pill">Status: <span id="olBidStatus">-</span></div>
       </div>
       <div id="olBidsList" class="sub"></div>
@@ -79,8 +79,8 @@
       </div>
 
       <div class="row gap">
-        <button id="olStartOnline" class="btn primary">Start online spil (giv kort)</button>
-        <button id="olNextRound" class="btn">Næste runde</button>
+        <button id="olStartOnline" class="primary">Start online spil (giv kort)</button>
+        <button id="olNextRound" class="primary">Næste runde</button>
         <div class="pill" id="olInfo">Ikke startet</div>
         <div class="pill">Runde: <span id="olRound">-</span></div>
         <div class="pill">Kort pr. spiller: <span id="olCardsPer">-</span></div>
@@ -129,3 +129,18 @@
   <script src="/online.js"></script>
 </body>
 </html>
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">🏴‍☠️</div>
+      <div>
+        <div class="title">Piratwhist <span class="ver">v0.1.20</span></div>
+        <div class="sub">Online spil · spar er trumf · bekend kulør</div>
+      </div>
+    </div>
+    <div class="nav">
+      <a class="linkbtn" href="/piratwhist.html">Point-tavle</a>
+      <a class="linkbtn ghost" href="/rules.html">Regler</a>
+    </div>
+  </div>
+
+

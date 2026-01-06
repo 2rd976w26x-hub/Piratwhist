@@ -330,6 +330,49 @@ def _online_emit_full_state(code: str, room):
         payload_state = dict(_online_public_state(room))
         payload_state["hands"] = [hand if i == seat else None for i in range(st["n"])]
         socketio.emit("online_state", {"room": code, "seat": seat, "state": payload_state}, to=sid)
+def _online_schedule_auto_next_round(code: str, round_index: int):
+    # Start next round automatically 2 seconds after the final card of a round is played.
+    def _task():
+        try:
+            socketio.sleep(2)
+            room = ONLINE_ROOMS.get(code)
+            if not room:
+                return
+            st = room["state"]
+            # Only advance if we are still on the same finished round
+            if st.get("phase") != "round_finished":
+                return
+            if st.get("roundIndex") != round_index:
+                return
+            # Prevent duplicate advancement
+            if st.get("autoNextDoneFor") == round_index:
+                return
+            st["autoNextDoneFor"] = round_index
+
+            n = st["n"]
+            if st["roundIndex"] >= 13:
+                st["phase"] = "game_finished"
+            else:
+                st["roundIndex"] += 1
+                hands, _ = _online_deal(n, st["roundIndex"])
+                st["hands"] = hands
+                st["leader"] = 0
+                st["turn"] = 0
+                st["leadSuit"] = None
+                st["table"] = [None for _ in range(n)]
+                st["winner"] = None
+                st["bids"] = [None for _ in range(n)]
+                st["tricksRound"] = [0 for _ in range(n)]
+                st["phase"] = "bidding"
+
+            _online_emit_full_state(code, room)
+        except Exception:
+            # don't crash the server on background task errors
+            return
+
+    socketio.start_background_task(_task)
+
+
 
 def _online_cleanup_sid(sid):
     for code, room in list(ONLINE_ROOMS.items()):
@@ -381,6 +424,7 @@ def online_create_room(data):
             "tricksTotal": [0 for _ in range(n_players)],
             "pointsTotal": [0 for _ in range(n_players)],
             "history": [],
+            "autoNextDoneFor": None,
         }
     }
     ONLINE_ROOMS[code] = room
@@ -589,6 +633,8 @@ def online_play_card(data):
             })
 
             st["phase"] = "round_finished"
+            # Auto-start next round after 2 seconds
+            _online_schedule_auto_next_round(code, st["roundIndex"])
         else:
             st["phase"] = "between_tricks"
 
