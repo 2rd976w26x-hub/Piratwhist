@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.1.20)
+// Piratwhist Online Multiplayer (v0.1.21)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
@@ -80,6 +80,7 @@ socket.on("online_state", (payload) => {
   showWarn("");
   syncPlayerCount();
   syncPlayerCount();
+  syncBotCount();
   render();
 });
 
@@ -99,6 +100,38 @@ socket.on("online_left", () => {
 function myName(){ return (el("olMyName")?.value || "").trim() || "Spiller"; }
 function playerCount(){ return parseInt(el("olPlayerCount")?.value || "4", 10); }
 
+function populateBotOptions(){
+  const players = playerCount();
+  const sel = el("olBotCount");
+  if (!sel) return;
+  const prev = sel.value || "0";
+  sel.innerHTML = "";
+  const maxBots = Math.max(0, players - 1);
+  for (let i=0;i<=maxBots;i++){
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = String(i);
+    sel.appendChild(opt);
+  }
+  if (parseInt(prev,10) <= maxBots) sel.value = prev;
+  else sel.value = String(maxBots);
+}
+function botCount(){
+  return parseInt(el("olBotCount")?.value || "0", 10);
+}
+function syncBotCount(){
+  const sel = el("olBotCount");
+  if (!sel) return;
+  if (state && Array.isArray(state.botSeats)){
+    sel.value = String(state.botSeats.length);
+    sel.disabled = true;
+  } else {
+    sel.disabled = false;
+    populateBotOptions();
+  }
+}
+
+
 
 function syncPlayerCount(){
   const sel = el("olPlayerCount");
@@ -112,7 +145,7 @@ function syncPlayerCount(){
 }
 
 
-function createRoom(){ socket.emit("online_create_room", { name: myName(), players: playerCount() }); }
+function createRoom(){ socket.emit("online_create_room", { name: myName(), players: playerCount(), bots: botCount() }); }); }
 function joinRoom(){ socket.emit("online_join_room", { room: normalizeCode(el("olRoomCode")?.value), name: myName() }); }
 function leaveRoom(){ if (roomCode) socket.emit("online_leave_room", { room: roomCode }); }
 function startOnline(){ if (roomCode) socket.emit("online_start_game", { room: roomCode }); }
@@ -395,6 +428,8 @@ el("olLeaveRoom")?.addEventListener("click", leaveRoom);
 el("olStartOnline")?.addEventListener("click", startOnline);
 el("olNextRound")?.addEventListener("click", onNext);
 el("olBidSubmit")?.addEventListener("click", submitBid);
-el("olPlayerCount")?.addEventListener("change", () => render());
+el("olPlayerCount")?.addEventListener("change", () => { populateBotOptions(); render(); });
 
 render();
+
+el("olBotCount")?.addEventListener("change", () => render());

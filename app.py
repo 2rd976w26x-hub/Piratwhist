@@ -318,7 +318,163 @@ def _online_public_state(room):
         "tricksTotal": st["tricksTotal"],
         "pointsTotal": st["pointsTotal"],
         "history": st["history"],
+        "botSeats": sorted(list(st.get("botSeats", set()))),
     }
+
+
+def _online_bot_choose_bid(room) -> None:
+    st = room["state"]
+    max_bid = ONLINE_ROUND_CARDS[st["roundIndex"]]
+    for seat in st.get("botSeats", set()):
+        if st["bids"][seat] is not None:
+            continue
+        hand = st["hands"][seat] or []
+        sp = sum(1 for c in hand if c["suit"] == "♠")
+        hi = sum(1 for c in hand if ONLINE_RANK_VALUE[c["rank"]] >= 11)
+        bid = max(0, min(max_bid, int(round((sp * 0.6) + (hi * 0.35)))))
+        st["bids"][seat] = bid
+
+def _online_bot_choose_card(room, seat: int):
+    st = room["state"]
+    hand = st["hands"][seat]
+    if not hand:
+        return None
+    lead = st.get("leadSuit")
+    if lead:
+        same = [c for c in hand if c["suit"] == lead]
+        if same:
+            same.sort(key=lambda c: ONLINE_RANK_VALUE[c["rank"]])
+            return same[0]
+    tr = [c for c in hand if c["suit"] == "♠"]
+    if tr:
+        tr.sort(key=lambda c: ONLINE_RANK_VALUE[c["rank"]])
+        return tr[0]
+    hand.sort(key=lambda c: (c["suit"], ONLINE_RANK_VALUE[c["rank"]]))
+    return hand[0]
+
+def _online_schedule_bot_turn(code: str):
+    def _task():
+        try:
+            socketio.sleep(0.6)
+            room = ONLINE_ROOMS.get(code)
+            if not room:
+                return
+            st = room["state"]
+            if st.get("phase") != "playing":
+                return
+            turn = st.get("turn")
+            if turn is None or turn not in st.get("botSeats", set()):
+                return
+            card = _online_bot_choose_card(room, turn)
+            if not card:
+                return
+            _online_internal_play_card(code, room, turn, _online_card_key(card))
+        except Exception:
+            return
+    socketio.start_background_task(_task)
+
+def _online_schedule_auto_next_trick(code: str, round_index: int):
+    def _task():
+        try:
+            socketio.sleep(1.2)
+            room = ONLINE_ROOMS.get(code)
+            if not room:
+                return
+            st = room["state"]
+            if st.get("phase") != "between_tricks":
+                return
+            if st.get("roundIndex") != round_index:
+                return
+            if len(st.get("botSeats", set())) == 0:
+                return
+            n = st["n"]
+            st["leader"] = st["winner"]
+            st["turn"] = st["leader"]
+            st["leadSuit"] = None
+            st["table"] = [None for _ in range(n)]
+            st["winner"] = None
+            st["phase"] = "playing"
+        _online_emit_full_state(code, room)
+        if st.get("turn") in st.get("botSeats", set()):
+            _online_schedule_bot_turn(code)
+        return
+            _online_emit_full_state(code, room)
+    if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
+        _online_schedule_bot_turn(code)
+            if st["turn"] in st.get("botSeats", set()):
+                _online_schedule_bot_turn(code)
+        except Exception:
+            return
+    socketio.start_background_task(_task)
+
+def _online_internal_play_card(code: str, room, seat: int, card_key: str):
+    st = room["state"]
+    if st.get("phase") != "playing":
+        return
+    if st.get("turn") != seat:
+        return
+
+    hand = st["hands"][seat]
+    idx = next((i for i, c in enumerate(hand) if _online_card_key(c) == card_key), None)
+    if idx is None:
+        return
+    card = hand[idx]
+
+    if st.get("leadSuit") is not None:
+        lead = st["leadSuit"]
+        has_lead = any(c["suit"] == lead for c in hand)
+        if has_lead and card["suit"] != lead:
+            return
+
+    hand.pop(idx)
+    if st.get("leadSuit") is None:
+        st["leadSuit"] = card["suit"]
+    st["table"][seat] = card
+
+    n = st["n"]
+    nxt = (seat + 1) % n
+    for _ in range(n):
+        if st["table"][nxt] is None:
+            st["turn"] = nxt
+            break
+        nxt = (nxt + 1) % n
+
+    if all(c is not None for c in st["table"]):
+        winner = st["leader"]
+        best = st["table"][winner]
+        for i in range(n):
+            c = st["table"][i]
+            if _online_compare_cards(c, best, st["leadSuit"]) > 0:
+                best = c
+                winner = i
+
+        st["winner"] = winner
+        st["tricksRound"][winner] += 1
+        st["tricksTotal"][winner] += 1
+
+        if all(len(h) == 0 for h in st["hands"]):
+            bids = [int(b or 0) for b in st["bids"]]
+            taken = list(st["tricksRound"])
+            points = [_online_points_for_round(bids[i], taken[i]) for i in range(n)]
+            for i in range(n):
+                st["pointsTotal"][i] += points[i]
+            st["history"].append({
+                "round": st["roundIndex"] + 1,
+                "cardsPer": ONLINE_ROUND_CARDS[st["roundIndex"]],
+                "bids": bids,
+                "taken": taken,
+                "points": points,
+            })
+            st["phase"] = "round_finished"
+            _online_schedule_auto_next_round(code, st["roundIndex"])
+        else:
+            st["phase"] = "between_tricks"
+            _online_schedule_auto_next_trick(code, st["roundIndex"])
+
+    _online_emit_full_state(code, room)
+
+    if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
+        _online_schedule_bot_turn(code)
 
 def _online_emit_full_state(code: str, room):
     st = room["state"]
@@ -398,12 +554,22 @@ def online_create_room(data):
     if n_players < 2 or n_players > 8:
         n_players = 4
 
+    bots = int(data.get("bots") or 0)
+    if bots < 0:
+        bots = 0
+    if bots > n_players - 1:
+        bots = n_players - 1
+
     code = _online_room_code()
     while code in ONLINE_ROOMS:
         code = _online_room_code()
 
     names = [None for _ in range(n_players)]
     names[0] = name
+
+    bot_seats = set(range(1, 1 + bots))
+    for i, seat in enumerate(sorted(list(bot_seats))):
+        names[seat] = f"Computer {i+1}"
 
     room = {
         "code": code,
@@ -450,7 +616,8 @@ def online_join_room(data):
     st = room["state"]
     n = st["n"]
     occupied = set(room["members"].values())
-    seat = next((i for i in range(n) if i not in occupied), None)
+    bot_seats = set(st.get("botSeats", set()))
+    seat = next((i for i in range(n) if i not in occupied and i not in bot_seats), None)
     if seat is None:
         emit("error", {"message": "Rummet er fuldt."})
         return
@@ -494,9 +661,10 @@ def online_start_game(data):
     if st["phase"] != "lobby":
         return
 
-    joined = sum(1 for n in st["names"] if n)
-    if joined < 2:
-        emit("error", {"message": "Der skal være mindst 2 spillere i rummet."})
+    human_joined = len(room["members"])
+    total_joined = sum(1 for n in st["names"] if n)
+    if total_joined < 2 or human_joined < 1:
+        emit("error", {"message": "Der skal være mindst 1 menneske og mindst 2 spillere i alt (inkl. computere)."})
         return
 
     st["roundIndex"] = 0
@@ -511,7 +679,14 @@ def online_start_game(data):
     st["tricksRound"] = [0 for _ in range(st["n"])]
     st["phase"] = "bidding"
 
+    _online_bot_choose_bid(room)
+    if all(b is not None for b in st["bids"]):
+        st["phase"] = "playing"
+        st["turn"] = st["leader"]
+
     _online_emit_full_state(code, room)
+    if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
+        _online_schedule_bot_turn(code)
 
 @socketio.on("online_set_bid")
 def online_set_bid(data):
@@ -573,72 +748,8 @@ def online_play_card(data):
         emit("error", {"message": "Det er ikke din tur."})
         return
 
-    hand = st["hands"][seat]
-    idx = next((i for i, c in enumerate(hand) if _online_card_key(c) == card_key), None)
-    if idx is None:
-        emit("error", {"message": "Kort ikke fundet i din hånd."})
+            _online_internal_play_card(code, room, seat, card_key)
         return
-    card = hand[idx]
-
-    # bekend kulør hvis muligt
-    if st["leadSuit"] is not None:
-        has_lead = any(c["suit"] == st["leadSuit"] for c in hand)
-        if has_lead and card["suit"] != st["leadSuit"]:
-            emit("error", {"message": "Du skal bekende kulør hvis muligt."})
-            return
-
-    hand.pop(idx)
-    if st["leadSuit"] is None:
-        st["leadSuit"] = card["suit"]
-    st["table"][seat] = card
-
-    # next turn = next seat without a card on table
-    n = st["n"]
-    nxt = (seat + 1) % n
-    for _ in range(n):
-        if st["table"][nxt] is None:
-            st["turn"] = nxt
-            break
-        nxt = (nxt + 1) % n
-
-    # trick done?
-    if all(c is not None for c in st["table"]):
-        winner = st["leader"]
-        best = st["table"][winner]
-        for i in range(n):
-            c = st["table"][i]
-            if _online_compare_cards(c, best, st["leadSuit"]) > 0:
-                best = c
-                winner = i
-
-        st["winner"] = winner
-        st["tricksRound"][winner] += 1
-        st["tricksTotal"][winner] += 1
-
-        # round finished when all hands empty
-        if all(len(h) == 0 for h in st["hands"]):
-            # compute points for this round
-            bids = [int(b or 0) for b in st["bids"]]
-            taken = list(st["tricksRound"])
-            points = [_online_points_for_round(bids[i], taken[i]) for i in range(n)]
-            for i in range(n):
-                st["pointsTotal"][i] += points[i]
-
-            st["history"].append({
-                "round": st["roundIndex"] + 1,
-                "cardsPer": ONLINE_ROUND_CARDS[st["roundIndex"]],
-                "bids": bids,
-                "taken": taken,
-                "points": points,
-            })
-
-            st["phase"] = "round_finished"
-            # Auto-start next round after 2 seconds
-            _online_schedule_auto_next_round(code, st["roundIndex"])
-        else:
-            st["phase"] = "between_tricks"
-
-    _online_emit_full_state(code, room)
 
 @socketio.on("online_next")
 def online_next(data):
@@ -675,7 +786,14 @@ def online_next(data):
             st["tricksRound"] = [0 for _ in range(n)]
             st["phase"] = "bidding"
 
+    _online_bot_choose_bid(room)
+    if all(b is not None for b in st["bids"]):
+        st["phase"] = "playing"
+        st["turn"] = st["leader"]
+
     _online_emit_full_state(code, room)
+    if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
+        _online_schedule_bot_turn(code)
 
 @socketio.on("disconnect")
 def online_disconnect():
