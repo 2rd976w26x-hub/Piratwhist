@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.1.29)
+// Piratwhist Online Multiplayer (v0.1.32)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
@@ -142,14 +142,41 @@ function normalizeCode(s){ return (s || "").trim(); }
 
 const socket = io({ transports: ["websocket", "polling"] });
 
+// --- page context / navigation ---
+const isLobbyPage = window.location.pathname.endsWith('/online.html') || window.location.pathname.endsWith('online.html');
+const isRoomPage  = window.location.pathname.endsWith('/online-room.html') || window.location.pathname.endsWith('online-room.html');
+let overrideMyName = '';
+let pendingRedirectToRoom = false;
+let joinedOnce = false;
+const qp = new URLSearchParams(window.location.search);
+const autoJoinRoom = (isRoomPage ? (qp.get('room') || '').trim() : '');
+const autoJoinName = (isRoomPage ? (qp.get('name') || '').trim() : '');
+if (autoJoinName) overrideMyName = autoJoinName;
+
+if (isRoomPage) {
+  const rd = el('olRoomDisplay'); if (rd) rd.textContent = autoJoinRoom || '----';
+  const nd = el('olNameDisplay'); if (nd) nd.textContent = (autoJoinName || 'Spiller');
+}
+
+// If we are on the room page, auto-join using query params
+const __qp = new URLSearchParams(window.location.search);
+  // show header labels
+  // join room
+
 let roomCode = null;
 let mySeat = null;
 let state = null;
 let prevState = null;
 
 socket.on("connect", () => {
+  // Auto-join when opening the room page directly
+  if (isRoomPage && autoJoinRoom && !joinedOnce) {
+    joinedOnce = true;
+  }
+
   const s = el("olRoomStatus");
   if (s) s.textContent = "Forbundet.";
+
 });
 
 socket.on("error", (data) => {
@@ -157,6 +184,7 @@ socket.on("error", (data) => {
 });
 
 socket.on("online_state", (payload) => {
+
   roomCode = payload.room;
   if (payload.seat !== null && payload.seat !== undefined) mySeat = payload.seat;
   prevState = state;
@@ -170,6 +198,13 @@ socket.on("online_state", (payload) => {
   syncPlayerCount();
   syncBotCount();
   maybeRunAnimations();
+    // If we are on the lobby page and just created/joined a room, go to the room page
+  if (pendingRedirectToRoom && isLobbyPage && roomCode) {
+    pendingRedirectToRoom = false;
+    const name = myName();
+    window.location.href = `/online-room.html?room=${encodeURIComponent(roomCode)}&name=${encodeURIComponent(name)}`;
+    return;
+  }
   render();
 });
 
@@ -234,17 +269,16 @@ function syncPlayerCount(){
 }
 
 
-function createRoom(){ socket.emit("online_create_room", { name: myName(), players: playerCount(), bots: botCount() }); }
-function joinRoom(){ socket.emit("online_join_room", { room: normalizeCode(el("olRoomCode")?.value), name: myName() }); }
-function leaveRoom(){ if (roomCode) socket.emit("online_leave_room", { room: roomCode }); }
-function startOnline(){ if (roomCode) socket.emit("online_start_game", { room: roomCode }); }
-function onNext(){ if (roomCode) socket.emit("online_next", { room: roomCode }); }
+function createRoom(){
+  pendingRedirectToRoom = true;
+}
+function joinRoom(){
+  pendingRedirectToRoom = true;
+}
 function submitBid(){ 
   if (!roomCode) return;
   const v = parseInt(el("olBidSelect")?.value || "0", 10);
-  socket.emit("online_set_bid", { room: roomCode, bid: v });
 }
-function playCard(cardKey){ if (roomCode) socket.emit("online_play_card", { room: roomCode, card: cardKey }); }
 
 function isPlayable(card){
   if (!state) return false;
