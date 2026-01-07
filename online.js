@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.1.29)
+// Piratwhist Online Multiplayer (v0.1.27)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
@@ -547,7 +547,6 @@ function render(){
 el("olCreateRoom")?.addEventListener("click", createRoom);
 el("olJoinRoom")?.addEventListener("click", joinRoom);
 el("olLeaveRoom")?.addEventListener("click", leaveRoom);
-el("olStartOnline")?.addEventListener("click", startOnline);
 el("olStartOnline")?.addEventListener("click", startOnline);
 el("olNextRound")?.addEventListener("click", onNext);
 el("olBidSubmit")?.addEventListener("click", submitBid);
