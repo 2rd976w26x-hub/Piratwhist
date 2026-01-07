@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Piratwhist – Online (Spil)</title>
+    <link rel="stylesheet" href="piratwhist.css" />
+    <link rel="stylesheet" href="online.css" />
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="topbar__left">
+        <a class="topbar__brand" href="/">Piratwhist</a>
+        <a class="pill" href="/online.html">Lobby</a>
+        <span class="pill active">Spil</span>
+        <a class="pill" href="/online_round.html">Runde</a>
+      </div>
+      <div class="topbar__right">
+        <span id="onlineRoomBadge" class="pill">Rum: –</span>
+        <span id="onlineVersion" class="pill">v0.1.39</span>
+      </div>
+    </div>
+
+    <main class="container">
+      <section class="card">
+        <h1 class="h1">Spil</h1>
+        <p class="muted">Bud og score-oversigt. Når alle bud er sat, skifter spillet automatisk til <b>Runde</b>.</p>
+
+        <div id="bidSection" class="section">
+          <h2 class="h2">Bud</h2>
+          <div id="olBids" class="bids"></div>
+        </div>
+
+        <div class="section">
+          <h2 class="h2">Resultater</h2>
+          <div id="olResults" class="results"></div>
+        </div>
+
+        <div class="row gap wrap" style="margin-top:14px;">
+          <a class="btn" href="/online_round.html">Gå til Runde</a>
+          <a class="btn" href="/online.html">Tilbage til Lobby</a>
+          <span id="olStatus" class="status" style="margin-left:auto;"></span>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-XG5F3dRzHh0C1yT9gO8o0cGfN+Xj7nqk0o6VvEwY7XKQmQv7Z9lI3p1i7hE7kQfX" crossorigin="anonymous"></script>
+    <script src="online.js"></script>
+  </body>
+</html>

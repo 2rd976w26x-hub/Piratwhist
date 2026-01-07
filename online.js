@@ -1,9 +1,33 @@
-// Piratwhist Online Multiplayer (v0.1.38)
+// Piratwhist Online Multiplayer (v0.1.39)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 function el(id){ return document.getElementById(id); }
+
+function setRoomBadge(code){
+  const b = el("onlineRoomBadge");
+  if (b) b.textContent = code ? `Rum: ${code}` : "Rum: –";
+}
+
+function pageKind(){
+  const p = (location.pathname || "").toLowerCase();
+  if (p.endsWith("/online_round.html")) return "round";
+  if (p.endsWith("/online_game.html")) return "game";
+  if (p.endsWith("/online.html")) return "lobby";
+  // fallback for local/dev
+  if (p.includes("online_round")) return "round";
+  if (p.includes("online_game")) return "game";
+  if (p.includes("online")) return "lobby";
+  return "unknown";
+}
+
+function hardNavigate(targetPath){
+  // Keep room code in querystring (nice for refresh) but also keep sessionStorage
+  const code = sessionStorage.getItem("piratwhist_room") || "";
+  const url = code ? `${targetPath}?code=${encodeURIComponent(code)}` : targetPath;
+  if (location.pathname !== targetPath) location.href = url;
+}
 
 function rectCenter(elm){
   const r = elm.getBoundingClientRect();
@@ -147,6 +171,48 @@ let mySeat = null;
 let state = null;
 let prevState = null;
 
+const STORAGE_CODE = "piratwhist_room_code";
+const STORAGE_NAME = "piratwhist_player_name";
+
+function storeRoom(code){
+  try {
+    if (code) sessionStorage.setItem(STORAGE_CODE, code);
+  } catch (e) {}
+}
+
+function storeName(name){
+  try {
+    const n = (name || "").trim();
+    if (n) sessionStorage.setItem(STORAGE_NAME, n);
+  } catch (e) {}
+}
+
+function loadRoom(){
+  try { return sessionStorage.getItem(STORAGE_CODE); } catch (e) { return null; }
+}
+
+function loadName(){
+  try { return sessionStorage.getItem(STORAGE_NAME); } catch (e) { return null; }
+}
+
+function desiredPageForPhase(phase){
+  if (!phase || phase === "setup" || phase === "lobby") return "lobby";
+  if (phase === "bidding") return "game";
+  if (phase === "playing" || phase === "between_tricks") return "round";
+  if (phase === "round_finished" || phase === "game_finished") return "game";
+  return "game";
+}
+
+function navTo(kind){
+  const cur = pageKind();
+  if (cur === kind) return;
+  const code = roomCode || loadRoom();
+  const qs = code ? `?code=${encodeURIComponent(code)}` : "";
+  if (kind === "lobby") location.replace(`/online.html${qs}`);
+  else if (kind === "game") location.replace(`/online_game.html${qs}`);
+  else if (kind === "round") location.replace(`/online_round.html${qs}`);
+}
+
 socket.on("connect", () => {
   const s = el("olRoomStatus");
   if (s) s.textContent = "Forbundet.";
@@ -162,6 +228,11 @@ socket.on("online_state", (payload) => {
   prevState = state;
   state = payload.state;
 
+  if (roomCode) {
+    storeRoom(roomCode);
+    setRoomBadge(roomCode);
+  }
+
   const rl = el("olRoomLabel"); if (rl) rl.textContent = roomCode || "-";
   const sl = el("olSeatLabel"); if (sl) sl.textContent = (mySeat===null || mySeat===undefined) ? "-" : `Spiller ${mySeat+1}`;
   showRoomWarn("");
@@ -171,6 +242,22 @@ socket.on("online_state", (payload) => {
   syncBotCount();
   maybeRunAnimations();
   render();
+
+  // Route between Lobby / Spil / Runde based on phase
+  const phase = state?.phase || "lobby";
+  const want = (phase === "lobby" || phase === "setup") ? "lobby"
+            : (phase === "bidding" || phase === "round_finished" || phase === "game_finished") ? "game"
+            : "round"; // playing/between_tricks
+  const here = pageKind();
+  if (want !== here) {
+    const q = roomCode ? `?code=${encodeURIComponent(roomCode)}` : "";
+    const target = want === "lobby" ? `/online.html${q}` : (want === "game" ? `/online_game.html${q}` : `/online_round.html${q}`);
+    // Prevent endless loops if we're in the middle of navigating
+    if (!location.pathname.endsWith(target.split("?")[0])) {
+      location.replace(target);
+      return;
+    }
+  }
 });
 
 socket.on("online_left", () => {
@@ -234,8 +321,19 @@ function syncPlayerCount(){
 }
 
 
-function createRoom(){ socket.emit("online_create_room", { name: myName(), players: playerCount(), bots: botCount() }); }
-function joinRoom(){ socket.emit("online_join_room", { room: normalizeCode(el("olRoomCode")?.value), name: myName() }); }
+function createRoom(){
+  const name = myName();
+  storeName(name);
+  socket.emit("online_create_room", { name, players: playerCount(), bots: botCount() });
+}
+
+function joinRoom(){
+  const code = normalizeCode(el("olRoomCode")?.value);
+  const name = myName();
+  storeName(name);
+  if (code) storeRoom(code);
+  socket.emit("online_join_room", { room: code, name });
+}
 function leaveRoom(){ if (roomCode) socket.emit("online_leave_room", { room: roomCode }); }
 function startOnline(){ if (roomCode) socket.emit("online_start_game", { room: roomCode }); }
 function onNext(){ if (roomCode) socket.emit("online_next", { room: roomCode }); }
@@ -551,6 +649,26 @@ el("olStartOnline")?.addEventListener("click", startOnline);
 el("olNextRound")?.addEventListener("click", onNext);
 el("olBidSubmit")?.addEventListener("click", submitBid);
 el("olPlayerCount")?.addEventListener("change", () => { populateBotOptions(); render(); });
+
+// Auto-join when navigating between Lobby / Spil / Runde pages
+try {
+  const params = new URLSearchParams(location.search || "");
+  const codeFromUrl = normalizeCode(params.get("code") || "");
+  const storedCode = normalizeCode(restoreRoom() || "");
+  const autoCode = codeFromUrl || storedCode;
+  const kind = pageKind();
+
+  if (autoCode) {
+    // Keep input in sync on lobby
+    if (el("olRoomCode")) el("olRoomCode").value = autoCode;
+    setRoomBadge(autoCode);
+  }
+
+  if (kind !== "lobby" && autoCode && !roomCode) {
+    // Join silently (server will send state)
+    socket.emit("online_join_room", { room: autoCode, name: restoreName() || "Spiller" });
+  }
+} catch (e) {}
 
 render();
 

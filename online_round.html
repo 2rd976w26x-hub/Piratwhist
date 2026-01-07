@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="da">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Piratwhist – Online (Runde)</title>
+    <link rel="stylesheet" href="piratwhist.css" />
+    <link rel="stylesheet" href="online.css" />
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="topbar__left">
+        <a class="topbar__brand" href="/">Piratwhist</a>
+        <a class="pill" href="/online.html">Lobby</a>
+        <a class="pill" href="/online_game.html">Spil</a>
+        <span class="pill active">Runde</span>
+      </div>
+      <div class="topbar__right">
+        <span id="onlineRoomBadge" class="pill">Rum: –</span>
+        <span id="onlineVersion" class="pill">v0.1.39</span>
+      </div>
+    </div>
+
+    <main class="container">
+      <section class="card">
+        <div class="row between wrap" style="align-items:flex-end;">
+          <div>
+            <h1 class="h1" style="margin-bottom:4px;">Runde</h1>
+            <div id="olRoundInfo" class="muted">—</div>
+          </div>
+          <div class="row gap wrap">
+            <button id="olNextRound" class="btn">Næste runde</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2 class="h2">Bordet</h2>
+          <div id="olTable" class="table"></div>
+        </div>
+
+        <div class="section">
+          <h2 class="h2">Din hånd</h2>
+          <div id="olHand" class="hand"></div>
+        </div>
+
+        <div class="section">
+          <h2 class="h2">Status</h2>
+          <div id="olStatus" class="muted"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="online.js"></script>
+  </body>
+</html>
