@@ -1,6 +1,6 @@
-/* Piratwhist – v0.1.23 (multiplayer rooms) */
+/* Piratwhist – v0.1.24 (multiplayer rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.1.23";
+const APP_VERSION = "0.1.24";
 
 const el = (id) => document.getElementById(id);
 
