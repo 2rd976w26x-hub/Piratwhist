@@ -575,6 +575,7 @@ def online_create_room(data):
         "state": {
             "n": n_players,
             "names": names,
+            "botSeats": bot_seats,
             "roundIndex": 0,
             "leader": 0,
             "turn": 0,
