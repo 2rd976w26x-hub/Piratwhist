@@ -3,66 +3,81 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.1.33 · Online</title>
+  <title>Piratwhist v0.1.34 · Online</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
-</head><body>
-  <div class="app">
-    <header class="top">
+  <script src="/online.js" defer></script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">🏴‍☠️</div>
       <div>
         <div class="title">Piratwhist</div>
-        <div class="sub">Spil online · v0.1.33</div>
+        <div class="subtitle">Online · v0.1.34</div>
       </div>
-      <div class="topRight">
-        <a class="ghost" href="/">Tilbage</a>
-      </div>
+    </div>
+    <div class="row gap wrap">
+      <a class="ghost linkbtn" href="/piratwhist.html">Point (offline)</a>
+      <a class="ghost linkbtn" href="/rules.html">Regler</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <header class="pagehead">
+      <h1>Online spil</h1>
+      <p class="muted">Opret et rum eller join et rum. Når du er inde i rummet, kan I starte spillet.</p>
     </header>
 
     <section class="card">
-      <h2>Online rum</h2>
+      <h2>Opret / Join</h2>
 
       <div class="grid2">
         <div>
           <label class="label">Dit navn</label>
           <input id="olMyName" class="input" placeholder="Dit navn" value="Spiller 1" />
         </div>
+
         <div>
           <label class="label">Rumkode (4 tal)</label>
-          <input id="olRoomCode" class="input" placeholder="1234" inputmode="numeric" />
+          <input id="olRoomCode" class="input" placeholder="1234" inputmode="numeric" maxlength="4" />
+        </div>
+
+        <div>
+          <label class="label">Antal spillere</label>
+          <select id="olPlayerCount" class="input">
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+          </select>
+          <div class="muted">Mennesker + computer-spillere må tilsammen være maks 4.</div>
+        </div>
+
+        <div>
+          <label class="label">Computer-spillere</label>
+          <select id="olBotCount" class="input"></select>
+          <div class="muted">Vælg hvor mange pladser der skal styres af computeren.</div>
         </div>
       </div>
 
-      <div class="row gap wrap">
+      <div class="row gap wrap mt">
         <button id="olCreateRoom" class="primary">Opret online-rum</button>
         <button id="olJoinRoom" class="ghost">Join online-rum</button>
-        <button id="olLeaveRoom" class="danger">Forlad rum</button>
+      </div>
+
+      <div class="muted mt">
+        Tip: Hvis du opretter rummet, så del rumkoden med de andre.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Status</h2>
+      <div class="row gap wrap">
         <div class="pill">Rum: <span id="olRoomLabel">-</span></div>
         <div class="pill">Du er: <span id="olSeatLabel">-</span></div>
       </div>
-
-      <div id="olRoomStatus" class="sub"></div>
-      <div id="olRoomWarn" class="warn hidden"></div>
+      <div id="olInfo" class="muted mt"></div>
     </section>
-    <section class="card">
-      <h2>Næste</h2>
-      <p class="muted">Når du har oprettet eller joined et rum, bliver du sendt videre til selve bordet.</p>
-      <a class="ghost linkbtn" href="/piratwhist.html">Til pointsystem (offline)</a>
-    </section>
-  <script src="/online.js" defer></script>
+  </div>
 </body>
 </html>
-  <div class="topbar">
-    <div class="brand">
-      <div class="logo">🏴‍☠️</div>
-      <div>
-        <div class="title">Piratwhist <span class="ver">v0.1.33</span></div>
-        <div class="sub">Online spil · spar er trumf · bekend kulør</div>
-      </div>
-    </div>
-    <div class="nav">
-      <a class="linkbtn" href="/piratwhist.html">Point-tavle</a>
-      <a class="linkbtn ghost" href="/rules.html">Regler</a>
-    </div>
-  </div>
-
-
