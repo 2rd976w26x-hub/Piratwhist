@@ -510,8 +510,8 @@ def _online_schedule_auto_next_round(code: str, round_index: int):
                 st["roundIndex"] += 1
                 hands, _ = _online_deal(n, st["roundIndex"])
                 st["hands"] = hands
-                st["leader"] = (st.get("winner") if st.get("winner") is not None else 0)
-                st["turn"] = st["leader"]
+                st["leader"] = 0
+                st["turn"] = 0
                 st["leadSuit"] = None
                 st["table"] = [None for _ in range(n)]
                 st["winner"] = None
@@ -607,17 +607,6 @@ def online_create_room(data):
     st["hands"] = [[]] + [None for _ in range(n_players-1)]
     emit("online_state", {"room": code, "seat": 0, "state": st})
 
-@socketio.on("online_leave")
-def online_leave(data):
-    code = (data.get("room") or "").strip()
-    room = ONLINE_ROOMS.get(code)
-    if not room:
-        return
-    try:
-        leave_room(code)
-    except Exception:
-        pass
-
 @socketio.on("online_join_room")
 def online_join_room(data):
     code = (data.get("room") or "").strip()
@@ -687,8 +676,8 @@ def online_start_game(data):
     st["roundIndex"] = 0
     hands, _ = _online_deal(st["n"], 0)
     st["hands"] = hands
-    st["leader"] = (st.get("winner") if st.get("winner") is not None else 0)
-    st["turn"] = st["leader"]
+    st["leader"] = 0
+    st["turn"] = 0
     st["leadSuit"] = None
     st["table"] = [None for _ in range(st["n"])]
     st["winner"] = None
@@ -794,8 +783,8 @@ def online_next(data):
             st["roundIndex"] += 1
             hands, _ = _online_deal(n, st["roundIndex"])
             st["hands"] = hands
-            st["leader"] = (st.get("winner") if st.get("winner") is not None else 0)
-            st["turn"] = st["leader"]
+            st["leader"] = 0
+            st["turn"] = 0
             st["leadSuit"] = None
             st["table"] = [None for _ in range(n)]
             st["winner"] = None

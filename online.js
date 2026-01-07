@@ -161,7 +161,6 @@ socket.on("online_state", (payload) => {
   if (payload.seat !== null && payload.seat !== undefined) mySeat = payload.seat;
   prevState = state;
   state = payload.state;
-  updateOnlinePageFromState();
 
   const rl = el("olRoomLabel"); if (rl) rl.textContent = roomCode || "-";
   const sl = el("olSeatLabel"); if (sl) sl.textContent = (mySeat===null || mySeat===undefined) ? "-" : `Spiller ${mySeat+1}`;
@@ -549,6 +548,7 @@ el("olCreateRoom")?.addEventListener("click", createRoom);
 el("olJoinRoom")?.addEventListener("click", joinRoom);
 el("olLeaveRoom")?.addEventListener("click", leaveRoom);
 el("olStartOnline")?.addEventListener("click", startOnline);
+el("olStartOnline")?.addEventListener("click", startOnline);
 el("olNextRound")?.addEventListener("click", onNext);
 el("olBidSubmit")?.addEventListener("click", submitBid);
 el("olPlayerCount")?.addEventListener("change", () => { populateBotOptions(); render(); });
@@ -556,36 +556,3 @@ el("olPlayerCount")?.addEventListener("change", () => { populateBotOptions(); re
 render();
 
 el("olBotCount")?.addEventListener("change", () => render());
-
-
-function setOnlinePage(which){
-  document.body.classList.remove("ol-show-lobby","ol-show-game");
-  if (which === "game") document.body.classList.add("ol-show-game");
-  else document.body.classList.add("ol-show-lobby");
-}
-
-function updateOnlinePageFromState(){
-  // Show lobby until we are in a room and have state
-  if (roomCode && state) setOnlinePage("game");
-  else setOnlinePage("lobby");
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const backBtn = document.getElementById("olBackToLobbyBtn");
-  if (backBtn){
-    backBtn.addEventListener("click", () => {
-      try{
-        if (roomCode){
-          socket.emit("online_leave", { room: roomCode });
-        }
-      }catch(e){}
-      roomCode = "";
-      state = null;
-      mySeat = null;
-      updateOnlinePageFromState();
-      syncPlayerCount();
-      syncBotCount();
-    });
-  }
-  updateOnlinePageFromState();
-});
