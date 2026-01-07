@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.1.24)
+// Piratwhist Online Multiplayer (v0.1.25)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
@@ -211,7 +211,7 @@ function botCount(){
 function syncBotCount(){
   const sel = el("olBotCount");
   if (!sel) return;
-  if (state && Array.isArray(state.botSeats)){
+  if (roomCode && state && Array.isArray(state.botSeats)){
     sel.value = String(state.botSeats.length);
     sel.disabled = true;
   } else {
@@ -225,7 +225,7 @@ function syncBotCount(){
 function syncPlayerCount(){
   const sel = el("olPlayerCount");
   if (!sel) return;
-  if (state && typeof state.n === "number"){
+  if (roomCode && state && typeof state.n === "number"){
     sel.value = String(state.n);
     sel.disabled = true; // room decides player count
   } else {
