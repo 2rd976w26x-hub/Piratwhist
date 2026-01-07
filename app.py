@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import random
+import time
 from typing import Any, Dict, List, Optional
 
 from flask import Flask, send_from_directory, request
@@ -306,6 +307,7 @@ def _online_public_state(room):
     return {
         "n": st["n"],
         "names": st["names"],
+        "hostSeat": room.get("host_seat", 0),
         "roundIndex": st["roundIndex"],
         "leader": st["leader"],
         "turn": st["turn"],
@@ -510,8 +512,8 @@ def _online_schedule_auto_next_round(code: str, round_index: int):
                 st["roundIndex"] += 1
                 hands, _ = _online_deal(n, st["roundIndex"])
                 st["hands"] = hands
-                st["leader"] = 0
-                st["turn"] = 0
+                st["leader"] = (st.get("winner") if st.get("winner") is not None else 0)
+                st["turn"] = st["leader"]
                 st["leadSuit"] = None
                 st["table"] = [None for _ in range(n)]
                 st["winner"] = None
@@ -545,12 +547,12 @@ def _online_cleanup_sid(sid):
                 pass
             st = room["state"]
             st["names"][seat] = None
-            # if room empty, delete it
+            # Keep empty rooms for a while so clients can navigate/reconnect (e.g. when switching pages)
             if not room["members"]:
-                ONLINE_ROOMS.pop(code, None)
+                room["empty_since"] = time.time()
             else:
+                room["empty_since"] = None
                 _online_emit_full_state(code, room)
-
 # ---------- Online multiplayer socket events ----------
 @socketio.on("online_create_room")
 def online_create_room(data):
@@ -579,6 +581,8 @@ def online_create_room(data):
     room = {
         "code": code,
         "members": {request.sid: 0},
+        "host_seat": 0,
+        "empty_since": None,
         "state": {
             "n": n_players,
             "names": names,
@@ -606,6 +610,17 @@ def online_create_room(data):
     st = dict(_online_public_state(room))
     st["hands"] = [[]] + [None for _ in range(n_players-1)]
     emit("online_state", {"room": code, "seat": 0, "state": st})
+
+@socketio.on("online_leave")
+def online_leave(data):
+    code = (data.get("room") or "").strip()
+    room = ONLINE_ROOMS.get(code)
+    if not room:
+        return
+    try:
+        leave_room(code)
+    except Exception:
+        pass
 
 @socketio.on("online_join_room")
 def online_join_room(data):
@@ -655,6 +670,87 @@ def online_leave_room(data):
 
     emit("online_left")
 
+
+
+
+@socketio.on("online_set_config")
+def _online_set_config(data):
+    code = (data or {}).get("code", "").strip().upper()
+    if not code or code not in ONLINE_ROOMS:
+        emit("online_error", {"message": "Ukendt rumkode."})
+        return
+    room = ONLINE_ROOMS[code]
+
+    # Kun værten kan ændre indstillinger, og kun før spillet starter
+    host_seat = int(room.get("host_seat", 0))
+    my_seat = room["members"].get(request.sid)
+    if my_seat != host_seat:
+        emit("online_error", {"message": "Kun værten kan ændre indstillinger."})
+        return
+    st = room["state"]
+    if st.get("phase") != "lobby":
+        emit("online_error", {"message": "Kan ikke ændre indstillinger efter spillet er startet."})
+        return
+
+    try:
+        player_count = int((data or {}).get("player_count", st.get("n", 4)))
+        bot_count = int((data or {}).get("bot_count", len(st.get("botSeats", set()))))
+    except Exception:
+        emit("online_error", {"message": "Ugyldige indstillinger."})
+        return
+
+    player_count = max(2, min(4, player_count))
+    bot_count = max(0, min(player_count, bot_count))
+
+    human_seats = set(room["members"].values())
+    if any(seat >= player_count for seat in human_seats):
+        emit("online_error", {"message": "Kan ikke sænke antal spillere under nuværende tilsluttede spillere."})
+        return
+
+    bot_count = min(bot_count, player_count - len(human_seats))
+
+    # Vælg bot-sæder fra slutningen uden at overskrive humans
+    bot_seats = set()
+    for seat in range(player_count - 1, -1, -1):
+        if len(bot_seats) >= bot_count:
+            break
+        if seat in human_seats:
+            continue
+        bot_seats.add(seat)
+
+    # Navne-liste (bevar humans hvis muligt)
+    old_names = st.get("names", [])
+    names = []
+    for seat in range(player_count):
+        if seat in human_seats:
+            nm = old_names[seat] if seat < len(old_names) and old_names[seat] else f"Spiller {seat+1}"
+            names.append(nm)
+        elif seat in bot_seats:
+            names.append(f"Computer {seat+1}")
+        else:
+            names.append(f"Spiller {seat+1}")
+
+    room["state"] = {
+        "n": player_count,
+        "names": names,
+        "botSeats": bot_seats,
+        "roundIndex": 0,
+        "leader": 0,
+        "turn": 0,
+        "leadSuit": None,
+        "table": [None] * player_count,
+        "winner": None,
+        "phase": "lobby",
+        "hands": [None] * player_count,
+        "bids": [None] * player_count,
+        "tricksRound": [0] * player_count,
+        "tricksTotal": [0] * player_count,
+        "pointsTotal": [0] * player_count,
+        "history": [],
+        "autoNextDoneFor": None,
+    }
+
+    _online_emit_full_state(code, room)
 @socketio.on("online_start_game")
 def online_start_game(data):
     code = (data.get("room") or "").strip()
@@ -676,8 +772,8 @@ def online_start_game(data):
     st["roundIndex"] = 0
     hands, _ = _online_deal(st["n"], 0)
     st["hands"] = hands
-    st["leader"] = 0
-    st["turn"] = 0
+    st["leader"] = (st.get("winner") if st.get("winner") is not None else 0)
+    st["turn"] = st["leader"]
     st["leadSuit"] = None
     st["table"] = [None for _ in range(st["n"])]
     st["winner"] = None
@@ -783,8 +879,8 @@ def online_next(data):
             st["roundIndex"] += 1
             hands, _ = _online_deal(n, st["roundIndex"])
             st["hands"] = hands
-            st["leader"] = 0
-            st["turn"] = 0
+            st["leader"] = (st.get("winner") if st.get("winner") is not None else 0)
+            st["turn"] = st["leader"]
             st["leadSuit"] = None
             st["table"] = [None for _ in range(n)]
             st["winner"] = None

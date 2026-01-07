@@ -143,6 +143,7 @@ function normalizeCode(s){ return (s || "").trim(); }
 const socket = io({ transports: ["websocket", "polling"] });
 
 let roomCode = null;
+let autoJoinRequested = false;
 let mySeat = null;
 let state = null;
 let prevState = null;
@@ -571,6 +572,30 @@ function updateOnlinePageFromState(){
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Room page: require code + name (from query or sessionStorage)
+  const params = new URLSearchParams(window.location.search);
+  const codeParam = (params.get("code") || params.get("room") || sessionStorage.getItem("pw_online_code") || "").trim().toUpperCase();
+  const nameParam = (params.get("name") || sessionStorage.getItem("pw_online_name") || "").trim();
+
+  if (!codeParam || !nameParam) {
+    window.location.href = "/online.html";
+    return;
+  }
+
+  roomCode = codeParam;
+  myName = nameParam;
+  sessionStorage.setItem("pw_online_code", roomCode);
+  sessionStorage.setItem("pw_online_name", myName);
+
+  const myNameEl = el("olMyName");
+  if (myNameEl) myNameEl.value = myName;
+
+  // Join immediately (socket may already be connected)
+  if (socket && socket.connected && !autoJoinRequested) {
+    socket.emit("online_join_room", { code: roomCode, name: myName });
+    autoJoinRequested = true;
+  }
+
   const backBtn = document.getElementById("olBackToLobbyBtn");
   if (backBtn){
     backBtn.addEventListener("click", () => {
@@ -588,4 +613,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
   updateOnlinePageFromState();
+  // Apply config (host only)
+  el("olApplyConfig")?.addEventListener("click", () => {
+    if (!roomCode) return;
+    const pc = parseInt(el("olPlayerCount")?.value || "4", 10);
+    const bc = parseInt(el("olBotCount")?.value || "0", 10);
+    socket.emit("online_set_config", { code: roomCode, player_count: pc, bot_count: bc });
+  });
+
 });

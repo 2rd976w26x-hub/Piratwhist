@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+
+<html lang="da">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Piratwhist v0.1.37 · Online</title>
+<link href="/piratwhist.css" rel="stylesheet"/>
+<link href="/online.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="olTopbar">
+<div class="olBrand">Piratwhist Online <span class="olVersion" id="olVersion"></span></div>
+<div class="olTopActions">
+<button class="btn secondary" id="olBackToLobbyBtn" title="Skift rum / tilbage" type="button">Til rum</button>
+<a class="btn secondary" href="/" title="Til pointtavlen">Til pointtavle</a>
+</div>
+</div>
+<div id="olLobbyPage">
+<div class="app">
+<header class="top">
+<div>
+<div class="title">Piratwhist</div>
+<div class="sub">Spil online · v0.1.37</div>
+</div>
+<div class="topRight">
+<a class="ghost" href="/">Tilbage</a>
+</div>
+</header>
+<section class="card">
+<h2>Online rum</h2>
+<div class="grid2">
+<div>
+<label class="label">Dit navn</label>
+<input autocomplete="off" class="input" id="olMyName" placeholder="Dit navn" readonly="readonly" value="Spiller 1"/>
+</div>
+<div>
+<label class="label">Rumkode (4 tal)</label>
+</div>
+</div>
+<div class="row gap wrap">
+<button class="danger" id="olLeaveRoom">Forlad rum</button>
+<div class="pill">Rum: <span id="olRoomLabel">-</span></div>
+<div class="pill">Du er: <span id="olSeatLabel">-</span></div>
+</div>
+<div class="sub" id="olRoomStatus"></div>
+<div class="warn hidden" id="olRoomWarn"></div>
+</section>
+<section class="card">
+<h2>Online spil (trick-taking)</h2>
+<p class="sub">
+        Prototype: Hver runde spilles <b>Antal kort pr. spiller</b> som i Piratwhist-runderne (14 runder: 7→1→7).
+        I hver stik-runde vinder det højeste kort. Man skal bekende kulør hvis muligt. Spar (♠) er trumf.
+      </p>
+<div class="grid2">
+<div>
+<label class="label">Antal spillere</label>
+<select class="input" id="olPlayerCount">
+<option value="2">2</option><option value="3">3</option><option selected="" value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+</select>
+<div>
+<label class="label">Computer-spillere</label>
+<select class="input" id="olBotCount"></select>
+</div><button class="pw-btn" id="olApplyConfig">Gem indstillinger</button>
+</div>
+<div>
+<label class="label">Navne</label>
+<div class="stack" id="olNames"></div>
+</div>
+</div>
+</section>
+<footer class="foot sub">
+      Tip: Klik et kort for at spille det. Du må kun spille kort som matcher kuløren, hvis du har den.
+    </footer>
+</div>
+</div><div id="olGamePage"><div class="row gap">
+<button class="primary" id="olStartOnline">Start online spil (giv kort)</button>
+<button class="primary" id="olNextRound">Næste runde</button>
+<div class="pill" id="olInfo">Ikke startet</div>
+<div class="pill">Runde: <span id="olRound">-</span></div>
+<div class="pill">Kort pr. spiller: <span id="olCardsPer">-</span></div>
+</div><section class="card">
+<h2>Bud</h2>
+<div class="row gap">
+<div>
+<label class="label">Dit bud (0–<span id="olBidMax">-</span>)</label>
+<select class="input" id="olBidSelect"></select>
+</div>
+<button class="primary" id="olBidSubmit">Gem bud</button>
+<div class="pill">Status: <span id="olBidStatus">-</span></div>
+</div>
+<div class="sub" id="olBidsList"></div>
+</section><section class="card">
+<h2>Runde</h2>
+<div class="row gap wrap">
+<div class="pill">Fører: <span id="olLeader">-</span></div>
+<div class="pill">Kulør: <span id="olLeadSuit">-</span></div>
+<div class="pill">Trumf: <span>♠</span></div>
+<div class="pill">Vinder: <span id="olWinner">-</span></div>
+</div>
+<div class="board" id="olBoard">
+<div class="center" id="olCenter">
+<div class="deck" id="olDeck" title="Kortbunke"></div>
+<div class="pile" id="olPile" title="Stik-pulje"></div>
+</div>
+<div class="table" id="olTable"></div>
+</div>
+</section><section class="card">
+<h2>Hænder</h2>
+<div class="hands" id="olHands"></div>
+<div class="warn hidden" id="olWarn"></div>
+</section><section class="card" id="olScores">
+<h2>Resultater</h2>
+<div class="row gap">
+<div class="pill">Runde: <span id="olResRound">-</span></div>
+<div class="pill">Kort pr. spiller: <span id="olResCards">-</span></div>
+</div>
+<div class="tableWrap">
+<table class="t" id="olScoreTable"></table>
+</div>
+<div class="hsep"></div>
+<div class="tableWrap">
+<table class="t" id="olHistoryTable"></table>
+</div>
+<div class="sub">Point pr. runde: Rammer du dit bud: <b>10 + bud</b>. Ellers: <b>-1 pr. stik</b> du er fra.</div>
+</section></div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script><script src="/online_room.js"></script></body>
+</html>
+<div class="topbar">
+<div class="brand">
+<div class="logo">🏴‍☠️</div>
+<div>
+<div class="title">Piratwhist <span class="ver">v0.1.37</span></div>
+<div class="sub">Online spil · spar er trumf · bekend kulør</div>
+</div>
+</div>
+<div class="nav">
+<a class="linkbtn" href="/piratwhist.html">Point-tavle</a>
+<a class="linkbtn ghost" href="/rules.html">Regler</a>
+</div>
+</div>
