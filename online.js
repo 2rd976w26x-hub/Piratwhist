@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.1.37)
+// Piratwhist Online Multiplayer (v0.1.38)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
@@ -161,7 +161,6 @@ socket.on("online_state", (payload) => {
   if (payload.seat !== null && payload.seat !== undefined) mySeat = payload.seat;
   prevState = state;
   state = payload.state;
-  updateOnlinePageFromState();
 
   const rl = el("olRoomLabel"); if (rl) rl.textContent = roomCode || "-";
   const sl = el("olSeatLabel"); if (sl) sl.textContent = (mySeat===null || mySeat===undefined) ? "-" : `Spiller ${mySeat+1}`;
@@ -556,36 +555,3 @@ el("olPlayerCount")?.addEventListener("change", () => { populateBotOptions(); re
 render();
 
 el("olBotCount")?.addEventListener("change", () => render());
-
-
-function setOnlinePage(which){
-  document.body.classList.remove("ol-show-lobby","ol-show-game");
-  if (which === "game") document.body.classList.add("ol-show-game");
-  else document.body.classList.add("ol-show-lobby");
-}
-
-function updateOnlinePageFromState(){
-  // Show lobby until we are in a room and have state
-  if (roomCode && state) setOnlinePage("game");
-  else setOnlinePage("lobby");
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const backBtn = document.getElementById("olBackToLobbyBtn");
-  if (backBtn){
-    backBtn.addEventListener("click", () => {
-      try{
-        if (roomCode){
-          socket.emit("online_leave", { room: roomCode });
-        }
-      }catch(e){}
-      roomCode = "";
-      state = null;
-      mySeat = null;
-      updateOnlinePageFromState();
-      syncPlayerCount();
-      syncBotCount();
-    });
-  }
-  updateOnlinePageFromState();
-});
