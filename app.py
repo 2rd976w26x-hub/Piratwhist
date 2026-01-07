@@ -519,7 +519,14 @@ def _online_schedule_auto_next_round(code: str, round_index: int):
                 st["tricksRound"] = [0 for _ in range(n)]
                 st["phase"] = "bidding"
 
+                _online_bot_choose_bid(room)
+                if all(b is not None for b in st["bids"]):
+                    st["phase"] = "playing"
+                    st["turn"] = st["leader"]
+
             _online_emit_full_state(code, room)
+            if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
+                _online_schedule_bot_turn(code)
         except Exception:
             # don't crash the server on background task errors
             return
