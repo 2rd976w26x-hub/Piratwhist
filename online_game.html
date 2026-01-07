@@ -17,7 +17,7 @@
       </div>
       <div class="topbar__right">
         <span id="onlineRoomBadge" class="pill">Rum: –</span>
-        <span id="onlineVersion" class="pill">v0.1.39</span>
+        <span id="onlineVersion" class="pill">v0.1.40</span>
       </div>
     </div>
 
@@ -42,9 +42,8 @@
           <span id="olStatus" class="status" style="margin-left:auto;"></span>
         </div>
       </section>
-    </main>
-
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-XG5F3dRzHh0C1yT9gO8o0cGfN+Xj7nqk0o6VvEwY7XKQmQv7Z9lI3p1i7hE7kQfX" crossorigin="anonymous"></script>
+    </main>    <!-- Socket.IO client (no SRI: avoids breaking if the CDN file hash changes) -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="online.js"></script>
   </body>
 </html>
