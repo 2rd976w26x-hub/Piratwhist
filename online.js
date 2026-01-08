@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.1.40)
+// Piratwhist Online Multiplayer (v0.1.41)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
@@ -8,6 +8,22 @@ function el(id){ return document.getElementById(id); }
 function setRoomBadge(code){
   const b = el("onlineRoomBadge");
   if (b) b.textContent = code ? `Rum: ${code}` : "Rum: –";
+}
+
+function updateRoomLinks(code){
+  const c = normalizeCode(code || "");
+  if (!c) return;
+  const qs = `?code=${encodeURIComponent(c)}`;
+
+  // Top navigation pills (present on Spil/Runde pages)
+  const navGame = el("navGame");
+  const navRound = el("navRound");
+  if (navGame && navGame.tagName === "A") navGame.href = `/online_game.html${qs}`;
+  if (navRound && navRound.tagName === "A") navRound.href = `/online_round.html${qs}`;
+
+  // Deep links inside pages
+  const goToRound = el("goToRound");
+  if (goToRound && goToRound.tagName === "A") goToRound.href = `/online_round.html${qs}`;
 }
 
 function pageKind(){
@@ -22,9 +38,38 @@ function pageKind(){
   return "unknown";
 }
 
+function getRoomCodeFromUrl(){
+  const m = location.search.match(/[?&]code=([^&]+)/i);
+  return m ? decodeURIComponent(m[1]).trim() : "";
+}
+
+function getStoredRoomCode(){
+  try {
+    const c = sessionStorage.getItem(STORAGE_CODE);
+    return c && c.trim() ? c.trim() : "";
+  } catch (_) {
+    return "";
+  }
+}
+
+function getRoomCode(){
+  return getRoomCodeFromUrl() || getStoredRoomCode();
+}
+
+function updateNavLinks(code){
+  // Keep the room code across the 3 online pages.
+  const links = document.querySelectorAll("a[data-online-nav]");
+  if (!links.length) return;
+  links.forEach(a => {
+    const base = a.getAttribute("data-online-nav");
+    if (!base) return;
+    a.href = code ? `${base}?code=${encodeURIComponent(code)}` : base;
+  });
+}
+
 function hardNavigate(targetPath){
   // Keep room code in querystring (nice for refresh) but also keep sessionStorage
-  const code = sessionStorage.getItem("piratwhist_room") || "";
+  const code = getRoomCode();
   const url = code ? `${targetPath}?code=${encodeURIComponent(code)}` : targetPath;
   if (location.pathname !== targetPath) location.href = url;
 }
@@ -591,8 +636,8 @@ function render(){
     }
   }
 
-  // my hand only
-  const hands = el("olHands");
+  // my hand only (game view uses #olHands, round view uses #olHand)
+  const hands = el("olHands") || el("olHand");
   if (hands){
     hands.innerHTML = "";
     const mine = (mySeat!==null && mySeat!==undefined && state.hands) ? state.hands[mySeat] : null;
@@ -661,6 +706,7 @@ try {
   if (autoCode) {
     // Keep input in sync on lobby
     if (el("olRoomCode")) el("olRoomCode").value = autoCode;
+    updateRoomLinks(autoCode);
     setRoomBadge(autoCode);
   }
 

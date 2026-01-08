@@ -11,13 +11,13 @@
     <div class="topbar">
       <div class="topbar__left">
         <a class="topbar__brand" href="/">Piratwhist</a>
-        <a class="pill" href="/online.html">Lobby</a>
-        <span class="pill active">Spil</span>
-        <a class="pill" href="/online_round.html">Runde</a>
+        <a id="navLobby" class="pill" href="/online.html">Lobby</a>
+        <span id="navGame" class="pill active">Spil</span>
+        <a id="navRound" class="pill" href="/online_round.html">Runde</a>
       </div>
       <div class="topbar__right">
         <span id="onlineRoomBadge" class="pill">Rum: –</span>
-        <span id="onlineVersion" class="pill">v0.1.40</span>
+        <span id="onlineVersion" class="pill">v0.1.41</span>
       </div>
     </div>
 
@@ -37,7 +37,7 @@
         </div>
 
         <div class="row gap wrap" style="margin-top:14px;">
-          <a class="btn" href="/online_round.html">Gå til Runde</a>
+          <a id="goToRound" class="btn" href="/online_round.html">Gå til Runde</a>
           <a class="btn" href="/online.html">Tilbage til Lobby</a>
           <span id="olStatus" class="status" style="margin-left:auto;"></span>
         </div>
