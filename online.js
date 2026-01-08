@@ -1,123 +1,9 @@
-// Piratwhist Online Multiplayer (v0.1.50)
+// Piratwhist Online Multiplayer (v0.1.38)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
-// Session storage keys (must be defined before we read them during boot).
-// If these are declared after the first read, the page can crash with:
-// "Cannot access 'STORAGE_CODE' before initialization".
-const STORAGE_CODE = "piratwhist_online_room_code";
-const STORAGE_NAME = "piratwhist_online_player_name";
-
 function el(id){ return document.getElementById(id); }
-
-function setRoomBadge(code){
-  const c = normalizeCode(code || "");
-
-  // Top bar badge
-  const b = el("onlineRoomBadge");
-  if (b) b.textContent = c ? `Rum: ${c}` : "Rum: –";
-
-  // Prominent room code section on Spil/Runde pages
-  const wrap = el("roomCodeDisplay");
-  const val = el("roomCodeValue");
-  if (wrap && val) {
-    if (!c) {
-      wrap.style.display = "none";
-      val.textContent = "–";
-    } else {
-      wrap.style.display = "";
-      val.textContent = c;
-    }
-  }
-
-  // Copy button (optional)
-  const copyBtn = el("roomCodeCopy");
-  if (copyBtn && !copyBtn.__pwBound) {
-    copyBtn.__pwBound = true;
-    copyBtn.addEventListener("click", async () => {
-      const codeToCopy = normalizeCode(roomCode || "") || normalizeCode(getRoomCodeFromUrl() || "");
-      if (!codeToCopy) return;
-      try {
-        await navigator.clipboard.writeText(codeToCopy);
-        copyBtn.textContent = "Kopieret";
-        setTimeout(() => (copyBtn.textContent = "Kopiér"), 900);
-      } catch {
-        // Fallback: best-effort
-        copyBtn.textContent = "Kunne ikke kopiere";
-        setTimeout(() => (copyBtn.textContent = "Kopiér"), 900);
-      }
-    });
-  }
-}
-
-function updateRoomLinks(code){
-  const c = normalizeCode(code || "");
-  if (!c) return;
-  const qs = `?code=${encodeURIComponent(c)}`;
-
-  // Top navigation pills (present on Spil/Runde pages)
-  const navLobby = el("navLobby");
-  const navGame = el("navGame");
-  const navRound = el("navRound");
-  if (navLobby && navLobby.tagName === "A") navLobby.href = `/online.html${qs}`;
-  if (navGame && navGame.tagName === "A") navGame.href = `/online_game.html${qs}`;
-  if (navRound && navRound.tagName === "A") navRound.href = `/online_round.html${qs}`;
-
-  // Deep links inside pages
-  const goToRound = el("goToRound");
-  if (goToRound && goToRound.tagName === "A") goToRound.href = `/online_round.html${qs}`;
-  const goToLobby = el("goToLobby");
-  if (goToLobby && goToLobby.tagName === "A") goToLobby.href = `/online.html${qs}`;
-}
-
-function pageKind(){
-  const p = (location.pathname || "").toLowerCase();
-  if (p.endsWith("/online_round.html")) return "round";
-  if (p.endsWith("/online_game.html")) return "game";
-  if (p.endsWith("/online.html")) return "lobby";
-  // fallback for local/dev
-  if (p.includes("online_round")) return "round";
-  if (p.includes("online_game")) return "game";
-  if (p.includes("online")) return "lobby";
-  return "unknown";
-}
-
-function getRoomCodeFromUrl(){
-  const m = location.search.match(/[?&]code=([^&]+)/i);
-  return m ? decodeURIComponent(m[1]).trim() : "";
-}
-
-function getStoredRoomCode(){
-  try {
-    const c = sessionStorage.getItem(STORAGE_CODE);
-    return c && c.trim() ? c.trim() : "";
-  } catch (_) {
-    return "";
-  }
-}
-
-function getRoomCode(){
-  return getRoomCodeFromUrl() || getStoredRoomCode();
-}
-
-function updateNavLinks(code){
-  // Keep the room code across the 3 online pages.
-  const links = document.querySelectorAll("a[data-online-nav]");
-  if (!links.length) return;
-  links.forEach(a => {
-    const base = a.getAttribute("data-online-nav");
-    if (!base) return;
-    a.href = code ? `${base}?code=${encodeURIComponent(code)}` : base;
-  });
-}
-
-function hardNavigate(targetPath){
-  // Keep room code in querystring (nice for refresh) but also keep sessionStorage
-  const code = getRoomCode();
-  const url = code ? `${targetPath}?code=${encodeURIComponent(code)}` : targetPath;
-  if (location.pathname !== targetPath) location.href = url;
-}
 
 function rectCenter(elm){
   const r = elm.getBoundingClientRect();
@@ -260,46 +146,6 @@ let roomCode = null;
 let mySeat = null;
 let state = null;
 let prevState = null;
-let pendingBid = null;
-
-function storeRoom(code){
-  try {
-    if (code) sessionStorage.setItem(STORAGE_CODE, code);
-  } catch (e) {}
-}
-
-function storeName(name){
-  try {
-    const n = (name || "").trim();
-    if (n) sessionStorage.setItem(STORAGE_NAME, n);
-  } catch (e) {}
-}
-
-function loadRoom(){
-  try { return sessionStorage.getItem(STORAGE_CODE); } catch (e) { return null; }
-}
-
-function loadName(){
-  try { return sessionStorage.getItem(STORAGE_NAME); } catch (e) { return null; }
-}
-
-function desiredPageForPhase(phase){
-  if (!phase || phase === "setup" || phase === "lobby") return "lobby";
-  if (phase === "bidding") return "game";
-  if (phase === "playing" || phase === "between_tricks") return "round";
-  if (phase === "round_finished" || phase === "game_finished") return "game";
-  return "game";
-}
-
-function navTo(kind){
-  const cur = pageKind();
-  if (cur === kind) return;
-  const code = roomCode || loadRoom();
-  const qs = code ? `?code=${encodeURIComponent(code)}` : "";
-  if (kind === "lobby") location.replace(`/online.html${qs}`);
-  else if (kind === "game") location.replace(`/online_game.html${qs}`);
-  else if (kind === "round") location.replace(`/online_round.html${qs}`);
-}
 
 socket.on("connect", () => {
   const s = el("olRoomStatus");
@@ -316,45 +162,15 @@ socket.on("online_state", (payload) => {
   prevState = state;
   state = payload.state;
 
-  if (roomCode) {
-    storeRoom(roomCode);
-    setRoomBadge(roomCode);
-  }
-
-  // If the user just created/joined a room from the Lobby, go directly to the
-  // "Spil" page for that room (lobby is only for create/join).
-  if (lobbyNavAfterState && pageKind() === "lobby" && roomCode) {
-    lobbyNavAfterState = false;
-    location.replace(`/online_game.html?code=${encodeURIComponent(roomCode)}`);
-    return;
-  }
-
   const rl = el("olRoomLabel"); if (rl) rl.textContent = roomCode || "-";
   const sl = el("olSeatLabel"); if (sl) sl.textContent = (mySeat===null || mySeat===undefined) ? "-" : `Spiller ${mySeat+1}`;
   showRoomWarn("");
   showWarn("");
   syncPlayerCount();
+  syncPlayerCount();
   syncBotCount();
   maybeRunAnimations();
   render();
-
-  // Route between Lobby / Spil / Runde based on phase
-  const phase = state?.phase || "lobby";
-  // If we already have a roomCode, the "Spil" page is the in-room waiting/setup
-  // area (even before start). The Lobby page is only for creating/joining.
-  const want = (phase === "lobby" && !roomCode) ? "lobby"
-            : (phase === "setup" || phase === "bidding" || phase === "round_finished" || phase === "game_finished") ? "game"
-            : "round"; // playing/between_tricks
-  const here = pageKind();
-  if (want !== here) {
-    const q = roomCode ? `?code=${encodeURIComponent(roomCode)}` : "";
-    const target = want === "lobby" ? `/online.html${q}` : (want === "game" ? `/online_game.html${q}` : `/online_round.html${q}`);
-    // Prevent endless loops if we're in the middle of navigating
-    if (!location.pathname.endsWith(target.split("?")[0])) {
-      location.replace(target);
-      return;
-    }
-  }
 });
 
 socket.on("online_left", () => {
@@ -418,60 +234,14 @@ function syncPlayerCount(){
 }
 
 
-function createRoom(){
-  const name = myName();
-  storeName(name);
-  lobbyNavAfterState = true;
-  socket.emit(
-    "online_create_room",
-    { name, players: playerCount(), bots: botCount() },
-    (ack) => {
-      // Prefer ack (most reliable), but keep the older "online_state" based
-      // navigation as a fallback for older servers.
-      if (!ack) return;
-      if (ack.ok && ack.room){
-        storeRoom(ack.room);
-        // Immediately navigate to game page; that page will auto-join using the stored code.
-        window.location.href = `/online_game.html?code=${ack.room}`;
-      } else if (ack.error){
-        showWarn("Kunne ikke oprette rum");
-      }
-    }
-  );
-}
-
-function joinRoom(){
-  const code = normalizeCode(el("olRoomCode")?.value);
-  const name = myName();
-  storeName(name);
-  if (code) storeRoom(code);
-  lobbyNavAfterState = true;
-  socket.emit(
-    "online_join_room",
-    { room: code, name },
-    (ack) => {
-      if (!ack) return;
-      if (ack.ok && ack.room){
-        storeRoom(String(ack.room));
-        window.location.href = `/online_game.html?code=${encodeURIComponent(String(ack.room))}`;
-      } else if (ack.error){
-        // Server also emits "online_error" for UI feedback; this is just an extra fallback.
-        showWarn("Kunne ikke joine rum.");
-      }
-    }
-  );
-}
+function createRoom(){ socket.emit("online_create_room", { name: myName(), players: playerCount(), bots: botCount() }); }
+function joinRoom(){ socket.emit("online_join_room", { room: normalizeCode(el("olRoomCode")?.value), name: myName() }); }
 function leaveRoom(){ if (roomCode) socket.emit("online_leave_room", { room: roomCode }); }
 function startOnline(){ if (roomCode) socket.emit("online_start_game", { room: roomCode }); }
 function onNext(){ if (roomCode) socket.emit("online_next", { room: roomCode }); }
 function submitBid(){ 
   if (!roomCode) return;
-  const v = parseInt(el("olBidInput")?.value || "0", 10);
-  if (!Number.isFinite(v) || v < 0){
-    showWarn("Ugyldigt bud");
-    return;
-  }
-  pendingBid = v;
+  const v = parseInt(el("olBidSelect")?.value || "0", 10);
   socket.emit("online_set_bid", { room: roomCode, bid: v });
 }
 function playCard(cardKey){ if (roomCode) socket.emit("online_play_card", { room: roomCode, card: cardKey }); }
@@ -491,53 +261,53 @@ function isPlayable(card){
 }
 
 function renderBidUI(cardsPer){
-  const max = Math.max(0, parseInt(cardsPer || 0, 10) || 0);
+  const max = cardsPer ?? 0;
   const maxEl = el("olBidMax");
   if (maxEl) maxEl.textContent = String(max);
 
-  const bidInput = el("olBidInput");
-  const btn = el("olBidSubmit");
-  const optList = el("olBidOptions");
-
-  // Clear "pending" once the server has registered our bid.
-  if (mySeat !== null && state?.bids && state.bids[mySeat] !== null && state.bids[mySeat] !== undefined){
-    pendingBid = null;
-  }
-
-  if (bidInput){
-    bidInput.min = "0";
-    bidInput.max = String(max);
-
-    // If we just submitted, keep the typed value visible until the server echoes it back.
-    if (pendingBid !== null && pendingBid !== undefined){
-      bidInput.value = String(pendingBid);
-    }
-
-    // If the value is empty or outside range, nudge it into range.
-    const v = (bidInput.value || "").trim();
-    if (v === "") bidInput.value = "0";
-    const n = parseInt(bidInput.value, 10);
-    if (!Number.isFinite(n) || n < 0) bidInput.value = "0";
-    if (Number.isFinite(n) && n > max) bidInput.value = String(max);
-  }
-
-  if (optList){
-    optList.innerHTML = "";
-    for (let i = 0; i <= max; i++){
+  const sel = el("olBidSelect");
+  if (sel){
+    sel.innerHTML = "";
+    for (let i=0;i<=max;i++){
       const opt = document.createElement("option");
       opt.value = String(i);
-      optList.appendChild(opt);
+      opt.textContent = String(i);
+      sel.appendChild(opt);
     }
   }
 
-  // Disable when we don't have a seat or not in bidding phase.
-  // Server validates bids; client only blocks obviously invalid cases.
-  const canBid = (mySeat !== null && mySeat !== undefined)
-    && (state && state.phase === "bidding")
-    && (state.bids && state.bids[mySeat] === null);
-  if (bidInput) bidInput.disabled = !canBid;
-  if (btn) btn.disabled = !canBid;
+  const bids = state?.bids || [];
+  const myBid = (mySeat!==null && mySeat!==undefined) ? bids[mySeat] : null;
+  const status = el("olBidStatus");
+  if (status){
+    if (state.phase === "lobby") status.textContent = "Lobby";
+    else if (state.phase === "bidding") status.textContent = "Afgiv bud";
+    else status.textContent = "Bud låst";
+  }
+
+  const btn = el("olBidSubmit");
+  if (btn){
+    const canBid = (state.phase === "bidding") && (mySeat!==null && mySeat!==undefined) && (myBid===null || myBid===undefined);
+    btn.disabled = !canBid;
+  }
+  if (sel){
+    sel.disabled = !((state.phase==="bidding") && (mySeat!==null && mySeat!==undefined) && (myBid===null || myBid===undefined));
+  }
+
+  // bids list
+  const list = el("olBidsList");
+  if (list){
+    const n = state?.n || playerCount();
+    const names = state?.names || Array.from({length:n}, (_,i)=>`Spiller ${i+1}`);
+    const parts = [];
+    for (let i=0;i<n;i++){
+      const b = bids[i];
+      parts.push(`<b>${names[i] || ("Spiller " + (i+1))}</b>: ${(b===null||b===undefined) ? "—" : b}`);
+    }
+    list.innerHTML = parts.join(" · ");
+  }
 }
+
 function renderScores(){
   const n = state?.n || playerCount();
   const names = state?.names || Array.from({length:n}, (_,i)=>`Spiller ${i+1}`);
@@ -723,8 +493,8 @@ function render(){
     }
   }
 
-  // my hand only (game view uses #olHands, round view uses #olHand)
-  const hands = el("olHands") || el("olHand");
+  // my hand only
+  const hands = el("olHands");
   if (hands){
     hands.innerHTML = "";
     const mine = (mySeat!==null && mySeat!==undefined && state.hands) ? state.hands[mySeat] : null;
@@ -781,27 +551,6 @@ el("olStartOnline")?.addEventListener("click", startOnline);
 el("olNextRound")?.addEventListener("click", onNext);
 el("olBidSubmit")?.addEventListener("click", submitBid);
 el("olPlayerCount")?.addEventListener("change", () => { populateBotOptions(); render(); });
-
-// Auto-join when navigating between Lobby / Spil / Runde pages
-try {
-  const params = new URLSearchParams(location.search || "");
-  const codeFromUrl = normalizeCode(params.get("code") || "");
-  const storedCode = normalizeCode(restoreRoom() || "");
-  const autoCode = codeFromUrl || storedCode;
-  const kind = pageKind();
-
-  if (autoCode) {
-    // Keep input in sync on lobby
-    if (el("olRoomCode")) el("olRoomCode").value = autoCode;
-    updateRoomLinks(autoCode);
-    setRoomBadge(autoCode);
-  }
-
-  if (kind !== "lobby" && autoCode && !roomCode) {
-    // Join silently (server will send state)
-    socket.emit("online_join_room", { room: autoCode, name: restoreName() || "Spiller" });
-  }
-} catch (e) {}
 
 render();
 

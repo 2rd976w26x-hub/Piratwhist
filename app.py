@@ -470,8 +470,6 @@ def _online_internal_play_card(code: str, room, seat: int, card_key: str):
             _online_schedule_auto_next_trick(code, st["roundIndex"])
 
     _online_emit_full_state(code, room)
-    if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
-        _online_schedule_bot_turn(code)
 
     if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
         _online_schedule_bot_turn(code)
@@ -556,10 +554,6 @@ def _online_cleanup_sid(sid):
 # ---------- Online multiplayer socket events ----------
 @socketio.on("online_create_room")
 def online_create_room(data):
-    # Supports Socket.IO acknowledgements (JS: socket.emit(..., (ack)=>...)).
-    if not isinstance(data, dict):
-        return {"ok": False, "error": "invalid_payload"}
-
     name = (data.get("name") or "").strip() or "Spiller 1"
     n_players = int(data.get("players") or 4)
     if n_players < 2 or n_players > 8:
@@ -613,23 +607,17 @@ def online_create_room(data):
     st["hands"] = [[]] + [None for _ in range(n_players-1)]
     emit("online_state", {"room": code, "seat": 0, "state": st})
 
-    return {"ok": True, "room": code, "seat": 0}
-
 @socketio.on("online_join_room")
 def online_join_room(data):
-    # Supports Socket.IO acknowledgements (JS: socket.emit(..., (ack)=>...)).
-    if not isinstance(data, dict):
-        return {"ok": False, "error": "invalid_payload"}
-
     code = (data.get("room") or "").strip()
     name = (data.get("name") or "").strip() or "Spiller"
     if (not code.isdigit()) or len(code) != 4:
         emit("error", {"message": "Rumkode skal være 4 tal."})
-        return {"ok": False, "error": "invalid_room_code"}
+        return
     room = ONLINE_ROOMS.get(code)
     if not room:
         emit("error", {"message": "Rum ikke fundet."})
-        return {"ok": False, "error": "room_not_found"}
+        return
 
     st = room["state"]
     n = st["n"]
@@ -638,15 +626,13 @@ def online_join_room(data):
     seat = next((i for i in range(n) if i not in occupied and i not in bot_seats), None)
     if seat is None:
         emit("error", {"message": "Rummet er fuldt."})
-        return {"ok": False, "error": "room_full"}
+        return
 
     room["members"][request.sid] = seat
     st["names"][seat] = name
     join_room(code)
 
     _online_emit_full_state(code, room)
-
-    return {"ok": True, "room": code, "seat": seat}
 
 @socketio.on("online_leave_room")
 def online_leave_room(data):
@@ -739,7 +725,6 @@ def online_set_bid(data):
         return
 
     st["bids"][seat] = bid
-    _online_bot_choose_bid(room)  # udfyld bud for computers (også efter menneskets bud)
 
     # when all bids submitted -> start playing
     if all(b is not None for b in st["bids"]):
