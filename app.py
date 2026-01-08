@@ -725,6 +725,7 @@ def online_set_bid(data):
         return
 
     st["bids"][seat] = bid
+    _online_bot_choose_bid(room)  # udfyld bud for computers (også efter menneskets bud)
 
     # when all bids submitted -> start playing
     if all(b is not None for b in st["bids"]):
