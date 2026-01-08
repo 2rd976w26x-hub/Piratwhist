@@ -17,7 +17,7 @@
       </div>
       <div class="topbar__right">
         <span id="onlineRoomBadge" class="pill">Rum: –</span>
-        <span id="onlineVersion" class="pill">v0.1.48</span>
+        <span id="onlineVersion" class="pill">v0.1.49</span>
       </div>
     </div>
 
@@ -42,7 +42,7 @@
             <label class="label" for="olBidInput">Dit bud</label>
             <input id="olBidInput" class="input" type="number" min="0" step="1" inputmode="numeric" pattern="[0-9]*" list="olBidOptions" aria-label="Dit bud"/>
             <datalist id="olBidOptions"></datalist>
-            <button id="olBidSubmit" class="btn primary" type="submit">Afgiv bud</button>
+            <button id="olBidSubmit" class="btn primary" type="button">Afgiv bud</button>
           </form>
           <div id="olError" class="error" style="display:none;"></div>
 
@@ -62,7 +62,8 @@
 
         <div class="row gap wrap" style="margin-top:14px;">
           <a id="goToRound" class="btn" href="/online_round.html">Gå til Runde</a>
-          <a class="btn" href="/online.html">Tilbage til Lobby</a>
+          <button id="olStartGame" type="button" class="btn primary">Start spil</button>
+          <a id="goToLobby" class="btn" href="/online.html">Tilbage til Lobby</a>
           <span id="olStatus" class="status" style="margin-left:auto;"></span>
         </div>
       </section>

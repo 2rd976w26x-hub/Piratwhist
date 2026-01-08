@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.1.48)
+// Piratwhist Online Multiplayer (v0.1.49)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
@@ -22,14 +22,18 @@ function updateRoomLinks(code){
   const qs = `?code=${encodeURIComponent(c)}`;
 
   // Top navigation pills (present on Spil/Runde pages)
+  const navLobby = el("navLobby");
   const navGame = el("navGame");
   const navRound = el("navRound");
+  if (navLobby && navLobby.tagName === "A") navLobby.href = `/online.html${qs}`;
   if (navGame && navGame.tagName === "A") navGame.href = `/online_game.html${qs}`;
   if (navRound && navRound.tagName === "A") navRound.href = `/online_round.html${qs}`;
 
   // Deep links inside pages
   const goToRound = el("goToRound");
   if (goToRound && goToRound.tagName === "A") goToRound.href = `/online_round.html${qs}`;
+  const goToLobby = el("goToLobby");
+  if (goToLobby && goToLobby.tagName === "A") goToLobby.href = `/online.html${qs}`;
 }
 
 function pageKind(){
@@ -221,6 +225,7 @@ let roomCode = null;
 let mySeat = null;
 let state = null;
 let prevState = null;
+let pendingBid = null;
 
 function storeRoom(code){
   try {
@@ -382,7 +387,22 @@ function createRoom(){
   const name = myName();
   storeName(name);
   lobbyNavAfterState = true;
-  socket.emit("online_create_room", { name, players: playerCount(), bots: botCount() });
+  socket.emit(
+    "online_create_room",
+    { name, players: playerCount(), bots: botCount() },
+    (ack) => {
+      // Prefer ack (most reliable), but keep the older "online_state" based
+      // navigation as a fallback for older servers.
+      if (!ack) return;
+      if (ack.ok && ack.room){
+        storeRoom(ack.room);
+        // Immediately navigate to game page; that page will auto-join using the stored code.
+        window.location.href = `/online_game.html?code=${ack.room}`;
+      } else if (ack.error){
+        showWarn("Kunne ikke oprette rum");
+      }
+    }
+  );
 }
 
 function joinRoom(){
@@ -391,7 +411,20 @@ function joinRoom(){
   storeName(name);
   if (code) storeRoom(code);
   lobbyNavAfterState = true;
-  socket.emit("online_join_room", { room: code, name });
+  socket.emit(
+    "online_join_room",
+    { room: code, name },
+    (ack) => {
+      if (!ack) return;
+      if (ack.ok && ack.room){
+        storeRoom(String(ack.room));
+        window.location.href = `/online_game.html?code=${encodeURIComponent(String(ack.room))}`;
+      } else if (ack.error){
+        // Server also emits "online_error" for UI feedback; this is just an extra fallback.
+        showWarn("Kunne ikke joine rum.");
+      }
+    }
+  );
 }
 function leaveRoom(){ if (roomCode) socket.emit("online_leave_room", { room: roomCode }); }
 function startOnline(){ if (roomCode) socket.emit("online_start_game", { room: roomCode }); }
@@ -399,6 +432,11 @@ function onNext(){ if (roomCode) socket.emit("online_next", { room: roomCode });
 function submitBid(){ 
   if (!roomCode) return;
   const v = parseInt(el("olBidInput")?.value || "0", 10);
+  if (!Number.isFinite(v) || v < 0){
+    showWarn("Ugyldigt bud");
+    return;
+  }
+  pendingBid = v;
   socket.emit("online_set_bid", { room: roomCode, bid: v });
 }
 function playCard(cardKey){ if (roomCode) socket.emit("online_play_card", { room: roomCode, card: cardKey }); }
@@ -426,9 +464,19 @@ function renderBidUI(cardsPer){
   const btn = el("olBidSubmit");
   const optList = el("olBidOptions");
 
+  // Clear "pending" once the server has registered our bid.
+  if (mySeat !== null && state?.bids && state.bids[mySeat] !== null && state.bids[mySeat] !== undefined){
+    pendingBid = null;
+  }
+
   if (bidInput){
     bidInput.min = "0";
     bidInput.max = String(max);
+
+    // If we just submitted, keep the typed value visible until the server echoes it back.
+    if (pendingBid !== null && pendingBid !== undefined){
+      bidInput.value = String(pendingBid);
+    }
 
     // If the value is empty or outside range, nudge it into range.
     const v = (bidInput.value || "").trim();
