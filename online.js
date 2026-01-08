@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.1.45)
+// Piratwhist Online Multiplayer (v0.1.46)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
@@ -437,7 +437,10 @@ function renderBidUI(cardsPer){
   }
 
   // Disable when we don't have a seat or not in bidding phase.
-  const canBid = (lastSeat !== null && lastSeat !== undefined) && lastState && lastState.phase === "bidding";
+  // Server validates bids; client only blocks obviously invalid cases.
+  const canBid = (mySeat !== null && mySeat !== undefined)
+    && (state && state.phase === "bidding")
+    && (state.bids && state.bids[mySeat] === null);
   if (bidInput) bidInput.disabled = !canBid;
   if (btn) btn.disabled = !canBid;
 }
