@@ -17,7 +17,7 @@
       </div>
       <div class="topbar__right">
         <span id="onlineRoomBadge" class="pill">Rum: –</span>
-        <span id="onlineVersion" class="pill">v0.1.41</span>
+        <span id="onlineVersion" class="pill">v0.1.42</span>
       </div>
     </div>
 
@@ -26,14 +26,37 @@
         <h1 class="h1">Spil</h1>
         <p class="muted">Bud og score-oversigt. Når alle bud er sat, skifter spillet automatisk til <b>Runde</b>.</p>
 
+        <div class="row gap wrap" style="margin-top:12px;">
+          <div class="chip">Spiller: <strong id="olWhoAmI">-</strong></div>
+          <div class="chip">Fase: <strong id="olPhase">-</strong></div>
+          <div class="chip">Runde: <strong id="olRound">-</strong></div>
+          <div class="chip">Kort pr. spiller: <strong id="olCardsPer">-</strong></div>
+          <div class="chip">Trumf: <strong id="olTrump">-</strong></div>
+        </div>
+
         <div id="bidSection" class="section">
           <h2 class="h2">Bud</h2>
-          <div id="olBids" class="bids"></div>
+          <p class="muted" id="olInfo"></p>
+
+          <form id="olBidForm" class="row gap wrap" autocomplete="off">
+            <label class="label" for="olBidInput">Dit bud</label>
+            <select id="olBidInput" class="input" aria-label="Dit bud"></select>
+            <button id="olBidSubmit" class="btn primary" type="submit">Afgiv bud</button>
+          </form>
+          <div id="olError" class="error" style="display:none;"></div>
+
+          <div class="subsection">
+            <div class="subheader">Buds oversigt</div>
+            <div id="olBidsList" class="bids"></div>
+          </div>
         </div>
 
         <div class="section">
           <h2 class="h2">Resultater</h2>
-          <div id="olResults" class="results"></div>
+          <div id="olScores" class="scores">
+            <table class="table" id="olScoreTable"></table>
+          </div>
+          <div id="olResultsList" class="results"></div>
         </div>
 
         <div class="row gap wrap" style="margin-top:14px;">
