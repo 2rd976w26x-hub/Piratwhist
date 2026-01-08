@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.1.42)
+// Piratwhist Online Multiplayer (v0.1.43)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
@@ -384,7 +384,7 @@ function startOnline(){ if (roomCode) socket.emit("online_start_game", { room: r
 function onNext(){ if (roomCode) socket.emit("online_next", { room: roomCode }); }
 function submitBid(){ 
   if (!roomCode) return;
-  const v = parseInt(el("olBidSelect")?.value || "0", 10);
+  const v = parseInt(el("olBidInput")?.value || "0", 10);
   socket.emit("online_set_bid", { room: roomCode, bid: v });
 }
 function playCard(cardKey){ if (roomCode) socket.emit("online_play_card", { room: roomCode, card: cardKey }); }
@@ -404,53 +404,40 @@ function isPlayable(card){
 }
 
 function renderBidUI(cardsPer){
-  const max = cardsPer ?? 0;
+  const max = Math.max(0, parseInt(cardsPer || 0, 10) || 0);
   const maxEl = el("olBidMax");
   if (maxEl) maxEl.textContent = String(max);
 
-  const sel = el("olBidSelect");
-  if (sel){
-    sel.innerHTML = "";
-    for (let i=0;i<=max;i++){
+  const bidInput = el("olBidInput");
+  const btn = el("olBidSubmit");
+  const optList = el("olBidOptions");
+
+  if (bidInput){
+    bidInput.min = "0";
+    bidInput.max = String(max);
+
+    // If the value is empty or outside range, nudge it into range.
+    const v = (bidInput.value || "").trim();
+    if (v === "") bidInput.value = "0";
+    const n = parseInt(bidInput.value, 10);
+    if (!Number.isFinite(n) || n < 0) bidInput.value = "0";
+    if (Number.isFinite(n) && n > max) bidInput.value = String(max);
+  }
+
+  if (optList){
+    optList.innerHTML = "";
+    for (let i = 0; i <= max; i++){
       const opt = document.createElement("option");
       opt.value = String(i);
-      opt.textContent = String(i);
-      sel.appendChild(opt);
+      optList.appendChild(opt);
     }
   }
 
-  const bids = state?.bids || [];
-  const myBid = (mySeat!==null && mySeat!==undefined) ? bids[mySeat] : null;
-  const status = el("olBidStatus");
-  if (status){
-    if (state.phase === "lobby") status.textContent = "Lobby";
-    else if (state.phase === "bidding") status.textContent = "Afgiv bud";
-    else status.textContent = "Bud låst";
-  }
-
-  const btn = el("olBidSubmit");
-  if (btn){
-    const canBid = (state.phase === "bidding") && (mySeat!==null && mySeat!==undefined) && (myBid===null || myBid===undefined);
-    btn.disabled = !canBid;
-  }
-  if (sel){
-    sel.disabled = !((state.phase==="bidding") && (mySeat!==null && mySeat!==undefined) && (myBid===null || myBid===undefined));
-  }
-
-  // bids list
-  const list = el("olBidsList");
-  if (list){
-    const n = state?.n || playerCount();
-    const names = state?.names || Array.from({length:n}, (_,i)=>`Spiller ${i+1}`);
-    const parts = [];
-    for (let i=0;i<n;i++){
-      const b = bids[i];
-      parts.push(`<b>${names[i] || ("Spiller " + (i+1))}</b>: ${(b===null||b===undefined) ? "—" : b}`);
-    }
-    list.innerHTML = parts.join(" · ");
-  }
+  // Disable when we don't have a seat or not in bidding phase.
+  const canBid = (lastSeat !== null && lastSeat !== undefined) && lastState && lastState.phase === "bidding";
+  if (bidInput) bidInput.disabled = !canBid;
+  if (btn) btn.disabled = !canBid;
 }
-
 function renderScores(){
   const n = state?.n || playerCount();
   const names = state?.names || Array.from({length:n}, (_,i)=>`Spiller ${i+1}`);

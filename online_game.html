@@ -11,13 +11,13 @@
     <div class="topbar">
       <div class="topbar__left">
         <a class="topbar__brand" href="/">Piratwhist</a>
-        <a id="navLobby" class="pill" href="/online.html">Lobby</a>
+        <a id="navLobby" class="pill" data-online-nav="/online.html" href="/online.html">Lobby</a>
         <span id="navGame" class="pill active">Spil</span>
-        <a id="navRound" class="pill" href="/online_round.html">Runde</a>
+        <a id="navRound" class="pill" data-online-nav="/online_round.html" href="/online_round.html">Runde</a>
       </div>
       <div class="topbar__right">
         <span id="onlineRoomBadge" class="pill">Rum: –</span>
-        <span id="onlineVersion" class="pill">v0.1.42</span>
+        <span id="onlineVersion" class="pill">v0.1.43</span>
       </div>
     </div>
 
@@ -40,7 +40,8 @@
 
           <form id="olBidForm" class="row gap wrap" autocomplete="off">
             <label class="label" for="olBidInput">Dit bud</label>
-            <select id="olBidInput" class="input" aria-label="Dit bud"></select>
+            <input id="olBidInput" class="input" type="number" min="0" step="1" inputmode="numeric" pattern="[0-9]*" list="olBidOptions" aria-label="Dit bud"/>
+            <datalist id="olBidOptions"></datalist>
             <button id="olBidSubmit" class="btn primary" type="submit">Afgiv bud</button>
           </form>
           <div id="olError" class="error" style="display:none;"></div>
