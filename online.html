@@ -14,7 +14,7 @@
         <span class="pill">Online</span>
       </div>
       <div class="topbar__right">
-        <span id="onlineVersion" class="pill">v0.1.46</span>
+        <span id="onlineVersion" class="pill">v0.1.47</span>
       </div>
     </div>
 
@@ -25,8 +25,8 @@
 
         <div class="grid2">
           <div>
-            <label class="label">Rumkode</label>
-            <input id="olRoomCode" class="input" placeholder="f.eks. 1234" inputmode="numeric" maxlength="8" />
+            <label class="label" for="olRoomCode">Rumkode</label>
+            <input id="olRoomCode" name="roomCode" class="input" placeholder="f.eks. 1234" inputmode="numeric" maxlength="8" />
             <div class="row gap">
               <button id="olCreateRoom" class="btn primary">Opret online rum</button>
               <button id="olJoinRoom" class="btn">Join rum</button>
@@ -39,7 +39,7 @@
             <div class="row gap wrap">
               <div class="field">
                 <span class="muted small">Antal spillere</span>
-                <select id="olPlayerCount" class="select">
+                <select id="olPlayerCount" name="playerCount" class="select">
                   <option value="2">2</option>
                   <option value="3">3</option>
                   <option value="4" selected>4</option>
@@ -47,7 +47,7 @@
               </div>
               <div class="field">
                 <span class="muted small">Computer spillere</span>
-                <select id="olBotCount" class="select">
+                <select id="olBotCount" name="botCount" class="select">
                   <option value="0" selected>0</option>
                   <option value="1">1</option>
                   <option value="2">2</option>

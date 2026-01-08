@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.1.46)
+// Piratwhist Online Multiplayer (v0.1.47)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
@@ -281,11 +281,18 @@ socket.on("online_state", (payload) => {
     setRoomBadge(roomCode);
   }
 
+  // If the user just created/joined a room from the Lobby, go directly to the
+  // "Spil" page for that room (lobby is only for create/join).
+  if (lobbyNavAfterState && pageKind() === "lobby" && roomCode) {
+    lobbyNavAfterState = false;
+    location.replace(`/online_game.html?code=${encodeURIComponent(roomCode)}`);
+    return;
+  }
+
   const rl = el("olRoomLabel"); if (rl) rl.textContent = roomCode || "-";
   const sl = el("olSeatLabel"); if (sl) sl.textContent = (mySeat===null || mySeat===undefined) ? "-" : `Spiller ${mySeat+1}`;
   showRoomWarn("");
   showWarn("");
-  syncPlayerCount();
   syncPlayerCount();
   syncBotCount();
   maybeRunAnimations();
@@ -293,8 +300,10 @@ socket.on("online_state", (payload) => {
 
   // Route between Lobby / Spil / Runde based on phase
   const phase = state?.phase || "lobby";
-  const want = (phase === "lobby" || phase === "setup") ? "lobby"
-            : (phase === "bidding" || phase === "round_finished" || phase === "game_finished") ? "game"
+  // If we already have a roomCode, the "Spil" page is the in-room waiting/setup
+  // area (even before start). The Lobby page is only for creating/joining.
+  const want = (phase === "lobby" && !roomCode) ? "lobby"
+            : (phase === "setup" || phase === "bidding" || phase === "round_finished" || phase === "game_finished") ? "game"
             : "round"; // playing/between_tricks
   const here = pageKind();
   if (want !== here) {
@@ -372,6 +381,7 @@ function syncPlayerCount(){
 function createRoom(){
   const name = myName();
   storeName(name);
+  lobbyNavAfterState = true;
   socket.emit("online_create_room", { name, players: playerCount(), bots: botCount() });
 }
 
@@ -380,6 +390,7 @@ function joinRoom(){
   const name = myName();
   storeName(name);
   if (code) storeRoom(code);
+  lobbyNavAfterState = true;
   socket.emit("online_join_room", { room: code, name });
 }
 function leaveRoom(){ if (roomCode) socket.emit("online_leave_room", { room: roomCode }); }
