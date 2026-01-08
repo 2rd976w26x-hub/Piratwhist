@@ -1,7 +1,13 @@
-// Piratwhist Online Multiplayer (v0.1.43)
+// Piratwhist Online Multiplayer (v0.1.44)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
+
+// Session storage keys (must be defined before we read them during boot).
+// If these are declared after the first read, the page can crash with:
+// "Cannot access 'STORAGE_CODE' before initialization".
+const STORAGE_CODE = "piratwhist_online_room_code";
+const STORAGE_NAME = "piratwhist_online_player_name";
 
 function el(id){ return document.getElementById(id); }
 
@@ -215,9 +221,6 @@ let roomCode = null;
 let mySeat = null;
 let state = null;
 let prevState = null;
-
-const STORAGE_CODE = "piratwhist_room_code";
-const STORAGE_NAME = "piratwhist_player_name";
 
 function storeRoom(code){
   try {
