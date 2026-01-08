@@ -17,7 +17,7 @@
       </div>
       <div class="topbar__right">
         <span id="onlineRoomBadge" class="pill">Rum: –</span>
-        <span id="onlineVersion" class="pill">v0.1.49</span>
+        <span id="onlineVersion" class="pill">v0.1.50</span>
       </div>
     </div>
 
@@ -26,6 +26,15 @@
         <div class="row between wrap" style="align-items:flex-end;">
           <div>
             <h1 class="h1" style="margin-bottom:4px;">Runde</h1>
+
+            <!-- Room code helper (kept visible for people joining mid-game) -->
+            <div id="roomCodeDisplay" class="roomcode" style="display:none; margin-top:10px;">
+              <div class="muted" style="font-size:12px;">Rumkode</div>
+              <div class="roomcode__row" style="display:flex; gap:10px; align-items:center; margin-top:6px;">
+                <strong id="roomCodeValue" style="font-size:18px; letter-spacing:0.06em;">-</strong>
+                <button id="roomCodeCopy" class="btn" type="button">Kopiér</button>
+              </div>
+            </div>
             <div id="olRoundInfo" class="muted">—</div>
           </div>
           <div class="row gap wrap">

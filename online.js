@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.1.49)
+// Piratwhist Online Multiplayer (v0.1.50)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
@@ -12,8 +12,43 @@ const STORAGE_NAME = "piratwhist_online_player_name";
 function el(id){ return document.getElementById(id); }
 
 function setRoomBadge(code){
+  const c = normalizeCode(code || "");
+
+  // Top bar badge
   const b = el("onlineRoomBadge");
-  if (b) b.textContent = code ? `Rum: ${code}` : "Rum: –";
+  if (b) b.textContent = c ? `Rum: ${c}` : "Rum: –";
+
+  // Prominent room code section on Spil/Runde pages
+  const wrap = el("roomCodeDisplay");
+  const val = el("roomCodeValue");
+  if (wrap && val) {
+    if (!c) {
+      wrap.style.display = "none";
+      val.textContent = "–";
+    } else {
+      wrap.style.display = "";
+      val.textContent = c;
+    }
+  }
+
+  // Copy button (optional)
+  const copyBtn = el("roomCodeCopy");
+  if (copyBtn && !copyBtn.__pwBound) {
+    copyBtn.__pwBound = true;
+    copyBtn.addEventListener("click", async () => {
+      const codeToCopy = normalizeCode(roomCode || "") || normalizeCode(getRoomCodeFromUrl() || "");
+      if (!codeToCopy) return;
+      try {
+        await navigator.clipboard.writeText(codeToCopy);
+        copyBtn.textContent = "Kopieret";
+        setTimeout(() => (copyBtn.textContent = "Kopiér"), 900);
+      } catch {
+        // Fallback: best-effort
+        copyBtn.textContent = "Kunne ikke kopiere";
+        setTimeout(() => (copyBtn.textContent = "Kopiér"), 900);
+      }
+    });
+  }
 }
 
 function updateRoomLinks(code){

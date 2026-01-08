@@ -17,13 +17,22 @@
       </div>
       <div class="topbar__right">
         <span id="onlineRoomBadge" class="pill">Rum: –</span>
-        <span id="onlineVersion" class="pill">v0.1.49</span>
+        <span id="onlineVersion" class="pill">v0.1.50</span>
       </div>
     </div>
 
     <main class="container">
       <section class="card">
         <h1 class="h1">Spil</h1>
+
+        <!-- Always show the room code clearly on this page (not only in the top bar) -->
+        <div id="roomCodeDisplay" class="roomcode" style="display:none; margin-top:10px;">
+          <div class="muted" style="font-size:12px;">Rumkode</div>
+          <div class="roomcode__row" style="display:flex; gap:10px; align-items:center; margin-top:6px;">
+            <strong id="roomCodeValue" style="font-size:22px; letter-spacing:1px;">-</strong>
+            <button id="roomCodeCopy" class="btn" type="button">Kopiér</button>
+          </div>
+        </div>
         <p class="muted">Bud og score-oversigt. Når alle bud er sat, skifter spillet automatisk til <b>Runde</b>.</p>
 
         <div class="row gap wrap" style="margin-top:12px;">
