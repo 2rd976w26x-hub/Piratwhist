@@ -18,11 +18,11 @@ html, body { height: 100%; }
 /* === Round table board === */
 
 .playLayout { grid-template-columns: 360px 1fr; }
-.playBoard { min-height: 620px; }
+.playBoard { min-height: 700px; }
 .board {
   position: relative;
   width: 100%;
-  min-height: 620px;
+  min-height: 700px;
   border-radius: 22px;
   background: radial-gradient(ellipse at center, rgba(255,255,255,.08) 0%, rgba(0,0,0,.18) 58%, rgba(0,0,0,.28) 100%);
   border: 1px solid rgba(255,255,255,.08);
@@ -32,8 +32,8 @@ html, body { height: 100%; }
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 300px;
-  height: 300px;
+  width: 380px;
+  height: 380px;
   transform: translate(-50%, -50%);
   border-radius: 999px;
   border: 1px dashed rgba(255,255,255,.14);
@@ -62,13 +62,36 @@ body.page-play .playingcard{ width:84px; height:118px; border-radius:16px; }
 
 .seat{
   position:absolute;
-  width: 200px;
+  width: 170px;
   max-width: 38%;
   padding: 8px 10px;
   border-radius: 18px;
   background: rgba(0,0,0,.10);
   border: 1px solid rgba(255,255,255,.10);
 }
+
+/* During play, minimize seat chrome to maximize board area */
+body.phase-playing .seatBadges .budChip,
+body.phase-playing .seatBadges .totalChip,
+body.phase-between_tricks .seatBadges .budChip,
+body.phase-between_tricks .seatBadges .totalChip{ display:none; }
+
+body.page-play .footer{ display:none; }
+
+/* Bottom bar replaces the removed top header */
+.bottomBar{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 12px;
+  border-radius: 18px;
+  background: rgba(0,0,0,.22);
+  border: 1px solid rgba(255,255,255,.10);
+}
+.bottomLeft,.bottomMid,.bottomRight{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.bottomMid{ justify-content:center; flex: 1; }
+.bottomRight{ justify-content:flex-end; }
 
 /* During actual play we prioritize the board: hide the left panel and let the board take full width */
 body.phase-playing .playersPanel,
@@ -104,10 +127,10 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   opacity: .35;
 }
 
-.seat-top { left: 50%; top: 10px; transform: translateX(-50%); text-align:center; }
-.seat-bottom { left: 50%; bottom: 10px; transform: translateX(-50%); text-align:center; }
-.seat-left { left: 10px; top: 50%; transform: translateY(-50%); }
-.seat-right { right: 10px; top: 50%; transform: translateY(-50%); }
+.seat-top { left: 50%; top: 6px; transform: translateX(-50%); text-align:center; }
+.seat-bottom { left: 50%; bottom: 6px; transform: translateX(-50%); text-align:center; }
+.seat-left { left: 6px; top: 50%; transform: translateY(-50%); }
+.seat-right { right: 6px; top: 50%; transform: translateY(-50%); }
 
 .board .deck{
   position:absolute;
@@ -136,7 +159,7 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   .seat-right { right: 14px; }
   .seat-top { top: auto; left: 14px; bottom: 14px; transform:none; text-align:left; }
   .seat-bottom { left:auto; right:14px; bottom:14px; transform:none; text-align:right; }
-  .centerPile { width: 240px; height: 240px; }
+  .centerPile { width: 280px; height: 280px; }
 }
 @media (max-width: 480px){
   .board { min-height: 380px; }

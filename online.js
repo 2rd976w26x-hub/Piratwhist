@@ -1,7 +1,7 @@
-// Piratwhist Online Multiplayer (v0.2.10)
+// Piratwhist Online Multiplayer (v0.2.11)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.8";
+const APP_VERSION = "0.2.11";
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 // Stable client identity across page navigations (keeps host seat on redirect)
@@ -354,7 +354,11 @@ socket.on("online_state", (payload) => {
   }catch(e){ /* ignore */ }
 
   const rl = el("olRoomLabel"); if (rl) rl.textContent = roomCode || "-";
-  const sl = el("olSeatLabel"); if (sl) sl.textContent = (mySeat===null || mySeat===undefined) ? "-" : `Spiller ${mySeat+1}`;
+  const sl = el("olSeatLabel");
+  if (sl){
+    if (mySeat===null || mySeat===undefined) sl.textContent = "-";
+    else sl.textContent = (state?.names?.[mySeat] ? state.names[mySeat] : `Spiller ${mySeat+1}`);
+  }
   showRoomWarn("");
   showWarn("");
   syncPlayerCount();
@@ -448,6 +452,8 @@ function updateLobbyConfig(){
 
 
 function createRoom(){
+  // Persist the name before navigating/redirecting across pages
+  setStoredName(myName());
   joinInProgress = true;
   socket.emit("online_create_room", {
     clientId: getClientId(),
@@ -459,6 +465,7 @@ function createRoom(){
 function joinRoom(roomOverride){
   const room = normalizeCode(roomOverride ?? el("olRoomCode")?.value);
   if (!room) return;
+  setStoredName(myName());
   joinInProgress = true;
   socket.emit("online_join_room", { room, clientId: getClientId(), name: myName() });
 }
