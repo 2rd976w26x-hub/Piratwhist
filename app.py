@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import random
+import time
 from typing import Any, Dict, List, Optional
 
 from flask import Flask, send_from_directory, request
@@ -24,6 +25,16 @@ rooms: Dict[str, Dict[str, Any]] = {}
 
 # Online multiplayer rooms for /online.html
 ONLINE_ROOMS: Dict[str, Dict[str, Any]] = {}
+ONLINE_EMPTY_TTL_SECONDS = 120  # keep empty rooms briefly (redirects/reloads)
+
+
+def _online_purge_old_rooms():
+    now = time.time()
+    for code, room in list(ONLINE_ROOMS.items()):
+        empty_since = room.get("emptySince")
+        if empty_since and (now - float(empty_since)) > ONLINE_EMPTY_TTL_SECONDS:
+            ONLINE_ROOMS.pop(code, None)
+
 def _room_code() -> str:
     alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # avoid confusing chars
     return "".join(random.choice(alphabet) for _ in range(6))
@@ -545,15 +556,17 @@ def _online_cleanup_sid(sid):
                 pass
             st = room["state"]
             st["names"][seat] = None
-            # if room empty, delete it
+            # if room empty, keep it briefly (redirects/reloads) then purge later
             if not room["members"]:
-                ONLINE_ROOMS.pop(code, None)
+                room["emptySince"] = time.time()
             else:
+                room["emptySince"] = None
                 _online_emit_full_state(code, room)
 
 # ---------- Online multiplayer socket events ----------
 @socketio.on("online_create_room")
 def online_create_room(data):
+    _online_purge_old_rooms()
     name = (data.get("name") or "").strip() or "Spiller 1"
     n_players = int(data.get("players") or 4)
     if n_players < 2 or n_players > 8:
@@ -578,6 +591,7 @@ def online_create_room(data):
 
     room = {
         "code": code,
+        "emptySince": None,
         "members": {request.sid: 0},
         "state": {
             "n": n_players,
@@ -609,6 +623,7 @@ def online_create_room(data):
 
 @socketio.on("online_join_room")
 def online_join_room(data):
+    _online_purge_old_rooms()
     code = (data.get("room") or "").strip()
     name = (data.get("name") or "").strip() or "Spiller"
     if (not code.isdigit()) or len(code) != 4:
@@ -619,6 +634,7 @@ def online_join_room(data):
         emit("error", {"message": "Rum ikke fundet."})
         return
 
+    room[\"emptySince\"] = None
     st = room["state"]
     n = st["n"]
     occupied = set(room["members"].values())
