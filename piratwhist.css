@@ -354,3 +354,23 @@ table.t th{ font-weight:800; color:var(--text); background: rgba(255,255,255,.04
   30%{ transform: translateY(-3px); filter: brightness(1.2); }
   100%{ transform: translateY(0); filter: brightness(1); }
 }
+
+
+.flystack{
+  position: fixed;
+  z-index: 9999;
+  width: 96px;
+  height: 132px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(0,0,0,.28);
+  box-shadow: 0 18px 45px rgba(0,0,0,.55);
+  transform: translate3d(0,0,0) scale(1);
+  transition: transform 2000ms cubic-bezier(.2,.9,.2,1), opacity 2000ms ease;
+  pointer-events: none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight: 900;
+  letter-spacing: .6px;
+}

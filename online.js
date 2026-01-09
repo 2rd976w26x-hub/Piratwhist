@@ -1,7 +1,7 @@
-// Piratwhist Online Multiplayer (v0.2.7)
+// Piratwhist Online Multiplayer (v0.2.8)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.7";
+const APP_VERSION = "0.2.8";
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 // Stable client identity across page navigations (keeps host seat on redirect)
@@ -128,22 +128,68 @@ function runPlayAnimation(seat, cardText){
   const pile = el("olPile");
   const deck = el("olDeck");
   if (!pile) return;
-  const srcEl = document.querySelector(`[data-seat="${seat}"]`) || deck;
+
+  // Prefer a dedicated trick slot on the board (one per seat)
+  const dst = el(`olTrickSlot${seat}`) || pile;
+
+  // Prefer the seat box on the board as source (fallback to deck)
+  const srcEl = document.querySelector(`.board [data-seat="${seat}"]`) ||
+                document.querySelector(`[data-seat="${seat}"]`) ||
+                deck;
   if (!srcEl) return;
+
   const sc = rectCenter(srcEl);
-  const pc = rectCenter(pile);
+  const dc = rectCenter(dst);
+
   const fc = spawnFlyCard(sc.x, sc.y, cardText, false);
-  requestAnimationFrame(()=> flyTo(fc, pc.x, pc.y, 0.96, 1));
-  setTimeout(()=> { fc.style.opacity="0"; setTimeout(()=> fc.remove(), 240); }, 620);
+  // 2 seconds flight time
+  fc.style.transition = "transform 2000ms cubic-bezier(.2,.9,.2,1), opacity 2000ms ease";
+  requestAnimationFrame(()=> flyTo(fc, dc.x, dc.y, 0.98, 1));
+  setTimeout(()=> { fc.style.opacity="0"; setTimeout(()=> fc.remove(), 260); }, 2050);
 }
+
+
+function spawnFlyStack(x, y, label){
+  const d = document.createElement("div");
+  d.className = "flystack";
+  d.style.left = (x - 48) + "px";
+  d.style.top  = (y - 66) + "px";
+  d.textContent = label || "STIK";
+  document.body.appendChild(d);
+  return d;
+}
+
+function runTrickSweepAnimation(winnerSeat){
+  const pile = el("olPile");
+  if (!pile) return;
+  const dst = el(`olSeatPile${winnerSeat}`) ||
+              document.querySelector(`.board [data-seat="${winnerSeat}"]`) ||
+              el("olDeck");
+  if (!dst) return;
+
+  const pc = rectCenter(pile);
+  const dc = rectCenter(dst);
+
+  const fs = spawnFlyStack(pc.x, pc.y, "STIK");
+  // 2 seconds flight time
+  fs.style.transition = "transform 2000ms cubic-bezier(.2,.9,.2,1), opacity 2000ms ease";
+  requestAnimationFrame(()=> flyTo(fs, dc.x, dc.y, 0.88, 0.95));
+  setTimeout(()=> { fs.style.opacity="0"; setTimeout(()=> fs.remove(), 260); }, 2050);
+}
+
 
 function highlightWinner(){
   const w = state?.winner;
   if (w === null || w === undefined) return;
+
+  const els = [];
   const cardEl = document.querySelector(`#olTable [data-seat-card="${w}"]`);
-  if (!cardEl) return;
-  cardEl.classList.add("winnerGlow");
-  setTimeout(()=> cardEl.classList.remove("winnerGlow"), 950);
+  if (cardEl) els.push(cardEl);
+  const slot = el(`olTrickSlot${w}`);
+  if (slot) els.push(slot);
+
+  els.forEach(e=> e.classList.add("winnerGlow"));
+  setTimeout(()=> els.forEach(e=> e.classList.remove("winnerGlow")), 950);
 }
 
 
@@ -499,9 +545,20 @@ function maybeRunAnimations(){
     }
   }
 
-  // Winner highlight when trick completes
+  // Winner + sweep when trick completes
   if (prevState && prevState.phase !== state.phase){
     if (state.phase === "between_tricks" || state.phase === "round_finished"){
+      // Animate the trick to the winner once per trick
+      try{
+        const sig = JSON.stringify(prevState.table || state.table || []);
+        const key = `${roomCode}|${state.roundIndex}|${state.winner}|${sig}`;
+        window.__pwSweepDone = window.__pwSweepDone || {};
+        if (!window.__pwSweepDone[key]){
+          window.__pwSweepDone[key] = true;
+          setTimeout(()=> runTrickSweepAnimation(state.winner), 30);
+        }
+      }catch(e){ /* ignore */ }
+
       setTimeout(highlightWinner, 120);
     }
   }
@@ -575,39 +632,97 @@ function render(){
   // bidding UI
   renderBidUI(cardsPer);
 
-  // table
-  const table = el("olTable");
-  if (table){
-    table.innerHTML = "";
-    table.style.gridTemplateColumns = `repeat(${Math.min(4,state.n)}, minmax(140px, 1fr))`;
+  // Round table board (play page)
+  if (el("olCenter")){
+    const bids = state.bids || [];
+    const taken = state.tricksRound || [];
+    const total = state.tricksTotal || [];
+
     for (let i=0;i<state.n;i++){
-      const slot = document.createElement("div");
-      slot.className = "slot";
+      const nm = el(`olSeatName${i}`);
+      if (nm) nm.textContent = state.names[i] || ("Spiller " + (i+1));
+      const b = el(`olSeatBid${i}`);
+      if (b) b.textContent = (bids[i]===null || bids[i]===undefined) ? "—" : String(bids[i]);
+      const tr = el(`olSeatTricks${i}`);
+      if (tr) tr.textContent = String(taken[i] ?? 0);
+      const tt = el(`olSeatTotal${i}`);
+      if (tt) tt.textContent = String(total[i] ?? 0);
 
-      const nm = document.createElement("div");
-      nm.className = "name";
-      const totalTricks = (state.tricksTotal && state.tricksTotal[i] !== undefined) ? state.tricksTotal[i] : 0;
-      const roundTricks = (state.tricksRound && state.tricksRound[i] !== undefined) ? state.tricksRound[i] : 0;
-      nm.textContent = `${state.names[i] || ("Spiller " + (i+1))} · runde: ${roundTricks} · total: ${totalTricks}`;
-
-      const cd = document.createElement("div");
-      cd.className = "card";
-      const c = state.table ? state.table[i] : null;
-      if (c){
-        const ce = makeCardEl(c);
-        ce.disabled = true;
-        cd.appendChild(ce.firstChild);
-      } else {
-        cd.textContent = "—";
+      const slot = el(`olTrickSlot${i}`);
+      if (slot){
+        slot.innerHTML = "";
+        const c = state.table ? state.table[i] : null;
+        if (c){
+          const ce = makeCardEl(c);
+          ce.disabled = true;
+          slot.appendChild(ce.firstChild);
+        }
       }
-
-      slot.appendChild(nm);
-      slot.appendChild(cd);
-      table.appendChild(slot);
     }
   }
 
-  // my hand only
+
+  // table
+  const table = el("olTable");
+  if (table){
+    const isPlayPage = !!el("olCenter");
+    table.innerHTML = "";
+
+    if (isPlayPage){
+      // Compact scoreboard (prevents overflow into the board column)
+      const bids = state.bids || [];
+      const taken = state.tricksRound || [];
+      const total = state.tricksTotal || [];
+      const wrap = document.createElement("div");
+      wrap.className = "scoreMini";
+
+      const head = document.createElement("div");
+      head.className = "sub small";
+      head.textContent = "Bud · stik (runde) · total";
+      wrap.appendChild(head);
+
+      for (let i=0;i<state.n;i++){
+        const row = document.createElement("div");
+        row.className = "scoreRow";
+        const nm = state.names[i] || ("Spiller " + (i+1));
+        const b  = (bids[i]===null || bids[i]===undefined) ? "—" : bids[i];
+        const tr = taken[i] ?? 0;
+        const tt = total[i] ?? 0;
+        row.innerHTML = `<b>${nm}</b><span class="pill tiny">Bud: ${b}</span><span class="pill tiny">Stik: ${tr}</span><span class="pill tiny ghost">Total: ${tt}</span>`;
+        table.appendChild(row);
+      }
+    } else {
+      // Original table with current trick cards (used on other pages)
+      table.style.gridTemplateColumns = `repeat(${Math.min(4,state.n)}, minmax(140px, 1fr))`;
+      for (let i=0;i<state.n;i++){
+        const slot = document.createElement("div");
+        slot.className = "slot";
+
+        const nm = document.createElement("div");
+        nm.className = "name";
+        const totalTricks = (state.tricksTotal && state.tricksTotal[i] !== undefined) ? state.tricksTotal[i] : 0;
+        const roundTricks = (state.tricksRound && state.tricksRound[i] !== undefined) ? state.tricksRound[i] : 0;
+        nm.textContent = `${state.names[i] || ("Spiller " + (i+1))} · runde: ${roundTricks} · total: ${totalTricks}`;
+
+        const cd = document.createElement("div");
+        cd.className = "card";
+        const c = state.table ? state.table[i] : null;
+        if (c){
+          const ce = makeCardEl(c);
+          ce.disabled = true;
+          cd.appendChild(ce.firstChild);
+        } else {
+          cd.textContent = "—";
+        }
+
+        slot.appendChild(nm);
+        slot.appendChild(cd);
+        table.appendChild(slot);
+      }
+    }
+  }
+
+// my hand only
   const hands = el("olHands");
   if (hands){
     hands.innerHTML = "";

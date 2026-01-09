@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.2.7 · Spil</title>
+  <title>Piratwhist v0.2.8 · Spil</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
   <link rel="stylesheet" href="/online_pages.css" />
@@ -13,7 +13,7 @@
     <header class="top">
       <div>
         <div class="title">Piratwhist</div>
-        <div class="sub">Online · Spil · v0.2.7</div>
+        <div class="sub">Online · Spil · v0.2.8</div>
       </div>
       <div class="pill">Rum: <span id="olRoomLabel">-</span></div>
       <div class="pill">Du er: <span id="olSeatLabel">-</span></div>
@@ -29,8 +29,8 @@
   </div>
 </section>
 
-<div class="twoCol">
-  <section class="card tight panel">
+<div class="twoCol playLayout">
+  <section class="card tight panel playersPanel">
     <h2>Spillere</h2>
     <div id="olTable" class="table"></div>
     <div class="hsep"></div>
@@ -41,11 +41,59 @@
     </div>
   </section>
 
-  <section class="card tight panel centerArea">
+  <section class="card tight panel centerArea boardPanel">
     <h2>Spillebord</h2>
     <div id="olCenter" class="center playBoard">
-      <div class="deck" id="olDeck" title="Kortbunke"></div>
-      <div class="pile" id="olPile" title="Stik-pulje"></div>
+      <div class="board">
+        <div class="seat seat-top" data-seat="2">
+          <div class="seatName" id="olSeatName2">-</div>
+          <div class="seatBadges">
+            <span class="chip">Bud: <span id="olSeatBid2">—</span></span>
+            <span class="chip">Stik: <span id="olSeatTricks2">0</span></span>
+            <span class="chip ghost">Total: <span id="olSeatTotal2">0</span></span>
+          </div>
+          <div class="seatPile" id="olSeatPile2" title="Stik vundet"></div>
+        </div>
+
+        <div class="seat seat-left" data-seat="1">
+          <div class="seatName" id="olSeatName1">-</div>
+          <div class="seatBadges">
+            <span class="chip">Bud: <span id="olSeatBid1">—</span></span>
+            <span class="chip">Stik: <span id="olSeatTricks1">0</span></span>
+            <span class="chip ghost">Total: <span id="olSeatTotal1">0</span></span>
+          </div>
+          <div class="seatPile" id="olSeatPile1" title="Stik vundet"></div>
+        </div>
+
+        <div class="seat seat-right" data-seat="3">
+          <div class="seatName" id="olSeatName3">-</div>
+          <div class="seatBadges">
+            <span class="chip">Bud: <span id="olSeatBid3">—</span></span>
+            <span class="chip">Stik: <span id="olSeatTricks3">0</span></span>
+            <span class="chip ghost">Total: <span id="olSeatTotal3">0</span></span>
+          </div>
+          <div class="seatPile" id="olSeatPile3" title="Stik vundet"></div>
+        </div>
+
+        <div class="seat seat-bottom" data-seat="0">
+          <div class="seatName" id="olSeatName0">-</div>
+          <div class="seatBadges">
+            <span class="chip">Bud: <span id="olSeatBid0">—</span></span>
+            <span class="chip">Stik: <span id="olSeatTricks0">0</span></span>
+            <span class="chip ghost">Total: <span id="olSeatTotal0">0</span></span>
+          </div>
+          <div class="seatPile" id="olSeatPile0" title="Stik vundet"></div>
+        </div>
+
+        <div class="deck" id="olDeck" title="Kortbunke"></div>
+
+        <div class="pile centerPile" id="olPile" title="Stik (midt)">
+          <div class="played played-top" id="olTrickSlot2"></div>
+          <div class="played played-left" id="olTrickSlot1"></div>
+          <div class="played played-right" id="olTrickSlot3"></div>
+          <div class="played played-bottom" id="olTrickSlot0"></div>
+        </div>
+      </div>
     </div>
 
     <div class="card tight handDock" style="margin:0;">
@@ -62,7 +110,7 @@
       <div class="brand">
         <div class="logo">🏴‍☠️</div>
         <div>
-          <div class="title">Piratwhist <span class="ver">v0.2.7</span></div>
+          <div class="title">Piratwhist <span class="ver">v0.2.8</span></div>
           <div class="sub">Online spil · spar er trumf · bekend kulør</div>
         </div>
       </div>

@@ -13,3 +13,136 @@ html, body { height: 100%; }
 .handDock { margin-top: auto; }
 .centerArea { display:flex; flex-direction:column; gap:12px; }
 .playBoard { flex:1; min-height: 220px; }
+
+
+/* === Round table board === */
+
+.playLayout { grid-template-columns: 360px 1fr; }
+.playBoard { min-height: 420px; }
+.board {
+  position: relative;
+  width: 100%;
+  min-height: 420px;
+  border-radius: 22px;
+  background: radial-gradient(ellipse at center, rgba(255,255,255,.08) 0%, rgba(0,0,0,.18) 58%, rgba(0,0,0,.28) 100%);
+  border: 1px solid rgba(255,255,255,.08);
+  overflow: hidden;
+}
+.centerPile {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 180px;
+  height: 180px;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  border: 1px dashed rgba(255,255,255,.14);
+  background: rgba(0,0,0,.12);
+}
+.played {
+  position: absolute;
+  width: 74px;
+  height: 104px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.played :is(button,.cardEl){
+  transform: scale(1.06);
+}
+.played-top { left: 50%; top: 12px; transform: translateX(-50%); }
+.played-bottom { left: 50%; bottom: 12px; transform: translateX(-50%); }
+.played-left { left: 12px; top: 50%; transform: translateY(-50%); }
+.played-right { right: 12px; top: 50%; transform: translateY(-50%); }
+
+.seat{
+  position:absolute;
+  width: 240px;
+  max-width: 42%;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgba(0,0,0,.16);
+  border: 1px solid rgba(255,255,255,.10);
+}
+.seatName{ font-weight: 800; letter-spacing: .2px; }
+.seatBadges{ margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
+.chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 8px;
+  border-radius: 999px;
+  font-size: .86rem;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.chip.ghost{ opacity: .75; }
+.seatPile{
+  margin-top: 8px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.08);
+  position: relative;
+  overflow:hidden;
+}
+.seatPile::after{
+  content: "";
+  position:absolute; inset:0;
+  background: linear-gradient(90deg, rgba(255,255,255,.12), rgba(255,255,255,0));
+  opacity: .35;
+}
+
+.seat-top { left: 50%; top: 14px; transform: translateX(-50%); text-align:center; }
+.seat-bottom { left: 50%; bottom: 14px; transform: translateX(-50%); text-align:center; }
+.seat-left { left: 14px; top: 50%; transform: translateY(-50%); }
+.seat-right { right: 14px; top: 50%; transform: translateY(-50%); }
+
+.board .deck{
+  position:absolute;
+  right: 18px;
+  bottom: 18px;
+  width: 72px;
+  height: 102px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.22);
+}
+
+/* Prevent overflow in the left panel on the play page */
+.playersPanel .table .slot .name { white-space: normal; }
+.playersPanel .table { overflow: hidden; }
+
+/* Mobile */
+@media (max-width: 860px){
+  .playLayout { grid-template-columns: 1fr; }
+  .boardPanel { order: 1; }
+  .playersPanel { order: 2; }
+  .board { min-height: 360px; }
+  .seat { width: 46%; max-width: 46%; padding: 8px 10px; }
+  .seat-left, .seat-right { top: 14px; transform: none; }
+  .seat-left { left: 14px; }
+  .seat-right { right: 14px; }
+  .seat-top { top: auto; left: 14px; bottom: 14px; transform:none; text-align:left; }
+  .seat-bottom { left:auto; right:14px; bottom:14px; transform:none; text-align:right; }
+  .centerPile { width: 160px; height: 160px; }
+}
+@media (max-width: 480px){
+  .board { min-height: 320px; }
+  .seat { font-size: .92rem; }
+  .chip { font-size: .78rem; padding: 3px 7px; }
+  .centerPile { width: 140px; height: 140px; }
+  .played { width: 66px; height: 94px; }
+}
+
+.scoreRow{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.scoreRow:last-child{ border-bottom: none; }
+.pill.tiny{ padding: 3px 8px; font-size: .82rem; }
