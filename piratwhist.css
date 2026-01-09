@@ -315,11 +315,17 @@ table.t th{ font-weight:800; color:var(--text); background: rgba(255,255,255,.04
   box-shadow: 0 14px 35px rgba(0,0,0,.45);
   transform: translate3d(0,0,0) scale(1);
   transition: transform 520ms cubic-bezier(.2,.9,.2,1), opacity 520ms ease;
+  will-change: transform, opacity;
   pointer-events: none;
 }
 
 /* When we render a real playingcard inside a flycard, make the container transparent */
-.flycard.cardface{ background: transparent; border: none; box-shadow: none; }
+.flycard.cardface{
+  background: transparent;
+  border: none;
+  /* Keep a subtle shadow so the flight is visible */
+  box-shadow: 0 14px 35px rgba(0,0,0,.45);
+ }
 .flycard.back::after{
   content:"🏴‍☠️";
   position:absolute;

@@ -1,7 +1,7 @@
-// Piratwhist Online Multiplayer (v0.2.11)
+// Piratwhist Online Multiplayer (v0.2.12)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.11";
+const APP_VERSION = "0.2.12";
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 // Stable client identity across page navigations (keeps host seat on redirect)
@@ -113,6 +113,28 @@ function flyTo(elm, tx, ty, scale, opacity){
   if (opacity !== undefined) elm.style.opacity = String(opacity);
 }
 
+function flyArc(elm, tx, ty, opts){
+  const hw = parseFloat(elm.dataset.hw || "32");
+  const hh = parseFloat(elm.dataset.hh || "45");
+  const sx = parseFloat(elm.style.left) + hw;
+  const sy = parseFloat(elm.style.top) + hh;
+  const dx = tx - sx;
+  const dy = ty - sy;
+
+  const dur = (opts && opts.duration) ? opts.duration : 2400;
+  const peak = (opts && typeof opts.peak === "number") ? opts.peak : Math.max(26, Math.min(70, Math.abs(dy) * 0.18));
+  const rot  = (opts && typeof opts.rotate === "number") ? opts.rotate : (dx >= 0 ? 6 : -6);
+  const scl  = (opts && typeof opts.scale === "number") ? opts.scale : 0.98;
+  const easing = (opts && opts.easing) ? opts.easing : "cubic-bezier(.18,.92,.22,1)";
+
+  // WAAPI animation so we can create a visible arc and ensure the card is clearly flying.
+  elm.animate([
+    { transform: `translate3d(0px, 0px, 0) rotate(0deg) scale(1)` },
+    { transform: `translate3d(${dx*0.55}px, ${dy*0.55 - peak}px, 0) rotate(${rot*0.7}deg) scale(${(1+scl)/2})` },
+    { transform: `translate3d(${dx}px, ${dy}px, 0) rotate(${rot}deg) scale(${scl})` },
+  ], { duration: dur, easing, fill: "forwards" });
+}
+
 function runDealAnimation(){
   const deck = el("olDeck");
   if (!deck) return;
@@ -166,11 +188,18 @@ function runPlayAnimation(seat, cardObj, srcRect){
   }
   const dc = rectCenter(dst);
 
+  // Hide destination slot until the flight completes (prevents the "teleport" look)
+  if (dst && dst.style) dst.style.opacity = "0";
+
   const fc = spawnFlyCard(sc.x, sc.y, cardObj, false);
-  // 2 seconds flight time
-  fc.style.transition = "transform 2000ms cubic-bezier(.2,.9,.2,1), opacity 2000ms ease";
-  requestAnimationFrame(()=> flyTo(fc, dc.x, dc.y, 0.98, 1));
-  setTimeout(()=> { fc.style.opacity="0"; setTimeout(()=> fc.remove(), 260); }, 2050);
+  // Slightly slower + arc so it is clearly visible
+  fc.style.opacity = "1";
+  flyArc(fc, dc.x, dc.y, { duration: 3000, rotate: (seat === 0 ? -4 : 4), scale: 1.0 });
+  setTimeout(()=> {
+    if (dst && dst.style) dst.style.opacity = "";
+    fc.style.opacity = "0";
+    setTimeout(()=> fc.remove(), 260);
+  }, 3080);
 }
 
 
@@ -217,11 +246,14 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
     // Hide the real card while the ghost animates (prevents double-vision)
     slot.style.opacity = "0";
 
-    ghost.style.transition = "transform 2000ms cubic-bezier(.2,.9,.2,1), opacity 2000ms ease";
     // Small per-seat offset so the 4 cards don't perfectly overlap at the destination
-    const off = (seat - 1.5) * 8;
-    requestAnimationFrame(()=> flyTo(ghost, dc.x + off, dc.y, 0.92, 1));
-    setTimeout(()=> { ghost.style.opacity = "0"; setTimeout(()=> ghost.remove(), 260); }, 2050);
+    const off = (seat - 1.5) * 10;
+    ghost.style.opacity = "1";
+    flyArc(ghost, dc.x + off, dc.y, { duration: 3000, rotate: (seat%2 ? 8 : -8), scale: 0.94 });
+    setTimeout(()=> {
+      ghost.style.opacity = "0";
+      setTimeout(()=> ghost.remove(), 260);
+    }, 3080);
   }
 
   // Restore opacity so future tricks render normally
@@ -230,7 +262,7 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
       const slot = el(`olTrickSlot${seat}`);
       if (slot) slot.style.opacity = "";
     }
-  }, 2100);
+  }, 3120);
 }
 
 
