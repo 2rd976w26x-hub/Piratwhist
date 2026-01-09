@@ -1,7 +1,7 @@
-// Piratwhist Online Multiplayer (v0.2.3)
+// Piratwhist Online Multiplayer (v0.2.4)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.3";
+const APP_VERSION = "0.2.4";
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 function el(id){ return document.getElementById(id); }
@@ -263,13 +263,16 @@ function botCount(){
 function syncBotCount(){
   const sel = el("olBotCount");
   if (!sel) return;
+  const isHost = (mySeat === 0);
+  const inLobby = (state && state.phase === "lobby");
   if (roomCode && state && Array.isArray(state.botSeats)){
     sel.value = String(state.botSeats.length);
-    sel.disabled = true;
+    // Host may change bot count while alone in lobby
+    sel.disabled = !(isHost && inLobby);
   } else {
     sel.disabled = false;
-    populateBotOptions();
   }
+  populateBotOptions();
 }
 
 
@@ -277,12 +280,27 @@ function syncBotCount(){
 function syncPlayerCount(){
   const sel = el("olPlayerCount");
   if (!sel) return;
+  const isHost = (mySeat === 0);
+  const inLobby = (state && state.phase === "lobby");
   if (roomCode && state && typeof state.n === "number"){
     sel.value = String(state.n);
-    sel.disabled = true; // room decides player count
+    // Host may change player count while alone in lobby
+    sel.disabled = !(isHost && inLobby);
   } else {
     sel.disabled = false;
   }
+}
+
+function updateLobbyConfig(){
+  if (!roomCode) return;
+  if (!state || state.phase !== "lobby") return;
+  if (mySeat !== 0) return;
+  socket.emit("online_update_lobby", {
+    room: roomCode,
+    players: playerCount(),
+    bots: botCount(),
+    name: myName(),
+  });
 }
 
 
@@ -603,8 +621,21 @@ el("olLeaveRoom")?.addEventListener("click", leaveRoom);
 el("olStartOnline")?.addEventListener("click", startOnline);
 el("olNextRound")?.addEventListener("click", onNext);
 el("olBidSubmit")?.addEventListener("click", submitBid);
-el("olPlayerCount")?.addEventListener("change", () => { populateBotOptions(); render(); });
+el("olPlayerCount")?.addEventListener("change", () => {
+  populateBotOptions();
+  updateLobbyConfig();
+  render();
+});
 
 render();
 
-el("olBotCount")?.addEventListener("change", () => render());
+el("olBotCount")?.addEventListener("change", () => {
+  updateLobbyConfig();
+  render();
+});
+
+// Update host name in lobby (and keep server state in sync)
+el("olMyName")?.addEventListener("blur", () => {
+  updateLobbyConfig();
+  render();
+});

@@ -710,6 +710,81 @@ def online_start_game(data):
     if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
         _online_schedule_bot_turn(code)
 
+
+@socketio.on("online_update_lobby")
+def online_update_lobby(data):
+    """Host-only lobby configuration.
+
+    Allows changing player count and bot count while phase is 'lobby'.
+    Safety rules:
+      - Only seat 0 (host) may change config
+      - Only allowed while only the host is connected (no other humans)
+      - Only allowed in lobby phase
+    """
+    _online_purge_old_rooms()
+    code = (data.get("room") or "").strip()
+    room = ONLINE_ROOMS.get(code)
+    if not room:
+        emit("error", {"message": "Rum ikke fundet."})
+        return
+
+    seat = room["members"].get(request.sid)
+    if seat != 0:
+        emit("error", {"message": "Kun værten kan ændre opsætningen."})
+        return
+
+    st = room["state"]
+    if st.get("phase") != "lobby":
+        return
+
+    # If other humans are connected, don't allow reshaping seats.
+    if len(room["members"]) > 1:
+        emit("error", {"message": "Kan ikke ændre opsætning når andre spillere er i rummet."})
+        return
+
+    n_players = int(data.get("players") or st.get("n") or 4)
+    if n_players < 2 or n_players > 8:
+        n_players = 4
+
+    bots = int(data.get("bots") or 0)
+    if bots < 0:
+        bots = 0
+    if bots > n_players - 1:
+        bots = n_players - 1
+
+    # Rebuild state arrays to match new n.
+    host_name = (data.get("name") or st.get("names") or ["Spiller 1"])[0] if st.get("names") else (data.get("name") or "Spiller 1")
+    host_name = (host_name or "").strip() or "Spiller 1"
+
+    names = [None for _ in range(n_players)]
+    names[0] = host_name
+
+    bot_seats = set(range(1, 1 + bots))
+    for i, s in enumerate(sorted(list(bot_seats))):
+        names[s] = f"Computer {i+1}"
+
+    room["state"] = {
+        "n": n_players,
+        "names": names,
+        "botSeats": bot_seats,
+        "roundIndex": 0,
+        "leader": 0,
+        "turn": 0,
+        "leadSuit": None,
+        "table": [None for _ in range(n_players)],
+        "winner": None,
+        "phase": "lobby",
+        "hands": [None for _ in range(n_players)],
+        "bids": [None for _ in range(n_players)],
+        "tricksRound": [0 for _ in range(n_players)],
+        "tricksTotal": [0 for _ in range(n_players)],
+        "pointsTotal": [0 for _ in range(n_players)],
+        "history": [],
+        "autoNextDoneFor": None,
+    }
+
+    _online_emit_full_state(code, room)
+
 @socketio.on("online_set_bid")
 def online_set_bid(data):
     code = (data.get("room") or "").strip()
