@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.8)
+// Piratwhist Online Multiplayer (v0.2.9)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const APP_VERSION = "0.2.8";
@@ -66,19 +66,30 @@ function rectCenter(elm){
   return { x: r.left + r.width/2, y: r.top + r.height/2, w: r.width, h: r.height };
 }
 
-function spawnFlyCard(x, y, faceText, isBack){
+function spawnFlyCard(x, y, cardOrText, isBack){
   const d = document.createElement("div");
+  const w = 72, h = 102;
+  d.dataset.hw = String(w/2);
+  d.dataset.hh = String(h/2);
   d.className = "flycard" + (isBack ? " back" : " cardface");
-  d.style.left = (x - 32) + "px";
-  d.style.top  = (y - 45) + "px";
+  d.style.left = (x - w/2) + "px";
+  d.style.top  = (y - h/2) + "px";
+
   if (!isBack){
-    d.textContent = faceText;
-    // add trump badge if spade
-    if (faceText.includes("♠")){
-      const b = document.createElement("div");
-      b.className = "badge";
-      b.textContent = "TRUMF";
-      d.appendChild(b);
+    // Render a real playingcard so you can actually see it fly.
+    // Accept either {rank,suit} or a compact string like "Q♣".
+    let card = null;
+    if (cardOrText && typeof cardOrText === "object") card = cardOrText;
+    else if (typeof cardOrText === "string" && cardOrText.length >= 2){
+      const suit = cardOrText.slice(-1);
+      const rank = cardOrText.slice(0, -1);
+      card = { rank, suit };
+    }
+    if (card){
+      const btn = makeCardEl(card);
+      const face = btn.firstChild;
+      face.style.transform = "none";
+      d.appendChild(face);
     }
   }
   document.body.appendChild(d);
@@ -86,8 +97,10 @@ function spawnFlyCard(x, y, faceText, isBack){
 }
 
 function flyTo(elm, tx, ty, scale, opacity){
-  const dx = tx - (parseFloat(elm.style.left) + 32);
-  const dy = ty - (parseFloat(elm.style.top) + 45);
+  const hw = parseFloat(elm.dataset.hw || "32");
+  const hh = parseFloat(elm.dataset.hh || "45");
+  const dx = tx - (parseFloat(elm.style.left) + hw);
+  const dy = ty - (parseFloat(elm.style.top) + hh);
   elm.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(${scale})`;
   if (opacity !== undefined) elm.style.opacity = String(opacity);
 }
@@ -124,7 +137,7 @@ function runDealAnimation(){
   }
 }
 
-function runPlayAnimation(seat, cardText){
+function runPlayAnimation(seat, cardObj, srcRect){
   const pile = el("olPile");
   const deck = el("olDeck");
   if (!pile) return;
@@ -133,15 +146,19 @@ function runPlayAnimation(seat, cardText){
   const dst = el(`olTrickSlot${seat}`) || pile;
 
   // Prefer the seat box on the board as source (fallback to deck)
-  const srcEl = document.querySelector(`.board [data-seat="${seat}"]`) ||
-                document.querySelector(`[data-seat="${seat}"]`) ||
-                deck;
-  if (!srcEl) return;
-
-  const sc = rectCenter(srcEl);
+  let sc = null;
+  if (srcRect && typeof srcRect.left === "number"){
+    sc = { x: srcRect.left + srcRect.width/2, y: srcRect.top + srcRect.height/2 };
+  } else {
+    const srcEl = document.querySelector(`.board [data-seat="${seat}"]`) ||
+                  document.querySelector(`[data-seat="${seat}"]`) ||
+                  deck;
+    if (!srcEl) return;
+    sc = rectCenter(srcEl);
+  }
   const dc = rectCenter(dst);
 
-  const fc = spawnFlyCard(sc.x, sc.y, cardText, false);
+  const fc = spawnFlyCard(sc.x, sc.y, cardObj, false);
   // 2 seconds flight time
   fc.style.transition = "transform 2000ms cubic-bezier(.2,.9,.2,1), opacity 2000ms ease";
   requestAnimationFrame(()=> flyTo(fc, dc.x, dc.y, 0.98, 1));
@@ -159,7 +176,7 @@ function spawnFlyStack(x, y, label){
   return d;
 }
 
-function runTrickSweepAnimation(winnerSeat){
+function runTrickSweepAnimation(winnerSeat, cardsBySeat){
   const pile = el("olPile");
   if (!pile) return;
   const dst = el(`olSeatPile${winnerSeat}`) ||
@@ -167,14 +184,45 @@ function runTrickSweepAnimation(winnerSeat){
               el("olDeck");
   if (!dst) return;
 
-  const pc = rectCenter(pile);
   const dc = rectCenter(dst);
+  const cards = Array.isArray(cardsBySeat) ? cardsBySeat : [];
 
-  const fs = spawnFlyStack(pc.x, pc.y, "STIK");
-  // 2 seconds flight time
-  fs.style.transition = "transform 2000ms cubic-bezier(.2,.9,.2,1), opacity 2000ms ease";
-  requestAnimationFrame(()=> flyTo(fs, dc.x, dc.y, 0.88, 0.95));
-  setTimeout(()=> { fs.style.opacity="0"; setTimeout(()=> fs.remove(), 260); }, 2050);
+  // Fly every card from its slot in the center pile to the winner.
+  for (let seat=0; seat<cards.length; seat++){
+    const c = cards[seat];
+    if (!c) continue;
+    const slot = el(`olTrickSlot${seat}`);
+    if (!slot) continue;
+    const face = slot.querySelector(".playingcard");
+    if (!face) continue;
+
+    const sc = rectCenter(slot);
+    const ghost = document.createElement("div");
+    ghost.className = "flycard cardface";
+    ghost.dataset.hw = String(72/2);
+    ghost.dataset.hh = String(102/2);
+    ghost.style.left = (sc.x - 72/2) + "px";
+    ghost.style.top  = (sc.y - 102/2) + "px";
+    ghost.appendChild(face.cloneNode(true));
+    document.body.appendChild(ghost);
+
+    // Hide the real card while the ghost animates (prevents double-vision)
+    slot.style.opacity = "0";
+
+    ghost.style.transition = "transform 2000ms cubic-bezier(.2,.9,.2,1), opacity 2000ms ease";
+    // Small per-seat offset so the 4 cards don't perfectly overlap at the destination
+    const off = (seat - 1.5) * 8;
+    requestAnimationFrame(()=> flyTo(ghost, dc.x + off, dc.y, 0.92, 1));
+    setTimeout(()=> { ghost.style.opacity = "0"; setTimeout(()=> ghost.remove(), 260); }, 2050);
+  }
+
+  // Restore opacity so future tricks render normally
+  setTimeout(()=>{
+    for (let seat=0; seat<4; seat++){
+      const slot = el(`olTrickSlot${seat}`);
+      if (slot) slot.style.opacity = "";
+    }
+  }, 2100);
 }
 
 
@@ -289,6 +337,13 @@ socket.on("online_state", (payload) => {
   if (payload.seat !== null && payload.seat !== undefined) mySeat = payload.seat;
   prevState = state;
   state = payload.state;
+
+  // Expose the current phase to CSS (for responsive layout + hiding side panels during play)
+  try{
+    const phases = ["lobby","bidding","playing","between_tricks","round_finished","game_finished"];
+    phases.forEach(p=> document.body.classList.remove(`phase-${p}`));
+    if (state?.phase) document.body.classList.add(`phase-${state.phase}`);
+  }catch(e){ /* ignore */ }
 
   const rl = el("olRoomLabel"); if (rl) rl.textContent = roomCode || "-";
   const sl = el("olSeatLabel"); if (sl) sl.textContent = (mySeat===null || mySeat===undefined) ? "-" : `Spiller ${mySeat+1}`;
@@ -540,7 +595,10 @@ function maybeRunAnimations(){
       const a = prevState.table[i];
       const b = state.table[i];
       if (!a && b){
-        runPlayAnimation(i, `${b.rank}${b.suit}`);
+        const lp = window.__pwLastPlayed;
+        const useRect = (lp && lp.seat===i && lp.key===`${b.rank}${b.suit}`) ? lp.rect : null;
+        runPlayAnimation(i, b, useRect);
+        if (useRect) window.__pwLastPlayed = null;
       }
     }
   }
@@ -555,7 +613,7 @@ function maybeRunAnimations(){
         window.__pwSweepDone = window.__pwSweepDone || {};
         if (!window.__pwSweepDone[key]){
           window.__pwSweepDone[key] = true;
-          setTimeout(()=> runTrickSweepAnimation(state.winner), 30);
+          setTimeout(()=> runTrickSweepAnimation(state.winner, prevState.table || state.table || []), 30);
         }
       }catch(e){ /* ignore */ }
 
@@ -735,7 +793,9 @@ function render(){
       const head = document.createElement("div");
       head.className = "head";
       const left = document.createElement("div");
-      left.innerHTML = `<b>Din hånd</b> <span class="sub">(${mine.length} kort)</span>`;
+      const isPlayPage = document.body.classList.contains("page-play");
+      left.innerHTML = isPlayPage ? `<span class="sub">${mine.length} kort</span>`
+                                : `<b>Din hånd</b> <span class="sub">(${mine.length} kort)</span>`;
       const right = document.createElement("div");
       right.className = "sub";
       right.textContent = (state.turn===mySeat && state.phase==="playing") ? "Din tur" : "";
@@ -746,7 +806,11 @@ function render(){
       for (const c of mine){
         const b = makeCardEl(c);
         b.disabled = !isPlayable(c);
-        b.addEventListener("click", ()=>playCard(`${c.rank}${c.suit}`));
+        b.addEventListener("click", () => {
+          // Save a precise start position for the fly-in animation (only for your own plays)
+          window.__pwLastPlayed = { seat: mySeat, key: `${c.rank}${c.suit}`, rect: b.getBoundingClientRect() };
+          playCard(`${c.rank}${c.suit}`);
+        });
         cards.appendChild(b);
       }
 
