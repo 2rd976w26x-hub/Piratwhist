@@ -1,7 +1,7 @@
-// Piratwhist Online Multiplayer (v0.2.6)
+// Piratwhist Online Multiplayer (v0.2.7)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.6";
+const APP_VERSION = "0.2.7";
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 // Stable client identity across page navigations (keeps host seat on redirect)
@@ -219,8 +219,6 @@ let roomCode = null;
 let mySeat = null;
 let state = null;
 let prevState = null;
-let joinInProgress = false;
-let joinInProgress = false;
 
 socket.on("connect", () => {
   const s = el("olRoomStatus");
