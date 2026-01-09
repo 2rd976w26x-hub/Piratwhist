@@ -1,8 +1,8 @@
-// Piratwhist Online Multiplayer (v0.2.18)
+// Piratwhist Online Multiplayer (v0.2.19)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.18";
-// v0.2.18: Only winner sweep animation. No per-card flying during normal play.
+const APP_VERSION = "0.2.19";
+// v0.2.19: Only winner sweep animation. No per-card flying during normal play.
 const ENABLE_FLY = false;
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
@@ -33,7 +33,7 @@ let joinInProgress = false;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.18: dynamic round-table board (2–8 players) ---
+// --- v0.2.19: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 
 function ensurePlayBoard(n){
