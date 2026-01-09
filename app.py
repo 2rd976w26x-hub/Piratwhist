@@ -883,6 +883,12 @@ def online_set_bid(data):
 
     _online_emit_full_state(code, room)
 
+    # If the bidding phase just transitioned into playing and it is a bot's
+    # turn (very common with 2 players when the leader rotates each round),
+    # we must schedule the bot's opening lead immediately.
+    if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
+        _online_schedule_bot_turn(code)
+
 @socketio.on("online_play_card")
 def online_play_card(data):
     code = (data.get("room") or "").strip()

@@ -1,8 +1,8 @@
-// Piratwhist Online Multiplayer (v0.2.17)
+// Piratwhist Online Multiplayer (v0.2.18)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.17";
-// v0.2.17: Only winner sweep animation. No per-card flying during normal play.
+const APP_VERSION = "0.2.18";
+// v0.2.18: Only winner sweep animation. No per-card flying during normal play.
 const ENABLE_FLY = false;
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
@@ -33,7 +33,7 @@ let joinInProgress = false;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.17: dynamic round-table board (2–8 players) ---
+// --- v0.2.18: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 
 function ensurePlayBoard(n){
@@ -886,21 +886,23 @@ function maybeRunAnimations(){
     }catch(e){ /* ignore */ }
   }
 
-  // Winner + sweep when trick completes
-  if (prevState && prevState.phase !== state.phase){
-    if (state.phase === "between_tricks" || state.phase === "round_finished"){
-      // Animate the trick to the winner once per trick
+  // Winner + sweep when a trick completes.
+  // NOTE: In some edge cases (page navigation mid-trick, fast state updates)
+  // the client may miss a phase transition but still receive winner + table.
+  // Therefore we trigger the sweep based on (phase in between_tricks/round_finished)
+  // AND presence of winner+table, not solely on phase changes.
+  if (state && (state.phase === "between_tricks" || state.phase === "round_finished")){
+    if (state.winner !== null && state.winner !== undefined){
       try{
-        const sig = JSON.stringify(prevState.table || state.table || []);
+        const sig = JSON.stringify((prevState && prevState.table) ? prevState.table : (state.table || []));
         const key = `${roomCode}|${state.roundIndex}|${state.winner}|${sig}`;
         window.__pwSweepDone = window.__pwSweepDone || {};
         if (!window.__pwSweepDone[key]){
           window.__pwSweepDone[key] = true;
-          setTimeout(()=> runTrickSweepAnimation(state.winner, prevState.table || state.table || []), 30);
+          setTimeout(()=> runTrickSweepAnimation(state.winner, (prevState && prevState.table) ? prevState.table : (state.table || [])), 30);
+          setTimeout(highlightWinner, 120);
         }
       }catch(e){ /* ignore */ }
-
-      setTimeout(highlightWinner, 120);
     }
   }
 }

@@ -84,7 +84,7 @@ body.page-play .seat-bottom{ bottom: 120px; }
   overflow: hidden;
 }
 
-/* v0.2.17: dynamic seats/trick slots (2–8 players) */
+/* v0.2.18: dynamic seats/trick slots (2–8 players) */
 .boardSeats{
   position:absolute;
   inset:0;
