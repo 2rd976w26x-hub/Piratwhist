@@ -1,7 +1,7 @@
-// Piratwhist Online Multiplayer (v0.2)
+// Piratwhist Online Multiplayer (v0.2.1)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2";
+const APP_VERSION = "0.2.1";
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 function el(id){ return document.getElementById(id); }
@@ -179,6 +179,18 @@ function makeCardEl(card){
 
 function normalizeCode(s){ return (s || "").trim(); }
 
+
+
+function bootFromUrl(){
+  const qp = new URLSearchParams(window.location.search || "");
+  const code = qp.get("code");
+  if (code && !roomCode){
+    const rc = el("olRoomCode");
+    if (rc) rc.value = code;
+    // Auto-join on phase pages when opened with ?code=XXXX
+    joinRoom();
+  }
+}
 const socket = io({ transports: ["websocket", "polling"] });
 
 let roomCode = null;
@@ -189,6 +201,7 @@ let prevState = null;
 socket.on("connect", () => {
   const s = el("olRoomStatus");
   if (s) s.textContent = "Forbundet.";
+  bootFromUrl();
 });
 
 socket.on("error", (data) => {
@@ -206,20 +219,8 @@ socket.on("online_state", (payload) => {
   showRoomWarn("");
   showWarn("");
   syncPlayerCount();
-  syncPlayerCount();
   syncBotCount();
   maybeRunAnimations();
-  function bootFromUrl(){
-  const qp = new URLSearchParams(window.location.search || "");
-  const code = qp.get("code");
-  if (code && !roomCode){
-    const rc = el("olRoomCode");
-    if (rc) rc.value = code;
-    // Auto-join on phase pages when opened with ?code=XXXX
-    joinRoom();
-  }
-}
-bootFromUrl();
 
 render();
 });
