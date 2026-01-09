@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.13)
+// Piratwhist Online Multiplayer (v0.2.14)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const APP_VERSION = "0.2.13";
@@ -194,8 +194,10 @@ function runPlayAnimation(seat, cardObj, srcRect){
   }
   const dc = rectCenter(dst);
 
-  // Hide destination slot until the flight completes (prevents the "teleport" look)
-  if (dst && dst.style) dst.style.opacity = "0";
+  // IMPORTANT stability rule:
+  // Never hide the real destination slot. If animation fails or is interrupted
+  // (reload, phase change, race), hidden slots can leave the table looking empty.
+  // Instead we always animate a ghost card above the board.
 
   const fc = spawnFlyCard(sc.x, sc.y, cardObj, false);
   // Slightly slower + arc so it is clearly visible
@@ -204,7 +206,6 @@ function runPlayAnimation(seat, cardObj, srcRect){
   const anim = flyArc(fc, dc.x, dc.y, { duration: dur, rotate: (seat === 0 ? -4 : 4), scale: 1.0 });
 
   const finish = () => {
-    if (dst && dst.style) dst.style.opacity = "";
     fc.style.opacity = "0";
     setTimeout(()=> fc.remove(), 260);
   };
@@ -261,8 +262,8 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
     ghost.appendChild(face.cloneNode(true));
     document.body.appendChild(ghost);
 
-    // Hide the real card while the ghost animates (prevents double-vision)
-    slot.style.opacity = "0";
+    // Stability: never hide the real slot/card. If anything interrupts the sweep
+    // we still want the trick to remain visible until the server clears it.
 
     const off = (seat - 1.5) * 10;
     ghost.style.opacity = "1";
@@ -276,12 +277,8 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
     else finishes.push(new Promise(res=> setTimeout(()=>{ fin(); res(); }, dur + 80)));
   }
 
-  Promise.allSettled(finishes).finally(()=>{
-    for (let seat=0; seat<4; seat++){
-      const slot = el(`olTrickSlot${seat}`);
-      if (slot) slot.style.opacity = "";
-    }
-  });
+  // No slot cleanup required (we never hide them).
+  Promise.allSettled(finishes).catch(()=>{});
 }
 
 
@@ -770,6 +767,40 @@ function render(){
     }
   }
 
+  // Winner toast on the round table (play page)
+  (function updateWinnerToast(){
+    const t = el("olWinnerToast");
+    if (!t) return;
+    let msg = "";
+    if (state.phase === "between_tricks" && state.winner !== null && state.winner !== undefined){
+      msg = `${state.names[state.winner] || ("Spiller " + (state.winner+1))} vandt stikket`;
+    } else if (state.phase === "round_finished"){
+      // Round winner (most tricks). If tie, list the tied names.
+      const tr = Array.isArray(state.tricksRound) ? state.tricksRound : [];
+      if (tr.length){
+        const mx = Math.max(...tr.map(x=> Number(x||0)));
+        const ws = tr.map((x,i)=>({x:Number(x||0),i})).filter(o=>o.x===mx).map(o=>o.i);
+        const names = ws.map(i=> state.names[i] || ("Spiller " + (i+1))).join(ws.length>1 ? ", " : "");
+        msg = ws.length>1 ? `Runden uafgjort: ${names} (${mx} stik)` : `${names} vandt runden (${mx} stik)`;
+      }
+    }
+
+    if (!msg){
+      t.classList.add("hidden");
+      t.textContent = "";
+      return;
+    }
+    t.textContent = msg;
+    t.classList.remove("hidden");
+    // Auto-hide after a moment (except round_finished where it can stay until next round)
+    if (state.phase !== "round_finished"){
+      clearTimeout(updateWinnerToast._timer);
+      updateWinnerToast._timer = setTimeout(()=>{
+        t.classList.add("hidden");
+      }, 2200);
+    }
+  })();
+
   if (el("olLeader")) el("olLeader").textContent = state.names[state.leader] ?? "-";
   if (el("olLeadSuit")) el("olLeadSuit").textContent = state.leadSuit ? `${state.leadSuit} (${SUIT_NAME[state.leadSuit]})` : "-";
   if (el("olWinner")) el("olWinner").textContent = (state.winner===null || state.winner===undefined) ? "-" : (state.names[state.winner] ?? "-");
@@ -795,6 +826,9 @@ function render(){
 
       const slot = el(`olTrickSlot${i}`);
       if (slot){
+        // Defensive: ensure slots are never left hidden by a previous animation.
+        slot.style.opacity = "";
+        slot.style.visibility = "";
         slot.innerHTML = "";
         const c = state.table ? state.table[i] : null;
         if (c){
