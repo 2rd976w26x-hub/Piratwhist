@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.14)
+// Piratwhist Online Multiplayer (v0.2.15)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const APP_VERSION = "0.2.13";
