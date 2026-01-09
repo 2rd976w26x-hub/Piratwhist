@@ -548,14 +548,25 @@ def _online_schedule_auto_next_round(code: str, round_index: int):
 
 def _online_cleanup_sid(sid):
     for code, room in list(ONLINE_ROOMS.items()):
+        # Detach member; keep seat reservation for a short time so a browser
+        # navigation (redirect/reload) can re-attach to the same seat.
         seat = room["members"].pop(sid, None)
+        client_id = None
+        try:
+            client_id = room.get("sidToClient", {}).pop(sid, None)
+        except Exception:
+            client_id = None
         if seat is not None:
             try:
                 leave_room(code)
             except Exception:
                 pass
             st = room["state"]
-            st["names"][seat] = None
+            # If we know the client id, keep the name and refresh lastSeen.
+            if client_id and room.get("clients") and client_id in room["clients"]:
+                room["clients"][client_id]["lastSeen"] = time.time()
+            else:
+                st["names"][seat] = None
             # if room empty, keep it briefly (redirects/reloads) then purge later
             if not room["members"]:
                 room["emptySince"] = time.time()
@@ -567,6 +578,7 @@ def _online_cleanup_sid(sid):
 @socketio.on("online_create_room")
 def online_create_room(data):
     _online_purge_old_rooms()
+    client_id = (data.get("clientId") or data.get("client_id") or "").strip() or None
     name = (data.get("name") or "").strip() or "Spiller 1"
     n_players = int(data.get("players") or 4)
     if n_players < 2 or n_players > 8:
@@ -593,6 +605,9 @@ def online_create_room(data):
         "code": code,
         "emptySince": None,
         "members": {request.sid: 0},
+        # Stable client mapping (clientId -> seat) to survive redirects/reloads.
+        "clients": {},
+        "sidToClient": {},
         "state": {
             "n": n_players,
             "names": names,
@@ -613,6 +628,9 @@ def online_create_room(data):
             "autoNextDoneFor": None,
         }
     }
+    if client_id:
+        room["clients"][client_id] = {"seat": 0, "lastSeen": time.time()}
+        room["sidToClient"][request.sid] = client_id
     ONLINE_ROOMS[code] = room
     join_room(code)
 
@@ -626,6 +644,7 @@ def online_join_room(data):
     _online_purge_old_rooms()
     code = (data.get("room") or "").strip()
     name = (data.get("name") or "").strip() or "Spiller"
+    client_id = (data.get("clientId") or data.get("client_id") or "").strip() or None
     if (not code.isdigit()) or len(code) != 4:
         emit("error", {"message": "Rumkode skal være 4 tal."})
         return
@@ -637,14 +656,39 @@ def online_join_room(data):
     room["emptySince"] = None
     st = room["state"]
     n = st["n"]
+    # Seats currently occupied by live members
     occupied = set(room["members"].values())
+    # Seats reserved for recently-seen clients (redirect/reload)
+    now = time.time()
+    for cid, meta in (room.get("clients") or {}).items():
+        try:
+            if now - float(meta.get("lastSeen", 0)) < 30:
+                occupied.add(int(meta.get("seat")))
+        except Exception:
+            continue
     bot_seats = set(st.get("botSeats", set()))
-    seat = next((i for i in range(n) if i not in occupied and i not in bot_seats), None)
+    # If the client has joined before, re-attach to the same seat.
+    seat = None
+    if client_id and room.get("clients") and client_id in room["clients"]:
+        seat = int(room["clients"][client_id]["seat"])
+        room["clients"][client_id]["lastSeen"] = now
+    else:
+        seat = next((i for i in range(n) if i not in occupied and i not in bot_seats), None)
     if seat is None:
         emit("error", {"message": "Rummet er fuldt."})
         return
 
+    # If this client already had a different sid in the room, detach it.
+    if client_id:
+        for sid_existing, cid in list((room.get("sidToClient") or {}).items()):
+            if cid == client_id and sid_existing in room["members"]:
+                room["members"].pop(sid_existing, None)
+                room["sidToClient"].pop(sid_existing, None)
+
     room["members"][request.sid] = seat
+    if client_id:
+        room.setdefault("clients", {})[client_id] = {"seat": seat, "lastSeen": now}
+        room.setdefault("sidToClient", {})[request.sid] = client_id
     st["names"][seat] = name
     join_room(code)
 
@@ -653,12 +697,23 @@ def online_join_room(data):
 @socketio.on("online_leave_room")
 def online_leave_room(data):
     code = (data.get("room") or "").strip()
+    client_id = (data.get("clientId") or data.get("client_id") or "").strip() or None
     room = ONLINE_ROOMS.get(code)
     if not room:
         emit("online_left")
         return
 
     seat = room["members"].pop(request.sid, None)
+    # also clear stable mapping for this client (explicit leave means really gone)
+    try:
+        room.get("sidToClient", {}).pop(request.sid, None)
+    except Exception:
+        pass
+    if client_id:
+        try:
+            room.get("clients", {}).pop(client_id, None)
+        except Exception:
+            pass
     leave_room(code)
 
     if seat is not None:
