@@ -1,7 +1,7 @@
-// Piratwhist Online Multiplayer (v0.2.4)
+// Piratwhist Online Multiplayer (v0.2.5)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.4";
+const APP_VERSION = "0.2.5";
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 function el(id){ return document.getElementById(id); }
@@ -183,13 +183,16 @@ function normalizeCode(s){ return (s || "").trim(); }
 
 function bootFromUrl(){
   const qp = new URLSearchParams(window.location.search || "");
-  const code = qp.get("code");
-  if (code && !roomCode){
-    const rc = el("olRoomCode");
-    if (rc) rc.value = code;
-    // Auto-join on phase pages when opened with ?code=XXXX
-    joinRoom();
-  }
+  const code = normalizeCode(qp.get("code"));
+  if (!code) return;
+
+  // Keep any visible input in sync (only exists on the entry page)
+  const rc = el("olRoomCode");
+  if (rc) rc.value = code;
+
+  // Important: phase pages may not have an input field, so we must
+  // join using the URL code directly.
+  if (!roomCode) joinRoom(code);
 }
 const socket = io({ transports: ["websocket", "polling"] });
 
@@ -201,6 +204,12 @@ let prevState = null;
 socket.on("connect", () => {
   const s = el("olRoomStatus");
   if (s) s.textContent = "Forbundet.";
+  bootFromUrl();
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  // In case the socket connects after DOM is ready or the page is restored
+  // from bfcache.
   bootFromUrl();
 });
 
@@ -305,7 +314,10 @@ function updateLobbyConfig(){
 
 
 function createRoom(){ socket.emit("online_create_room", { name: myName(), players: playerCount(), bots: botCount() }); }
-function joinRoom(){ socket.emit("online_join_room", { room: normalizeCode(el("olRoomCode")?.value), name: myName() }); }
+function joinRoom(roomOverride){
+  const room = normalizeCode(roomOverride ?? el("olRoomCode")?.value);
+  socket.emit("online_join_room", { room, name: myName() });
+}
 function leaveRoom(){ if (roomCode) socket.emit("online_leave_room", { room: roomCode }); }
 function startOnline(){ if (roomCode) socket.emit("online_start_game", { room: roomCode }); }
 function onNext(){ if (roomCode) socket.emit("online_next", { room: roomCode }); }
