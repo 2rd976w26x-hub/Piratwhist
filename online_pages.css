@@ -1,0 +1,15 @@
+/* Page layouts for split-phase online UI (v0.2) */
+html, body { height: 100%; }
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+.top { position: sticky; top: 0; z-index: 5; backdrop-filter: blur(8px); }
+.main { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+.twoCol { flex: 1; display: grid; grid-template-columns: 340px 1fr; gap: 12px; align-items: start; }
+@media (max-width: 860px){
+  .twoCol { grid-template-columns: 1fr; }
+}
+.panel { height: 100%; }
+.card.tight { padding: 14px; }
+.small { font-size: 0.9rem; opacity: .9; }
+.handDock { margin-top: auto; }
+.centerArea { display:flex; flex-direction:column; gap:12px; }
+.playBoard { flex:1; min-height: 220px; }

@@ -1,9 +1,48 @@
-// Piratwhist Online Multiplayer (v0.1.38)
+// Piratwhist Online Multiplayer (v0.2)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
+const APP_VERSION = "0.2";
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 function el(id){ return document.getElementById(id); }
+
+function desiredPathForPhase(phase){
+  const map = {
+    "lobby": "/online_lobby.html",
+    "bidding": "/online_bidding.html",
+    "playing": "/online_play.html",
+    "between_tricks": "/online_play.html",
+    "round_finished": "/online_result.html",
+    "game_finished": "/online_result.html"
+  };
+  return map[phase] || "/online_lobby.html";
+}
+
+function currentPathName(){
+  try { return window.location.pathname || ""; } catch(e){ return ""; }
+}
+
+function maybeRedirectForPhase(){
+  if (!state || !roomCode) return false;
+  const desired = desiredPathForPhase(state.phase);
+  const here = currentPathName();
+  const isEntry = here.endsWith("/online.html") || here === "/online.html" || here.endsWith("online.html");
+  const desiredFile = desired.split("/").pop();
+  const onDesired = here.endsWith("/" + desiredFile) || here.endsWith(desiredFile);
+
+  const target = `${desired}?code=${encodeURIComponent(roomCode)}`;
+  if (isEntry){
+    // entry always moves into the phase pages once joined
+    window.location.replace(target);
+    return true;
+  }
+  if (!onDesired){
+    window.location.replace(target);
+    return true;
+  }
+  return false;
+}
+
 
 function rectCenter(elm){
   const r = elm.getBoundingClientRect();
@@ -170,7 +209,19 @@ socket.on("online_state", (payload) => {
   syncPlayerCount();
   syncBotCount();
   maybeRunAnimations();
-  render();
+  function bootFromUrl(){
+  const qp = new URLSearchParams(window.location.search || "");
+  const code = qp.get("code");
+  if (code && !roomCode){
+    const rc = el("olRoomCode");
+    if (rc) rc.value = code;
+    // Auto-join on phase pages when opened with ?code=XXXX
+    joinRoom();
+  }
+}
+bootFromUrl();
+
+render();
 });
 
 socket.on("online_left", () => {
@@ -395,6 +446,7 @@ function maybeRunAnimations(){
 }
 
 function render(){
+  if (maybeRedirectForPhase()) return;
   // lobby names view
   const namesWrap = el("olNames");
   if (namesWrap){

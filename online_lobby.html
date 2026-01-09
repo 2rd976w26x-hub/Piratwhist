@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Piratwhist v0.2 · Lobby</title>
+  <link rel="stylesheet" href="/piratwhist.css" />
+  <link rel="stylesheet" href="/online.css" />
+  <link rel="stylesheet" href="/online_pages.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div>
+        <div class="title">Piratwhist</div>
+        <div class="sub">Online · Lobby · v0.2</div>
+      </div>
+      <div class="pill">Rum: <span id="olRoomLabel">-</span></div>
+      <div class="pill">Du er: <span id="olSeatLabel">-</span></div>
+    </header>
+    <main class="main">
+
+<section class="card tight">
+  <h2>Lobby</h2>
+  <div id="olInfo" class="sub">-</div>
+  <div id="olRoomStatus" class="sub"></div>
+  <div id="olRoomWarn" class="warn hidden"></div>
+</section>
+
+<div class="twoCol">
+  <section class="card tight panel">
+    <h2>Opsætning</h2>
+    <div class="grid2">
+      <div>
+        <label class="label">Dit navn</label>
+        <input id="olMyName" class="input" placeholder="Dit navn" value="Spiller 1" />
+      </div>
+      <div>
+        <label class="label">Rumkode</label>
+        <input id="olRoomCode" class="input" placeholder="1234" inputmode="numeric" disabled />
+      </div>
+    </div>
+
+    <div class="hsep"></div>
+
+    <div class="grid2">
+      <div>
+        <label class="label">Antal spillere</label>
+        <select id="olPlayerCount" class="input">
+          <option value="2">2</option><option value="3">3</option><option value="4" selected>4</option>
+          <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Computer-spillere</label>
+        <select id="olBotCount" class="input"></select>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <label class="label">Navne</label>
+      <div id="olNames" class="stack"></div>
+    </div>
+
+    <div class="row gap wrap" style="margin-top:12px;">
+      <button id="olStartOnline" class="primary">Start spil</button>
+      <button id="olLeaveRoom" class="danger">Forlad rum</button>
+    </div>
+
+    <div class="sub small" style="margin-top:10px;">
+      “Start spil” låser lobbyen og deler kort (én gang).
+    </div>
+  </section>
+
+  <section class="card tight panel">
+    <h2>Din hånd</h2>
+    <div id="olHands" class="hands"></div>
+    <div id="olWarn" class="warn hidden"></div>
+  </section>
+</div>
+
+    </main>
+
+    <footer class="footer">
+      <div class="brand">
+        <div class="logo">🏴‍☠️</div>
+        <div>
+          <div class="title">Piratwhist <span class="ver">v0.2</span></div>
+          <div class="sub">Online spil · spar er trumf · bekend kulør</div>
+        </div>
+      </div>
+      <div class="nav">
+        <a class="linkbtn" href="/online.html">Online</a>
+        <a class="linkbtn" href="/piratwhist.html">Point-tavle</a>
+        <a class="linkbtn ghost" href="/rules.html">Regler</a>
+      </div>
+    </footer>
+
+  </div>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/online.js"></script>
+</body>
+</html>

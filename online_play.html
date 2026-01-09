@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Piratwhist v0.2 · Spil</title>
+  <link rel="stylesheet" href="/piratwhist.css" />
+  <link rel="stylesheet" href="/online.css" />
+  <link rel="stylesheet" href="/online_pages.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div>
+        <div class="title">Piratwhist</div>
+        <div class="sub">Online · Spil · v0.2</div>
+      </div>
+      <div class="pill">Rum: <span id="olRoomLabel">-</span></div>
+      <div class="pill">Du er: <span id="olSeatLabel">-</span></div>
+    </header>
+    <main class="main">
+
+<section class="card tight">
+  <h2>Spil</h2>
+  <div id="olInfo" class="sub">-</div>
+  <div class="row gap wrap" style="margin-top:8px;">
+    <div class="pill">Leader: <span id="olLeader">-</span></div>
+    <div class="pill">Kulør: <span id="olLeadSuit">-</span></div>
+  </div>
+</section>
+
+<div class="twoCol">
+  <section class="card tight panel">
+    <h2>Spillere</h2>
+    <div id="olTable" class="table"></div>
+    <div class="hsep"></div>
+    <button id="olNextRound" class="primary">Næste</button>
+    <button id="olLeaveRoom" class="danger" style="margin-left:8px;">Forlad rum</button>
+    <div class="sub small" style="margin-top:10px;">
+      Når stik er færdigt vises “Næste stik”. Når runden er færdig vises “Næste runde”.
+    </div>
+  </section>
+
+  <section class="card tight panel centerArea">
+    <h2>Spillebord</h2>
+    <div id="olCenter" class="center playBoard">
+      <div class="deck" id="olDeck" title="Kortbunke"></div>
+      <div class="pile" id="olPile" title="Stik-pulje"></div>
+    </div>
+
+    <div class="card tight handDock" style="margin:0;">
+      <h2 style="margin-top:0;">Din hånd</h2>
+      <div id="olHands" class="hands"></div>
+      <div id="olWarn" class="warn hidden"></div>
+    </div>
+  </section>
+</div>
+
+    </main>
+
+    <footer class="footer">
+      <div class="brand">
+        <div class="logo">🏴‍☠️</div>
+        <div>
+          <div class="title">Piratwhist <span class="ver">v0.2</span></div>
+          <div class="sub">Online spil · spar er trumf · bekend kulør</div>
+        </div>
+      </div>
+      <div class="nav">
+        <a class="linkbtn" href="/online.html">Online</a>
+        <a class="linkbtn" href="/piratwhist.html">Point-tavle</a>
+        <a class="linkbtn ghost" href="/rules.html">Regler</a>
+      </div>
+    </footer>
+
+  </div>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/online.js"></script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.2 · Online</title>
+  <title>Piratwhist v0.2 · Bud</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
   <link rel="stylesheet" href="/online_pages.css" />
@@ -13,39 +13,43 @@
     <header class="top">
       <div>
         <div class="title">Piratwhist</div>
-        <div class="sub">Online · v0.2</div>
+        <div class="sub">Online · Bud · v0.2</div>
       </div>
       <div class="pill">Rum: <span id="olRoomLabel">-</span></div>
       <div class="pill">Du er: <span id="olSeatLabel">-</span></div>
     </header>
     <main class="main">
 
-<section class="card tight panel">
-  <h2>Online</h2>
-  <p class="sub">Opret eller join et rum. Når du er inde i et rum, skifter siden automatisk til den rigtige fase.</p>
-
-  <div class="grid2">
-    <div>
-      <label class="label">Dit navn</label>
-      <input id="olMyName" class="input" placeholder="Dit navn" value="Spiller 1" />
-    </div>
-    <div>
-      <label class="label">Rumkode (4 tal)</label>
-      <input id="olRoomCode" class="input" placeholder="1234" inputmode="numeric" />
-    </div>
-  </div>
-
-  <div class="row gap wrap" style="margin-top:12px;">
-    <button id="olCreateRoom" class="primary">Opret online-rum</button>
-    <button id="olJoinRoom" class="ghost">Join online-rum</button>
-  </div>
-
-  <div id="olRoomStatus" class="sub" style="margin-top:10px;"></div>
-  <div id="olRoomWarn" class="warn hidden"></div>
-
-  <div class="hsep"></div>
-  <div class="sub small">Tip: Del rumkoden med de andre spillere. Du kan også åbne direkte: <b>/online_lobby.html?code=XXXX</b></div>
+<section class="card tight">
+  <h2>Bud</h2>
+  <div id="olInfo" class="sub">-</div>
 </section>
+
+<div class="twoCol">
+  <section class="card tight panel">
+    <h2>Afgiv bud</h2>
+    <div class="row gap wrap">
+      <div>
+        <label class="label">Dit bud (0–<span id="olBidMax">-</span>)</label>
+        <select id="olBidSelect" class="input"></select>
+      </div>
+      <div style="align-self:end;">
+        <button id="olBidSubmit" class="primary">Gem bud</button>
+      </div>
+    </div>
+    <div class="hsep"></div>
+    <div id="olBidsList" class="sub"></div>
+
+    <div class="hsep"></div>
+    <button id="olLeaveRoom" class="danger">Forlad rum</button>
+  </section>
+
+  <section class="card tight panel">
+    <h2>Din hånd</h2>
+    <div id="olHands" class="hands"></div>
+    <div id="olWarn" class="warn hidden"></div>
+  </section>
+</div>
 
     </main>
 
