@@ -18,11 +18,11 @@ html, body { height: 100%; }
 /* === Round table board === */
 
 .playLayout { grid-template-columns: 360px 1fr; }
-.playBoard { min-height: 520px; }
+.playBoard { min-height: 620px; }
 .board {
   position: relative;
   width: 100%;
-  min-height: 520px;
+  min-height: 620px;
   border-radius: 22px;
   background: radial-gradient(ellipse at center, rgba(255,255,255,.08) 0%, rgba(0,0,0,.18) 58%, rgba(0,0,0,.28) 100%);
   border: 1px solid rgba(255,255,255,.08);
@@ -32,8 +32,8 @@ html, body { height: 100%; }
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 220px;
-  height: 220px;
+  width: 300px;
+  height: 300px;
   transform: translate(-50%, -50%);
   border-radius: 999px;
   border: 1px dashed rgba(255,255,255,.14);
@@ -41,8 +41,8 @@ html, body { height: 100%; }
 }
 .played {
   position: absolute;
-  width: 92px;
-  height: 128px;
+  width: 104px;
+  height: 146px;
   border-radius: 14px;
   display: flex;
   align-items: center;
@@ -51,9 +51,9 @@ html, body { height: 100%; }
 .played :is(button,.cardEl){ transform: scale(1.0); }
 
 /* Bigger cards on the play page */
-body.page-play .playingcard{ width:72px; height:102px; border-radius:14px; }
+body.page-play .playingcard{ width:84px; height:118px; border-radius:16px; }
 @media (max-width: 480px){
-  body.page-play .playingcard{ width:60px; height:86px; border-radius:12px; }
+  body.page-play .playingcard{ width:66px; height:96px; border-radius:14px; }
 }
 .played-top { left: 50%; top: 12px; transform: translateX(-50%); }
 .played-bottom { left: 50%; bottom: 12px; transform: translateX(-50%); }
@@ -62,11 +62,11 @@ body.page-play .playingcard{ width:72px; height:102px; border-radius:14px; }
 
 .seat{
   position:absolute;
-  width: 260px;
-  max-width: 42%;
-  padding: 10px 12px;
+  width: 200px;
+  max-width: 38%;
+  padding: 8px 10px;
   border-radius: 18px;
-  background: rgba(0,0,0,.16);
+  background: rgba(0,0,0,.10);
   border: 1px solid rgba(255,255,255,.10);
 }
 
@@ -76,14 +76,14 @@ body.phase-between_tricks .playersPanel{ display:none; }
 body.phase-playing .playLayout,
 body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .seatName{ font-weight: 800; letter-spacing: .2px; }
-.seatBadges{ margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; }
+.seatBadges{ margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
 .chip{
   display:inline-flex;
   align-items:center;
   gap:6px;
-  padding:4px 8px;
+  padding:3px 7px;
   border-radius: 999px;
-  font-size: .86rem;
+  font-size: .78rem;
   background: rgba(255,255,255,.06);
   border: 1px solid rgba(255,255,255,.08);
 }
@@ -104,10 +104,10 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   opacity: .35;
 }
 
-.seat-top { left: 50%; top: 14px; transform: translateX(-50%); text-align:center; }
-.seat-bottom { left: 50%; bottom: 14px; transform: translateX(-50%); text-align:center; }
-.seat-left { left: 14px; top: 50%; transform: translateY(-50%); }
-.seat-right { right: 14px; top: 50%; transform: translateY(-50%); }
+.seat-top { left: 50%; top: 10px; transform: translateX(-50%); text-align:center; }
+.seat-bottom { left: 50%; bottom: 10px; transform: translateX(-50%); text-align:center; }
+.seat-left { left: 10px; top: 50%; transform: translateY(-50%); }
+.seat-right { right: 10px; top: 50%; transform: translateY(-50%); }
 
 .board .deck{
   position:absolute;
@@ -129,21 +129,21 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   .playLayout { grid-template-columns: 1fr; }
   .boardPanel { order: 1; }
   .playersPanel { order: 2; }
-  .board { min-height: 360px; }
+  .board { min-height: 420px; }
   .seat { width: 46%; max-width: 46%; padding: 8px 10px; }
   .seat-left, .seat-right { top: 14px; transform: none; }
   .seat-left { left: 14px; }
   .seat-right { right: 14px; }
   .seat-top { top: auto; left: 14px; bottom: 14px; transform:none; text-align:left; }
   .seat-bottom { left:auto; right:14px; bottom:14px; transform:none; text-align:right; }
-  .centerPile { width: 190px; height: 190px; }
+  .centerPile { width: 240px; height: 240px; }
 }
 @media (max-width: 480px){
-  .board { min-height: 320px; }
+  .board { min-height: 380px; }
   .seat { font-size: .92rem; }
-  .chip { font-size: .78rem; padding: 3px 7px; }
-  .centerPile { width: 170px; height: 170px; }
-  .played { width: 82px; height: 116px; }
+  .chip { font-size: .72rem; padding: 3px 7px; }
+  .centerPile { width: 220px; height: 220px; }
+  .played { width: 92px; height: 130px; }
 }
 
 .scoreRow{

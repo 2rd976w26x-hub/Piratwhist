@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.9)
+// Piratwhist Online Multiplayer (v0.2.10)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const APP_VERSION = "0.2.8";
@@ -17,6 +17,14 @@ function getClientId(){
   } catch(e){
     return "cid_" + Math.random().toString(16).slice(2);
   }
+}
+
+// Persist player display name across page redirects (multi-page online UI)
+function getStoredName(){
+  try { return (localStorage.getItem("pw_player_name") || "").trim(); } catch(e){ return ""; }
+}
+function setStoredName(v){
+  try { localStorage.setItem("pw_player_name", (v||"").trim()); } catch(e){}
 }
 
 let joinInProgress = false;
@@ -369,7 +377,11 @@ socket.on("online_left", () => {
   render();
 });
 
-function myName(){ return (el("olMyName")?.value || "").trim() || "Spiller"; }
+function myName(){
+  const v = (el("olMyName")?.value || "").trim();
+  const s = getStoredName();
+  return v || s || "Spiller";
+}
 function playerCount(){ return parseInt(el("olPlayerCount")?.value || "4", 10); }
 
 function populateBotOptions(){
@@ -858,6 +870,13 @@ el("olBotCount")?.addEventListener("change", () => {
 
 // Update host name in lobby (and keep server state in sync)
 el("olMyName")?.addEventListener("blur", () => {
+  setStoredName(el("olMyName")?.value || "");
   updateLobbyConfig();
   render();
 });
+
+// Pre-fill name inputs on pages that have them
+if (el("olMyName")) {
+  const s = getStoredName();
+  if (s && !el("olMyName").value) el("olMyName").value = s;
+}
