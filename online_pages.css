@@ -28,6 +28,12 @@ html, body { height: 100%; }
   border: 1px solid rgba(255,255,255,.08);
   overflow: hidden;
 }
+
+/* Ensure center trick area + played cards always render above seats */
+.deck{ z-index: 1; }
+.seat{ z-index: 2; }
+.centerPile{ z-index: 3; }
+.played{ z-index: 4; pointer-events:none; }
 .centerPile {
   position: absolute;
   left: 50%;
@@ -74,10 +80,8 @@ body.page-play .playingcard{ width:96px; height:134px; border-radius:16px; }
   border: 1px solid rgba(255,255,255,.10);
 }
 
-/* During play, minimize seat chrome to maximize board area */
-body.phase-playing .seatBadges .budChip,
+/* During play, keep Bud + Stik visible; hide only Total to reduce clutter */
 body.phase-playing .seatBadges .totalChip,
-body.phase-between_tricks .seatBadges .budChip,
 body.phase-between_tricks .seatBadges .totalChip{ display:none; }
 
 body.page-play .footer{ display:none; }

@@ -1,7 +1,7 @@
-// Piratwhist Online Multiplayer (v0.2.12)
+// Piratwhist Online Multiplayer (v0.2.13)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.12";
+const APP_VERSION = "0.2.13";
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 // Stable client identity across page navigations (keeps host seat on redirect)
@@ -128,7 +128,13 @@ function flyArc(elm, tx, ty, opts){
   const easing = (opts && opts.easing) ? opts.easing : "cubic-bezier(.18,.92,.22,1)";
 
   // WAAPI animation so we can create a visible arc and ensure the card is clearly flying.
-  elm.animate([
+  // Return the Animation object so callers can reliably clean up on finish.
+  if (!elm.animate){
+    // Fallback (very old browsers): use a straight flight
+    flyTo(elm, tx, ty, scl, 1);
+    return null;
+  }
+  return elm.animate([
     { transform: `translate3d(0px, 0px, 0) rotate(0deg) scale(1)` },
     { transform: `translate3d(${dx*0.55}px, ${dy*0.55 - peak}px, 0) rotate(${rot*0.7}deg) scale(${(1+scl)/2})` },
     { transform: `translate3d(${dx}px, ${dy}px, 0) rotate(${rot}deg) scale(${scl})` },
@@ -194,12 +200,21 @@ function runPlayAnimation(seat, cardObj, srcRect){
   const fc = spawnFlyCard(sc.x, sc.y, cardObj, false);
   // Slightly slower + arc so it is clearly visible
   fc.style.opacity = "1";
-  flyArc(fc, dc.x, dc.y, { duration: 3000, rotate: (seat === 0 ? -4 : 4), scale: 1.0 });
-  setTimeout(()=> {
+  const dur = 3000;
+  const anim = flyArc(fc, dc.x, dc.y, { duration: dur, rotate: (seat === 0 ? -4 : 4), scale: 1.0 });
+
+  const finish = () => {
     if (dst && dst.style) dst.style.opacity = "";
     fc.style.opacity = "0";
     setTimeout(()=> fc.remove(), 260);
-  }, 3080);
+  };
+
+  if (anim && typeof anim.finished !== "undefined"){
+    anim.finished.then(finish).catch(finish);
+  } else {
+    // fallback
+    setTimeout(finish, dur + 80);
+  }
 }
 
 
@@ -223,9 +238,12 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
 
   const dc = rectCenter(dst);
   const cards = Array.isArray(cardsBySeat) ? cardsBySeat : [];
+  const dur = 3000;
 
   // Fly every card from its slot in the center pile to the winner.
-  for (let seat=0; seat<cards.length; seat++){
+  // Use Animation.finished so we don't accidentally leave slots hidden.
+  const finishes = [];
+  for (let seat=0; seat<4; seat++){
     const c = cards[seat];
     if (!c) continue;
     const slot = el(`olTrickSlot${seat}`);
@@ -246,23 +264,24 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
     // Hide the real card while the ghost animates (prevents double-vision)
     slot.style.opacity = "0";
 
-    // Small per-seat offset so the 4 cards don't perfectly overlap at the destination
     const off = (seat - 1.5) * 10;
     ghost.style.opacity = "1";
-    flyArc(ghost, dc.x + off, dc.y, { duration: 3000, rotate: (seat%2 ? 8 : -8), scale: 0.94 });
-    setTimeout(()=> {
+    const anim = flyArc(ghost, dc.x + off, dc.y, { duration: dur, rotate: (seat%2 ? 8 : -8), scale: 0.94 });
+
+    const fin = () => {
       ghost.style.opacity = "0";
       setTimeout(()=> ghost.remove(), 260);
-    }, 3080);
+    };
+    if (anim && anim.finished) finishes.push(anim.finished.then(fin).catch(fin));
+    else finishes.push(new Promise(res=> setTimeout(()=>{ fin(); res(); }, dur + 80)));
   }
 
-  // Restore opacity so future tricks render normally
-  setTimeout(()=>{
+  Promise.allSettled(finishes).finally(()=>{
     for (let seat=0; seat<4; seat++){
       const slot = el(`olTrickSlot${seat}`);
       if (slot) slot.style.opacity = "";
     }
-  }, 3120);
+  });
 }
 
 
@@ -652,6 +671,23 @@ function maybeRunAnimations(){
         if (useRect) window.__pwLastPlayed = null;
       }
     }
+  }
+
+  // If we navigated to the play page mid-trick, prevState may be null.
+  // In that case, animate any already-present table cards once so they don't just "pop" in.
+  if ((!prevState || !Array.isArray(prevState.table)) && Array.isArray(state.table)){
+    try{
+      const sig = JSON.stringify(state.table);
+      window.__pwInitTableDone = window.__pwInitTableDone || {};
+      const key = `${roomCode}|${state.roundIndex}|${sig}`;
+      if (!window.__pwInitTableDone[key]){
+        window.__pwInitTableDone[key] = true;
+        for (let i=0;i<state.table.length;i++){
+          const b = state.table[i];
+          if (b) setTimeout(()=> runPlayAnimation(i, b, null), 120 + i*60);
+        }
+      }
+    }catch(e){ /* ignore */ }
   }
 
   // Winner + sweep when trick completes
