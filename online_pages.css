@@ -84,6 +84,37 @@ body.page-play .seat-bottom{ bottom: 120px; }
   overflow: hidden;
 }
 
+/* v0.2.17: dynamic seats/trick slots (2–8 players) */
+.boardSeats{
+  position:absolute;
+  inset:0;
+  z-index:4;
+}
+
+.boardSeats .seat{
+  position:absolute;
+  transform:translate(-50%,-50%);
+  text-align:center;
+  max-width:240px;
+}
+
+.boardSeats .seatBadges{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+
+.trickSlots{
+  position:absolute;
+  inset:0;
+}
+
+.trickSlots .played{
+  position:absolute;
+  transform:translate(-50%,-50%);
+}
+
 /* Winner toast (shown after each trick and at end of round) */
 .winnerToast{
   position:absolute;

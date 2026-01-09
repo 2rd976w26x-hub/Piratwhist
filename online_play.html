@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.2.16 · Spil</title>
+  <title>Piratwhist v0.2.17 · Spil</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
   <link rel="stylesheet" href="/online_pages.css" />
@@ -29,53 +29,15 @@
     <div id="olCenter" class="center playBoard">
       <div class="board">
         <div id="olWinnerToast" class="winnerToast hidden" aria-live="polite"></div>
-        <div class="seat seat-top" data-seat="2">
-          <div class="seatName" id="olSeatName2">-</div>
-          <div class="seatBadges">
-            <span class="chip budChip">Bud: <span id="olSeatBid2">—</span></span>
-            <span class="chip trickChip">Stik: <span id="olSeatTricks2">0</span></span>
-            <span class="chip totalChip ghost">Total: <span id="olSeatTotal2">0</span></span>
-          </div>
-          <div class="seatPile" id="olSeatPile2" title="Stik vundet"></div>
-        </div>
 
-        <div class="seat seat-left" data-seat="1">
-          <div class="seatName" id="olSeatName1">-</div>
-          <div class="seatBadges">
-            <span class="chip budChip">Bud: <span id="olSeatBid1">—</span></span>
-            <span class="chip trickChip">Stik: <span id="olSeatTricks1">0</span></span>
-            <span class="chip totalChip ghost">Total: <span id="olSeatTotal1">0</span></span>
-          </div>
-          <div class="seatPile" id="olSeatPile1" title="Stik vundet"></div>
-        </div>
-
-        <div class="seat seat-right" data-seat="3">
-          <div class="seatName" id="olSeatName3">-</div>
-          <div class="seatBadges">
-            <span class="chip budChip">Bud: <span id="olSeatBid3">—</span></span>
-            <span class="chip trickChip">Stik: <span id="olSeatTricks3">0</span></span>
-            <span class="chip totalChip ghost">Total: <span id="olSeatTotal3">0</span></span>
-          </div>
-          <div class="seatPile" id="olSeatPile3" title="Stik vundet"></div>
-        </div>
-
-        <div class="seat seat-bottom" data-seat="0">
-          <div class="seatName" id="olSeatName0">-</div>
-          <div class="seatBadges">
-            <span class="chip budChip">Bud: <span id="olSeatBid0">—</span></span>
-            <span class="chip trickChip">Stik: <span id="olSeatTricks0">0</span></span>
-            <span class="chip totalChip ghost">Total: <span id="olSeatTotal0">0</span></span>
-          </div>
-          <div class="seatPile" id="olSeatPile0" title="Stik vundet"></div>
-        </div>
+        <!-- Seats are injected dynamically so the board can handle 2–8 players. -->
+        <div id="olBoardSeats" class="boardSeats" aria-hidden="false"></div>
 
         <div class="deck" id="olDeck" title="Kortbunke"></div>
 
+        <!-- Trick slots are injected dynamically (one per player) -->
         <div class="pile centerPile" id="olPile" title="Stik (midt)">
-          <div class="played played-top" id="olTrickSlot2"></div>
-          <div class="played played-left" id="olTrickSlot1"></div>
-          <div class="played played-right" id="olTrickSlot3"></div>
-          <div class="played played-bottom" id="olTrickSlot0"></div>
+          <div id="olTrickSlots" class="trickSlots"></div>
         </div>
       </div>
     </div>
@@ -110,7 +72,7 @@
       <div class="brand">
         <div class="logo">🏴‍☠️</div>
         <div>
-          <div class="title">Piratwhist <span class="ver">v0.2.16</span></div>
+          <div class="title">Piratwhist <span class="ver">v0.2.17</span></div>
           <div class="sub">Online spil · spar er trumf · bekend kulør</div>
         </div>
       </div>

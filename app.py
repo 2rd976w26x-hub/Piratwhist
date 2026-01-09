@@ -762,6 +762,10 @@ def online_start_game(data):
         st["turn"] = st["leader"]
 
     _online_emit_full_state(code, room)
+
+    # If bidding just completed and it's a bot's turn to lead, schedule the bot
+    # immediately. Otherwise the game can stall when a bot is the leader for
+    # the round (common with 2 players).
     if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
         _online_schedule_bot_turn(code)
 

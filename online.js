@@ -1,8 +1,9 @@
-// Piratwhist Online Multiplayer (v0.2.16)
+// Piratwhist Online Multiplayer (v0.2.17)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.16";
-const ENABLE_FLY = false; // v0.2.16: no flying cards; winner marker only
+const APP_VERSION = "0.2.17";
+// v0.2.17: Only winner sweep animation. No per-card flying during normal play.
+const ENABLE_FLY = false;
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 // Stable client identity across page navigations (keeps host seat on redirect)
@@ -31,6 +32,75 @@ function setStoredName(v){
 let joinInProgress = false;
 
 function el(id){ return document.getElementById(id); }
+
+// --- v0.2.17: dynamic round-table board (2–8 players) ---
+let __pwBoardBuiltFor = null;
+
+function ensurePlayBoard(n){
+  const seatsWrap = el("olBoardSeats");
+  const slotsWrap = el("olTrickSlots");
+  if (!seatsWrap || !slotsWrap) return;
+  if (__pwBoardBuiltFor === n && seatsWrap.children.length === n && slotsWrap.children.length === n) return;
+  __pwBoardBuiltFor = n;
+  seatsWrap.innerHTML = "";
+  slotsWrap.innerHTML = "";
+
+  for (let i=0;i<n;i++){
+    // Seat UI
+    const seat = document.createElement("div");
+    seat.className = "seat dyn";
+    seat.dataset.seat = String(i);
+    seat.innerHTML = `
+      <div class="seatName" id="olSeatName${i}">-</div>
+      <div class="seatBadges">
+        <span class="chip budChip">Bud: <span id="olSeatBid${i}">—</span></span>
+        <span class="chip trickChip">Stik: <span id="olSeatTricks${i}">0</span></span>
+        <span class="chip totalChip ghost">Total: <span id="olSeatTotal${i}">0</span></span>
+      </div>
+      <div class="seatPile" id="olSeatPile${i}" title="Stik vundet"></div>
+    `;
+    seatsWrap.appendChild(seat);
+
+    // Trick slot (played card position near center)
+    const slot = document.createElement("div");
+    slot.className = "played dyn";
+    slot.id = `olTrickSlot${i}`;
+    slotsWrap.appendChild(slot);
+  }
+}
+
+function positionPlayBoard(n){
+  const seatsWrap = el("olBoardSeats");
+  const slotsWrap = el("olTrickSlots");
+  const board = document.querySelector(".board");
+  if (!seatsWrap || !slotsWrap || !board) return;
+
+  const my = (typeof mySeat === "number" && mySeat >= 0) ? mySeat : 0;
+  // Seat ring radius in % (tuned for desktop + responsive CSS scales it)
+  const seatR = (n <= 2) ? 42 : (n <= 4 ? 44 : 46);
+  const slotR = 18;
+
+  for (let i=0;i<n;i++){
+    const rel = (i - my + n) % n;
+    const ang = (90 + (rel * 360 / n)) * Math.PI / 180;
+    const x = 50 + seatR * Math.cos(ang);
+    const y = 50 + seatR * Math.sin(ang);
+
+    const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
+    if (seatEl){
+      seatEl.style.left = x.toFixed(2) + "%";
+      seatEl.style.top  = y.toFixed(2) + "%";
+    }
+
+    const sx = 50 + slotR * Math.cos(ang);
+    const sy = 50 + slotR * Math.sin(ang);
+    const slotEl = el(`olTrickSlot${i}`);
+    if (slotEl){
+      slotEl.style.left = sx.toFixed(2) + "%";
+      slotEl.style.top  = sy.toFixed(2) + "%";
+    }
+  }
+}
 
 function desiredPathForPhase(phase){
   const map = {
@@ -143,6 +213,7 @@ function flyArc(elm, tx, ty, opts){
 }
 
 function runDealAnimation(){
+  if (!ENABLE_FLY) return;
   const deck = el("olDeck");
   if (!deck) return;
   const deckC = rectCenter(deck);
@@ -175,6 +246,7 @@ function runDealAnimation(){
 }
 
 function runPlayAnimation(seat, cardObj, srcRect){
+  if (!ENABLE_FLY) return;
   const pile = el("olPile");
   const deck = el("olDeck");
   if (!pile) return;
@@ -245,7 +317,7 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
   // Fly every card from its slot in the center pile to the winner.
   // Use Animation.finished so we don't accidentally leave slots hidden.
   const finishes = [];
-  for (let seat=0; seat<4; seat++){
+  for (let seat=0; seat<cards.length; seat++){
     const c = cards[seat];
     if (!c) continue;
     const slot = el(`olTrickSlot${seat}`);
@@ -377,6 +449,7 @@ function buildCardSVG(card){
   const isAce  = (rank === "A");
 
   if (isFace){
+    // Vector "portrait" in a classic card style (no copyrighted art).
     const frame = document.createElementNS(NS, "rect");
     frame.setAttribute("x","18"); frame.setAttribute("y","28");
     frame.setAttribute("width","64"); frame.setAttribute("height","84");
@@ -384,23 +457,43 @@ function buildCardSVG(card){
     frame.setAttribute("class","face-bg");
     svg.appendChild(frame);
 
-    // Simple "portrait": crown + big suit + rank banner
-    const crown = document.createElementNS(NS, "path");
-    crown.setAttribute("d","M30 54 L36 44 L44 56 L50 42 L56 56 L64 44 L70 54 L70 64 L30 64 Z");
-    crown.setAttribute("class","face-line");
-    svg.appendChild(crown);
+    // Head + body
+    const head = document.createElementNS(NS, "circle");
+    head.setAttribute("cx","50"); head.setAttribute("cy","60");
+    head.setAttribute("r","10");
+    head.setAttribute("class","face-fill");
+    svg.appendChild(head);
 
-    pip(50, 78, 44, 0);
+    const body = document.createElementNS(NS, "path");
+    body.setAttribute("d","M34 108 Q50 86 66 108 L66 112 Q50 124 34 112 Z");
+    body.setAttribute("class","face-fill");
+    svg.appendChild(body);
 
+    // Crown/tiara/helmet hint
+    const hat = document.createElementNS(NS, "path");
+    if (rank === "K"){
+      hat.setAttribute("d","M34 56 L38 46 L44 58 L50 44 L56 58 L62 46 L66 56 L66 62 L34 62 Z");
+    } else if (rank === "Q"){
+      hat.setAttribute("d","M34 58 Q50 40 66 58 L62 50 Q50 46 38 50 Z");
+    } else {
+      hat.setAttribute("d","M34 56 Q50 48 66 56 L66 66 Q50 70 34 66 Z");
+    }
+    hat.setAttribute("class","face-line");
+    svg.appendChild(hat);
+
+    // Big center suit
+    pip(50, 84, 38, 0);
+
+    // Rank banner
     const banner = document.createElementNS(NS, "rect");
-    banner.setAttribute("x","30"); banner.setAttribute("y","96");
+    banner.setAttribute("x","30"); banner.setAttribute("y","94");
     banner.setAttribute("width","40"); banner.setAttribute("height","18");
     banner.setAttribute("rx","6");
     banner.setAttribute("class","face-banner");
     svg.appendChild(banner);
 
     const rt = document.createElementNS(NS, "text");
-    rt.setAttribute("x","50"); rt.setAttribute("y","105");
+    rt.setAttribute("x","50"); rt.setAttribute("y","103");
     rt.setAttribute("text-anchor","middle");
     rt.setAttribute("dominant-baseline","middle");
     rt.setAttribute("class","face-rank");
@@ -475,6 +568,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // In case the socket connects after DOM is ready or the page is restored
   // from bfcache.
   bootFromUrl();
+
+  // Keep the round-table layout stable on resize / orientation change.
+  window.addEventListener("resize", () => {
+    try{
+      if (state && el("olCenter")){
+        ensurePlayBoard(state.n);
+        positionPlayBoard(state.n);
+      }
+    }catch(e){ /* ignore */ }
+  });
 });
 
 socket.on("error", (data) => {
@@ -906,6 +1009,10 @@ function render(){
 
   // Round table board (play page)
   if (el("olCenter")){
+    // Build + position the dynamic board DOM (2–8 players)
+    ensurePlayBoard(state.n);
+    positionPlayBoard(state.n);
+
     const bids = state.bids || [];
     const taken = state.tricksRound || [];
     const total = state.tricksTotal || [];
