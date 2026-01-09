@@ -26,27 +26,64 @@
   width:56px; height:78px;
   border-radius:12px;
   border:1px solid rgba(0,0,0,.25);
-  background: rgba(255,255,255,.95);
+  background: rgba(255,255,255,.97);
   color:#111;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-  padding:6px 6px 6px 6px;
+  position:relative;
+  overflow:hidden;
   box-shadow: 0 6px 16px rgba(0,0,0,.25);
 }
 .playingcard.red{ color:#b00020; }
+
 .playingcard .corner{
-  font-weight:800;
-  font-size:14px;
-  line-height:1;
-}
-.playingcard .center{
-  font-size:22px;
+  position:absolute;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:0px;
   font-weight:900;
   line-height:1;
-  text-align:center;
-  margin-top:6px;
+  letter-spacing:-.2px;
+  user-select:none;
 }
+.playingcard .corner.tl{ left:6px; top:6px; }
+.playingcard .corner.br{ right:6px; bottom:6px; transform: rotate(180deg); }
+
+.playingcard .corner .rk{ font-size:14px; }
+.playingcard .corner .st{ font-size:14px; margin-top:0px; }
+
+.cardface-svg{
+  position:absolute;
+  left:0; top:0;
+  width:100%; height:100%;
+  pointer-events:none;
+}
+.cardface-svg .pip{
+  fill: currentColor;
+  font-weight: 900;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+.cardface-svg .face-bg{
+  fill: rgba(0,0,0,.04);
+  stroke: rgba(0,0,0,.18);
+  stroke-width: 1.2;
+}
+.cardface-svg .face-line{
+  fill: rgba(0,0,0,.03);
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.cardface-svg .face-banner{
+  fill: rgba(255,255,255,.65);
+  stroke: rgba(0,0,0,.18);
+  stroke-width: 1;
+}
+.cardface-svg .face-rank{
+  fill: currentColor;
+  font-weight: 900;
+  font-size: 14px;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+}
+
 .cardbtn{
   padding:0;
   border:none;

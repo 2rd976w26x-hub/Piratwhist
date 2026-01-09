@@ -521,8 +521,8 @@ def _online_schedule_auto_next_round(code: str, round_index: int):
                 st["roundIndex"] += 1
                 hands, _ = _online_deal(n, st["roundIndex"])
                 st["hands"] = hands
-                st["leader"] = 0
-                st["turn"] = 0
+                st["leader"] = (st["roundIndex"] % st["n"])
+                st["turn"] = st["leader"]
                 st["leadSuit"] = None
                 st["table"] = [None for _ in range(n)]
                 st["winner"] = None
@@ -747,8 +747,8 @@ def online_start_game(data):
     st["roundIndex"] = 0
     hands, _ = _online_deal(st["n"], 0)
     st["hands"] = hands
-    st["leader"] = 0
-    st["turn"] = 0
+    st["leader"] = (st["roundIndex"] % st["n"])
+    st["turn"] = st["leader"]
     st["leadSuit"] = None
     st["table"] = [None for _ in range(st["n"])]
     st["winner"] = None
@@ -929,8 +929,8 @@ def online_next(data):
             st["roundIndex"] += 1
             hands, _ = _online_deal(n, st["roundIndex"])
             st["hands"] = hands
-            st["leader"] = 0
-            st["turn"] = 0
+            st["leader"] = (st["roundIndex"] % st["n"])
+            st["turn"] = st["leader"]
             st["leadSuit"] = None
             st["table"] = [None for _ in range(n)]
             st["winner"] = None

@@ -267,7 +267,7 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .scoreRow:last-child{ border-bottom: none; }
 .pill.tiny{ padding: 3px 8px; font-size: .82rem; }
 
-/* === v0.2.15: Hand overlaps the board, remove background bar === */
+/* === v0.2.16: Hand overlaps the board, remove background bar === */
 body.page-play .boardPanel{ position:relative; }
 
 /* Place the hand dock on top of the board area */

@@ -1,7 +1,8 @@
-// Piratwhist Online Multiplayer (v0.2.15)
+// Piratwhist Online Multiplayer (v0.2.16)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.13";
+const APP_VERSION = "0.2.16";
+const ENABLE_FLY = false; // v0.2.16: no flying cards; winner marker only
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 // Stable client identity across page navigations (keeps host seat on redirect)
@@ -322,26 +323,120 @@ function showWarn(msg){
 function makeCardEl(card){
   const btn = document.createElement("button");
   btn.className = "cardbtn";
-  const div = document.createElement("div");
+  btn.appendChild(renderCardFace(card));
+  return btn;
+}
+
+function renderCardFace(card){
   const red = (card.suit === "♥" || card.suit === "♦");
-  div.className = "playingcard" + (red ? " red" : "");
+  const wrap = document.createElement("div");
+  wrap.className = "playingcard" + (red ? " red" : "");
 
   const c1 = document.createElement("div");
-  c1.className = "corner";
-  c1.textContent = card.rank + card.suit;
-
-  const mid = document.createElement("div");
-  mid.className = "center";
-  mid.textContent = card.suit;
+  c1.className = "corner tl";
+  c1.innerHTML = `<div class="rk">${card.rank}</div><div class="st">${card.suit}</div>`;
 
   const c2 = document.createElement("div");
-  c2.className = "corner";
-  c2.style.alignSelf = "flex-end";
-  c2.textContent = card.rank + card.suit;
+  c2.className = "corner br";
+  c2.innerHTML = `<div class="rk">${card.rank}</div><div class="st">${card.suit}</div>`;
 
-  div.appendChild(c1); div.appendChild(mid); div.appendChild(c2);
-  btn.appendChild(div);
-  return btn;
+  const svg = buildCardSVG(card);
+  wrap.appendChild(c1);
+  wrap.appendChild(svg);
+  wrap.appendChild(c2);
+  return wrap;
+}
+
+// SVG card face (no copyrighted art). Normal playing-card pips for 2–10,
+// and a simple vector "portrait" for J/Q/K.
+function buildCardSVG(card){
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 100 140");
+  svg.setAttribute("class", "cardface-svg");
+
+  const suit = card.suit;
+  const rank = String(card.rank);
+
+  function pip(x, y, size, rotate){
+    const t = document.createElementNS(NS, "text");
+    t.setAttribute("x", String(x));
+    t.setAttribute("y", String(y));
+    t.setAttribute("text-anchor", "middle");
+    t.setAttribute("dominant-baseline", "middle");
+    t.setAttribute("font-size", String(size));
+    t.setAttribute("class", "pip");
+    t.textContent = suit;
+    if (rotate){
+      t.setAttribute("transform", `rotate(${rotate} ${x} ${y})`);
+    }
+    svg.appendChild(t);
+  }
+
+  const isFace = (rank === "J" || rank === "Q" || rank === "K");
+  const isAce  = (rank === "A");
+
+  if (isFace){
+    const frame = document.createElementNS(NS, "rect");
+    frame.setAttribute("x","18"); frame.setAttribute("y","28");
+    frame.setAttribute("width","64"); frame.setAttribute("height","84");
+    frame.setAttribute("rx","10");
+    frame.setAttribute("class","face-bg");
+    svg.appendChild(frame);
+
+    // Simple "portrait": crown + big suit + rank banner
+    const crown = document.createElementNS(NS, "path");
+    crown.setAttribute("d","M30 54 L36 44 L44 56 L50 42 L56 56 L64 44 L70 54 L70 64 L30 64 Z");
+    crown.setAttribute("class","face-line");
+    svg.appendChild(crown);
+
+    pip(50, 78, 44, 0);
+
+    const banner = document.createElementNS(NS, "rect");
+    banner.setAttribute("x","30"); banner.setAttribute("y","96");
+    banner.setAttribute("width","40"); banner.setAttribute("height","18");
+    banner.setAttribute("rx","6");
+    banner.setAttribute("class","face-banner");
+    svg.appendChild(banner);
+
+    const rt = document.createElementNS(NS, "text");
+    rt.setAttribute("x","50"); rt.setAttribute("y","105");
+    rt.setAttribute("text-anchor","middle");
+    rt.setAttribute("dominant-baseline","middle");
+    rt.setAttribute("class","face-rank");
+    rt.textContent = rank;
+    svg.appendChild(rt);
+
+    return svg;
+  }
+
+  if (isAce){
+    pip(50, 74, 64, 0);
+    pip(26, 46, 18, 0);
+    pip(74, 102, 18, 180);
+    return svg;
+  }
+
+  const n = parseInt(rank, 10);
+  const layouts = {
+    2:  [[50, 44],[50, 104]],
+    3:  [[50, 38],[50, 74],[50, 110]],
+    4:  [[34, 44],[66, 44],[34, 104],[66, 104]],
+    5:  [[34, 44],[66, 44],[50, 74],[34, 104],[66, 104]],
+    6:  [[34, 40],[66, 40],[34, 74],[66, 74],[34, 108],[66, 108]],
+    7:  [[34, 38],[66, 38],[34, 68],[66, 68],[50, 74],[34, 108],[66, 108]],
+    8:  [[34, 36],[66, 36],[34, 62],[66, 62],[34, 86],[66, 86],[34, 112],[66, 112]],
+    9:  [[34, 34],[66, 34],[34, 58],[66, 58],[50, 74],[34, 92],[66, 92],[34, 116],[66, 116]],
+    10: [[30, 34],[70, 34],[34, 56],[66, 56],[30, 78],[70, 78],[34, 100],[66, 100],[30, 122],[70, 122]],
+  };
+
+  const pts = layouts[n] || [[50,74]];
+  for (const [x,y] of pts){
+    const rot = (y > 74) ? 180 : 0;
+    const size = (n >= 8) ? 20 : 22;
+    pip(x, y, size, rot);
+  }
+  return svg;
 }
 
 function normalizeCode(s){ return (s || "").trim(); }
@@ -643,6 +738,7 @@ function renderScores(){
 }
 
 function maybeRunAnimations(){
+  if (!ENABLE_FLY) return;
   if (!state) return;
 
   // Deal animation: when roundIndex changes OR phase enters bidding and previous wasn't bidding for same round
@@ -929,7 +1025,7 @@ function render(){
         b.disabled = !isPlayable(c);
         b.addEventListener("click", () => {
           // Save a precise start position for the fly-in animation (only for your own plays)
-          window.__pwLastPlayed = { seat: mySeat, key: `${c.rank}${c.suit}`, rect: b.getBoundingClientRect() };
+          if (ENABLE_FLY) window.__pwLastPlayed = { seat: mySeat, key: `${c.rank}${c.suit}`, rect: b.getBoundingClientRect() };
           playCard(`${c.rank}${c.suit}`);
         });
         cards.appendChild(b);
