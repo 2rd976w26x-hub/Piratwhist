@@ -634,7 +634,7 @@ def online_join_room(data):
         emit("error", {"message": "Rum ikke fundet."})
         return
 
-    room[\"emptySince\"] = None
+    room["emptySince"] = None
     st = room["state"]
     n = st["n"]
     occupied = set(room["members"].values())
