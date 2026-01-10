@@ -1,8 +1,8 @@
-// Piratwhist Online Multiplayer (v0.2.20)
+// Piratwhist Online Multiplayer (v0.2.21)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.20";
-// v0.2.20: Only winner sweep animation. No per-card flying during normal play.
+const APP_VERSION = "0.2.21";
+// v0.2.21: Only winner sweep animation. No per-card flying during normal play.
 const ENABLE_FLY = false;
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
@@ -30,10 +30,13 @@ function setStoredName(v){
 }
 
 let joinInProgress = false;
+let pendingJoinRoom = null;
+let pendingCreateRoom = false;
+
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.20: dynamic round-table board (2–8 players) ---
+// --- v0.2.21: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 
 function ensurePlayBoard(n){
@@ -562,6 +565,20 @@ function bootFromUrl(){
 }
 const socket = io({ transports: ["websocket", "polling"] });
 
+
+function emitWhenConnected(fn){
+  if (socket && socket.connected){
+    fn();
+    return;
+  }
+  // Socket.IO will connect automatically, but we defer emits until we are connected
+  try { socket.connect(); } catch(e){ /* ignore */ }
+  const once = () => {
+    socket.off("connect", once);
+    fn();
+  };
+  socket.on("connect", once);
+}
 let roomCode = null;
 let mySeat = null;
 let state = null;
@@ -586,16 +603,21 @@ document.addEventListener("DOMContentLoaded", () => {
         positionPlayBoard(state.n);
       }
     }catch(e){ /* ignore */ }
-  });
+  }));
+  pendingCreateRoom = false;
 });
 
 socket.on("error", (data) => {
   joinInProgress = false;
+  pendingJoinRoom = null;
+  pendingCreateRoom = false;
   showRoomWarn(data?.message || "Ukendt fejl");
 });
 
 socket.on("online_state", (payload) => {
   joinInProgress = false;
+  pendingJoinRoom = null;
+  pendingCreateRoom = false;
   roomCode = payload.room;
   if (payload.seat !== null && payload.seat !== undefined) mySeat = payload.seat;
   prevState = state;
@@ -710,11 +732,15 @@ function createRoom(){
   // Persist the name before navigating/redirecting across pages
   setStoredName(myName());
   joinInProgress = true;
-  socket.emit("online_create_room", {
-    clientId: getClientId(),
-    name: myName(),
-    players: playerCount(),
-    bots: botCount()
+  pendingCreateRoom = true;
+  emitWhenConnected(() => {
+    socket.emit("online_create_room", {
+      clientId: getClientId(),
+      name: myName(),
+      players: playerCount(),
+      bots: botCount()
+    });
+    pendingCreateRoom = false;
   });
 }
 function joinRoom(roomOverride){
@@ -722,7 +748,8 @@ function joinRoom(roomOverride){
   if (!room) return;
   setStoredName(myName());
   joinInProgress = true;
-  socket.emit("online_join_room", { room, clientId: getClientId(), name: myName() });
+  pendingJoinRoom = room;
+  emitWhenConnected(() => socket.emit("online_join_room", { room, clientId: getClientId(), name: myName() }));
 }
 function leaveRoom(){ if (roomCode) socket.emit("online_leave_room", { room: roomCode, clientId: getClientId() }); }
 function startOnline(){ if (roomCode) socket.emit("online_start_game", { room: roomCode }); }
