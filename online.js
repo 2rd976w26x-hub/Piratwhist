@@ -1,8 +1,8 @@
-// Piratwhist Online Multiplayer (v0.2.19)
+// Piratwhist Online Multiplayer (v0.2.20)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.19";
-// v0.2.19: Only winner sweep animation. No per-card flying during normal play.
+const APP_VERSION = "0.2.20";
+// v0.2.20: Only winner sweep animation. No per-card flying during normal play.
 const ENABLE_FLY = false;
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
@@ -33,7 +33,7 @@ let joinInProgress = false;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.19: dynamic round-table board (2–8 players) ---
+// --- v0.2.20: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 
 function ensurePlayBoard(n){
@@ -305,53 +305,62 @@ function spawnFlyStack(x, y, label){
 function runTrickSweepAnimation(winnerSeat, cardsBySeat){
   const pile = el("olPile");
   if (!pile) return;
-  const dst = el(`olSeatPile${winnerSeat}`) ||
-              document.querySelector(`.board [data-seat="${winnerSeat}"]`) ||
-              el("olDeck");
-  if (!dst) return;
 
-  const dc = rectCenter(dst);
-  const cards = Array.isArray(cardsBySeat) ? cardsBySeat : [];
-  const dur = 3000;
+  // Destination: winner seat's pile/label; fallback to winner seat container.
+  const dstEl = el(`olSeatPile${winnerSeat}`) ||
+    document.querySelector(`.seat[data-seat="${winnerSeat}"] .seatName`) ||
+    document.querySelector(`.seat[data-seat="${winnerSeat}"]`) ||
+    pile;
 
-  // Fly every card from its slot in the center pile to the winner.
-  // Use Animation.finished so we don't accidentally leave slots hidden.
-  const finishes = [];
-  for (let seat=0; seat<cards.length; seat++){
-    const c = cards[seat];
-    if (!c) continue;
-    const slot = el(`olTrickSlot${seat}`);
-    if (!slot) continue;
-    const face = slot.querySelector(".playingcard");
-    if (!face) continue;
+  const dstRect = dstEl.getBoundingClientRect();
+  const dstX = dstRect.left + dstRect.width/2;
+  const dstY = dstRect.top + dstRect.height/2;
 
-    const sc = rectCenter(slot);
+  // Animate every card currently in the center pile to the winner.
+  // cardsBySeat is an array indexed by seat; each entry is the card object played by that seat (or null).
+  const seatCount = playerCount();
+
+  for (let s=0; s<seatCount; s++){
+    const card = (cardsBySeat && cardsBySeat[s]) ? cardsBySeat[s] : null;
+    if (!card) continue;
+
+    // Find the rendered center slot for that seat (we render slots with data-seat).
+    const srcEl = document.querySelector(`#olTrickSlot${s} .playingcard`) || document.getElementById(`olTrickSlot${s}`) || pile;
+
+    const srcRect = srcEl.getBoundingClientRect();
+    const srcX = srcRect.left + srcRect.width/2;
+    const srcY = srcRect.top + srcRect.height/2;
+
+    // Ghost card – real face so the user can see it move.
     const ghost = document.createElement("div");
-    ghost.className = "flycard cardface";
-    ghost.dataset.hw = String(72/2);
-    ghost.dataset.hh = String(102/2);
-    ghost.style.left = (sc.x - 72/2) + "px";
-    ghost.style.top  = (sc.y - 102/2) + "px";
-    ghost.appendChild(face.cloneNode(true));
+    ghost.className = "flycard";
+    ghost.style.left = (srcRect.left) + "px";
+    ghost.style.top = (srcRect.top) + "px";
+    ghost.style.width = srcRect.width + "px";
+    ghost.style.height = srcRect.height + "px";
+    ghost.style.pointerEvents = "none";
+    ghost.style.transformOrigin = "center center";
+
+    // Render the actual card face inside the ghost
+    ghost.appendChild(renderCardFace(card));
     document.body.appendChild(ghost);
 
-    // Stability: never hide the real slot/card. If anything interrupts the sweep
-    // we still want the trick to remain visible until the server clears it.
+    const dx = (dstX - srcX);
+    const dy = (dstY - srcY);
 
-    const off = (seat - 1.5) * 10;
-    ghost.style.opacity = "1";
-    const anim = flyArc(ghost, dc.x + off, dc.y, { duration: dur, rotate: (seat%2 ? 8 : -8), scale: 0.94 });
+    const anim = ghost.animate([
+      { transform: "translate(0px, 0px) scale(1) rotate(0deg)", opacity: 1 },
+      { transform: `translate(${dx}px, ${dy}px) scale(0.88) rotate(6deg)`, opacity: 0.98 }
+    ], {
+      duration: 1600,
+      easing: "cubic-bezier(0.2,0.8,0.2,1)",
+      fill: "forwards"
+    });
 
-    const fin = () => {
-      ghost.style.opacity = "0";
-      setTimeout(()=> ghost.remove(), 260);
-    };
-    if (anim && anim.finished) finishes.push(anim.finished.then(fin).catch(fin));
-    else finishes.push(new Promise(res=> setTimeout(()=>{ fin(); res(); }, dur + 80)));
+    anim.finished.then(() => {
+      ghost.remove();
+    }).catch(()=>{ try{ghost.remove();}catch(e){} });
   }
-
-  // No slot cleanup required (we never hide them).
-  Promise.allSettled(finishes).catch(()=>{});
 }
 
 

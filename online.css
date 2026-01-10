@@ -98,7 +98,7 @@
 .cardbtn:disabled .playingcard{filter: grayscale(.4);}
 .slot .playingcard{transform: scale(.95); transform-origin: left top;}
 
-/* --- v0.2.19: winner sweep animation helpers (stable, visible) --- */
+/* --- v0.2.20: winner sweep animation helpers (stable, visible) --- */
 .flycard{
   position: fixed;
   z-index: 9999;
