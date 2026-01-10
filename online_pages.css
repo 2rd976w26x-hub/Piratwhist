@@ -57,13 +57,14 @@ body.page-play .handDock .cards .cardbtn:focus{ z-index: 6; }
 /* Move the bottom seat up to make room for the overlapping hand */
 body.page-play .seat-bottom{ bottom: 120px; }
 
- (max-width: 860px){
+@media (max-width: 860px){
   body.page-play .handDock{ bottom: 72px; width: 98%; }
   body.page-play .seat-bottom{ bottom: 108px; }
   body.page-play .handDock .cards .cardbtn{ margin-left: -22px; }
 }
- (max-width: 480px){
-  body.page-play .seat-bottom{ bottom: 98px; }
+@media (max-width: 480px){
+  body.page-play .handDock{ bottom: 58px; }
+  body.page-play .seat-bottom{ bottom: 112px; }
 }
 
 .centerArea { display:flex; flex-direction:column; gap:12px; }
@@ -84,7 +85,28 @@ body.page-play .seat-bottom{ bottom: 120px; }
   overflow: hidden;
 }
 
-/* v0.2.21: dynamic seats/trick slots (2–8 players) */
+/* Mobile/compact play: use the full viewport and avoid vertical scrolling */
+@media (max-width: 860px){
+  body.page-play .playersPanel{ display:none; }
+  body.page-play .playLayout{ grid-template-columns: 1fr; }
+  body.page-play .centerArea{ gap: 8px; }
+
+  /* Give the board the screen; the hand overlays it */
+  body.page-play .playBoard{ min-height: 0; }
+  body.page-play .board{
+    min-height: 0;
+    height: calc(100dvh - 120px);
+  }
+
+  /* Hide the footer on the play page to save space */
+  body.page-play .footer{ display:none; }
+}
+
+@media (max-width: 480px){
+  body.page-play .board{ height: calc(100dvh - 112px); }
+}
+
+/* v0.2.23: dynamic seats/trick slots (2–8 players) */
 .boardSeats{
   position:absolute;
   inset:0;
