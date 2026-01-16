@@ -1,9 +1,13 @@
-// Piratwhist Online Multiplayer (v0.2.26)
+// Piratwhist Online Multiplayer (v0.2.27)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.26";
-// v0.2.26: Fix ReferenceError on card click (ENABLE_FLY alias). Winner sweep animation ON. No per-card flying during normal play.
-const ENABLE_FLY_CARDS = false;
+const APP_VERSION = "0.2.27";
+// v0.2.27: Visible animations (2s) for:
+// 1) Card played: player seat -> center table (ghost card)
+// 2) Trick won: all table cards -> winning player's seat
+// NOTE: Deal animation intentionally disabled to keep the game snappy.
+const ENABLE_FLY_CARDS = true;
+const ENABLE_DEAL_ANIM = false;
 // Backwards-compat alias used in a few click handlers
 const ENABLE_FLY = ENABLE_FLY_CARDS;
 const ENABLE_SWEEP = true;
@@ -220,7 +224,7 @@ function flyArc(elm, tx, ty, opts){
 }
 
 function runDealAnimation(){
-  if (!ENABLE_FLY_CARDS) return;
+  if (!ENABLE_FLY_CARDS || !ENABLE_DEAL_ANIM) return;
   const deck = el("olDeck");
   if (!deck) return;
   const deckC = rectCenter(deck);
@@ -282,7 +286,7 @@ function runPlayAnimation(seat, cardObj, srcRect){
   const fc = spawnFlyCard(sc.x, sc.y, cardObj, false);
   // Slightly slower + arc so it is clearly visible
   fc.style.opacity = "1";
-  const dur = 3000;
+  const dur = 2000;
   const anim = flyArc(fc, dc.x, dc.y, { duration: dur, rotate: (seat === 0 ? -4 : 4), scale: 1.0 });
 
   const finish = () => {
@@ -359,7 +363,7 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
       { transform: "translate(0px, 0px) scale(1) rotate(0deg)", opacity: 1 },
       { transform: `translate(${dx}px, ${dy}px) scale(0.88) rotate(6deg)`, opacity: 0.98 }
     ], {
-      duration: 1600,
+      duration: 2000,
       easing: "cubic-bezier(0.2,0.8,0.2,1)",
       fill: "forwards"
     });
@@ -914,7 +918,7 @@ function maybeRunAnimations(){
   const cr = state.roundIndex;
   const dealKey = `dealDone_${cr}`;
   if (!window.__pwDealDone) window.__pwDealDone = {};
-  const shouldDeal = (pr !== cr) || (prevState?.phase !== "bidding" && state.phase === "bidding");
+  const shouldDeal = ENABLE_DEAL_ANIM && ((pr !== cr) || (prevState?.phase !== "bidding" && state.phase === "bidding"));
   if (shouldDeal && !window.__pwDealDone[dealKey] && state.hands){
     window.__pwDealDone[dealKey] = true;
     setTimeout(runDealAnimation, 260);
