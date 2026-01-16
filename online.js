@@ -1,8 +1,10 @@
-// Piratwhist Online Multiplayer (v0.2.30)
+// Piratwhist Online Multiplayer (v0.2.31)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.30";
-// v0.2.30: Ensure trick sweep waits for the last card fly-in to finish,
+const APP_VERSION = "0.2.31";
+// v0.2.31:
+// - Remove winner toast/marking on board (cards sweeping to winner is the cue)
+// - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
 // destination rendering while a fly-in is active, and hiding center slots
 // while sweep-to-winner runs.
@@ -178,6 +180,33 @@ function maybeRedirectForPhase(){
   const isEntry = here.endsWith("/online.html") || here === "/online.html" || here.endsWith("online.html");
   const desiredFile = desired.split("/").pop();
   const onDesired = here.endsWith("/" + desiredFile) || here.endsWith(desiredFile);
+
+  // Clear any pending delayed redirect if we're no longer in round_finished.
+  if (state.phase !== "round_finished"){
+    clearTimeout(maybeRedirectForPhase._timer);
+    maybeRedirectForPhase._pendingKey = null;
+  }
+
+  // UX: After the LAST trick in a round, keep the play board visible a bit
+  // before moving to the results page.
+  // (Avoid immediate redirect when the server flips to round_finished.)
+  if (state.phase === "round_finished"){
+    const onPlay = here.endsWith("/online_play.html") || here.endsWith("online_play.html");
+    if (onPlay){
+      const key = `${roomCode}|${state.roundIndex}`;
+      if (maybeRedirectForPhase._pendingKey !== key){
+        clearTimeout(maybeRedirectForPhase._timer);
+        maybeRedirectForPhase._pendingKey = key;
+        maybeRedirectForPhase._timer = setTimeout(()=>{
+          // Only redirect if we're still in the same room+round and still finished.
+          if (state && roomCode && state.phase === "round_finished" && `${roomCode}|${state.roundIndex}` === key){
+            window.location.replace(`${desired}?code=${encodeURIComponent(roomCode)}`);
+          }
+        }, 4000);
+      }
+      return false;
+    }
+  }
 
   const target = `${desired}?code=${encodeURIComponent(roomCode)}`;
   if (isEntry){
@@ -1123,44 +1152,20 @@ function render(){
     } else if (state.phase === "round_finished"){
       info.textContent = `Runde ${rNo} færdig · Klik “Næste runde”`;
     } else if (state.phase === "between_tricks"){
-      info.textContent = `Stik færdig · Vinder: ${state.names[state.winner]}`;
+      // Winner is shown via the sweep-to-winner animation; keep text neutral.
+      info.textContent = "Stik færdig";
     } else {
       info.textContent = `Runde ${rNo} · Tur: ${state.names[state.turn]}`;
     }
   }
 
-  // Winner toast on the round table (play page)
-  (function updateWinnerToast(){
+  // Remove winner toast/marking on the board. The trick sweep animation
+  // (cards moving to the winner) is the visual cue.
+  (function hideWinnerToast(){
     const t = el("olWinnerToast");
     if (!t) return;
-    let msg = "";
-    if (state.phase === "between_tricks" && state.winner !== null && state.winner !== undefined){
-      msg = `${state.names[state.winner] || ("Spiller " + (state.winner+1))} vandt stikket`;
-    } else if (state.phase === "round_finished"){
-      // Round winner (most tricks). If tie, list the tied names.
-      const tr = Array.isArray(state.tricksRound) ? state.tricksRound : [];
-      if (tr.length){
-        const mx = Math.max(...tr.map(x=> Number(x||0)));
-        const ws = tr.map((x,i)=>({x:Number(x||0),i})).filter(o=>o.x===mx).map(o=>o.i);
-        const names = ws.map(i=> state.names[i] || ("Spiller " + (i+1))).join(ws.length>1 ? ", " : "");
-        msg = ws.length>1 ? `Runden uafgjort: ${names} (${mx} stik)` : `${names} vandt runden (${mx} stik)`;
-      }
-    }
-
-    if (!msg){
-      t.classList.add("hidden");
-      t.textContent = "";
-      return;
-    }
-    t.textContent = msg;
-    t.classList.remove("hidden");
-    // Auto-hide after a moment (except round_finished where it can stay until next round)
-    if (state.phase !== "round_finished"){
-      clearTimeout(updateWinnerToast._timer);
-      updateWinnerToast._timer = setTimeout(()=>{
-        t.classList.add("hidden");
-      }, 2200);
-    }
+    t.classList.add("hidden");
+    t.textContent = "";
   })();
 
   if (el("olLeader")) el("olLeader").textContent = state.names[state.leader] ?? "-";
