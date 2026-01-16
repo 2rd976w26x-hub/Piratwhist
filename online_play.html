@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.2.33 · Spil</title>
+  <title>Piratwhist v0.2.34 · Spil</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
   <link rel="stylesheet" href="/online_pages.css" />
@@ -33,7 +33,8 @@
         <!-- Seats are injected dynamically so the board can handle 2–8 players. -->
         <div id="olBoardSeats" class="boardSeats" aria-hidden="false"></div>
 
-        <div class="deck" id="olDeck" title="Kortbunke"></div>
+        <!-- No global deck pile on the board.
+             Won tricks are represented per-seat via each player's mini pile (seatPile). -->
 
         <!-- Trick slots are injected dynamically (one per player) -->
         <div class="pile centerPile" id="olPile" title="Stik (midt)">
@@ -72,7 +73,7 @@
       <div class="brand">
         <div class="logo">🏴‍☠️</div>
         <div>
-          <div class="title">Piratwhist <span class="ver">v0.2.33</span></div>
+          <div class="title">Piratwhist <span class="ver">v0.2.34</span></div>
           <div class="sub">Online spil · spar er trumf · bekend kulør</div>
         </div>
       </div>

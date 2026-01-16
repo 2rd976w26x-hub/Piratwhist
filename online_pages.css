@@ -243,37 +243,39 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   border: 1px solid rgba(255,255,255,.08);
 }
 .chip.ghost{ opacity: .75; }
+/* Per-seat won-tricks mini pile (destination for the sweep animation)
+   Rendered as a small stack of cards near each seat (more realistic than a global pile). */
 .seatPile{
   margin-top: 8px;
-  height: 16px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.08);
+  width: 44px;
+  height: 60px;
+  border-radius: 10px;
+  background: rgba(0,0,0,.18);
+  border: 1px solid rgba(255,255,255,.14);
   position: relative;
-  overflow:hidden;
+  overflow: visible;
 }
+.seatPile::before,
 .seatPile::after{
   content: "";
-  position:absolute; inset:0;
-  background: linear-gradient(90deg, rgba(255,255,255,.12), rgba(255,255,255,0));
-  opacity: .35;
+  position:absolute;
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 60px;
+  border-radius: 10px;
+  background: rgba(0,0,0,.18);
+  border: 1px solid rgba(255,255,255,.10);
 }
+.seatPile::before{ transform: translate(4px, 4px) rotate(4deg); opacity: .55; }
+.seatPile::after{ transform: translate(8px, 8px) rotate(8deg); opacity: .30; }
 
 .seat-top { left: 50%; top: 6px; transform: translateX(-50%); text-align:center; }
 .seat-bottom { left: 50%; bottom: 6px; transform: translateX(-50%); text-align:center; }
 .seat-left { left: 6px; top: 50%; transform: translateY(-50%); }
 .seat-right { right: 6px; top: 50%; transform: translateY(-50%); }
 
-.board .deck{
-  position:absolute;
-  right: 18px;
-  bottom: 18px;
-  width: 72px;
-  height: 102px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(0,0,0,.22);
-}
+/* No global deck pile on the play board in v0.2.34+ (we use per-seat piles instead). */
 
 /* Prevent overflow in the left panel on the play page */
 .playersPanel .table .slot .name { white-space: normal; }
