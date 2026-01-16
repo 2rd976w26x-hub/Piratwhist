@@ -1,8 +1,8 @@
-// Piratwhist Online Multiplayer (v0.2.32)
+// Piratwhist Online Multiplayer (v0.2.33)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.32";
-// v0.2.32:
+const APP_VERSION = "0.2.33";
+// v0.2.33:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -197,12 +197,25 @@ function maybeRedirectForPhase(){
       if (maybeRedirectForPhase._pendingKey !== key){
         clearTimeout(maybeRedirectForPhase._timer);
         maybeRedirectForPhase._pendingKey = key;
+        // Wait for any in-flight animations to finish (last card fly-in + sweep-out)
+        // and then keep the board visible for 4 seconds before redirecting.
         maybeRedirectForPhase._timer = setTimeout(()=>{
-          // Only redirect if we're still in the same room+round and still finished.
-          if (state && roomCode && state.phase === "round_finished" && `${roomCode}|${state.roundIndex}` === key){
-            window.location.replace(`${desired}?code=${encodeURIComponent(roomCode)}`);
-          }
-        }, 4000);
+          (async ()=>{
+            try{
+              const pending = Object.values(PW_ANIM?.flyPromises || {}).filter(Boolean);
+              if (pending.length) await Promise.allSettled(pending);
+              if (PW_ANIM?.sweepPromise) await PW_ANIM.sweepPromise;
+            }catch(e){ /* ignore */ }
+
+            // Extra pause requested by UX (show the finished board before results).
+            await new Promise((res)=>setTimeout(res, 4000));
+
+            // Only redirect if we're still in the same room+round and still finished.
+            if (state && roomCode && state.phase === "round_finished" && `${roomCode}|${state.roundIndex}` === key){
+              window.location.replace(`${desired}?code=${encodeURIComponent(roomCode)}`);
+            }
+          })();
+        }, 0);
       }
       return false;
     }
@@ -404,6 +417,12 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
   const pile = el("olPile");
   if (!pile) return;
 
+  // Expose a promise so other flows (e.g. end-of-round redirect) can
+  // reliably wait until the sweep has fully completed.
+  // (We must avoid cutting the animation short on the last trick.)
+  let resolveSweep = null;
+  PW_ANIM.sweepPromise = new Promise((res)=>{ resolveSweep = res; });
+
   // Hide the real center slots during the sweep so the user only sees
   // the moving ghost cards (prevents "double" cards).
   try{
@@ -428,6 +447,8 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
   // Animate every card currently in the center pile to the winner.
   // cardsBySeat is an array indexed by seat; each entry is the card object played by that seat (or null).
   const seatCount = playerCount();
+
+  const finished = [];
 
   for (let s=0; s<seatCount; s++){
     const card = (cardsBySeat && cardsBySeat[s]) ? cardsBySeat[s] : null;
@@ -466,6 +487,8 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
       fill: "forwards"
     });
 
+    if (anim && anim.finished) finished.push(anim.finished);
+
     anim.finished.then(() => {
       ghost.remove();
     }).catch(()=>{ try{ghost.remove();}catch(e){} });
@@ -477,6 +500,7 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
       for (let s=0; s<seatCount; s++) delete PW_ANIM.sweepHide[s];
       render();
     }catch(e){ /* ignore */ }
+    try{ resolveSweep && resolveSweep(); }catch(e){ /* ignore */ }
   }, 2100);
 }
 
@@ -486,13 +510,14 @@ function runTrickSweepAnimationQueued(winnerSeat, cardsBySeat){
   try{
     const pending = Object.values(PW_ANIM.flyPromises || {}).filter(Boolean);
     if (pending.length){
-      Promise.allSettled(pending).then(() => {
+      return Promise.allSettled(pending).then(() => {
         setTimeout(() => runTrickSweepAnimation(winnerSeat, cardsBySeat), 20);
+        return PW_ANIM.sweepPromise;
       });
-      return;
     }
   }catch(e){ /* ignore */ }
   runTrickSweepAnimation(winnerSeat, cardsBySeat);
+  return PW_ANIM.sweepPromise;
 }
 
 
@@ -1090,7 +1115,6 @@ function maybeRunAnimations(){
         if (!window.__pwSweepDone[key]){
           window.__pwSweepDone[key] = true;
           setTimeout(()=> runTrickSweepAnimationQueued(state.winner, (prevState && prevState.table) ? prevState.table : (state.table || [])), 30);
-          setTimeout(highlightWinner, 120);
         }
       }catch(e){ /* ignore */ }
     }
