@@ -1,17 +1,56 @@
-// Piratwhist Online Multiplayer (v0.2.27)
+// Piratwhist Online Multiplayer (v0.2.29)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.27";
-// v0.2.27: Visible animations (2s) for:
+const APP_VERSION = "0.2.29";
+// v0.2.29: Fix double-appearance during animations by suppressing
+// destination rendering while a fly-in is active, and hiding center slots
+// while sweep-to-winner runs.
 // 1) Card played: player seat -> center table (ghost card)
 // 2) Trick won: all table cards -> winning player's seat
-// NOTE: Deal animation intentionally disabled to keep the game snappy.
+// NOTE: Deal animation can be toggled via console.
+//   pwSetFlag('dealAnim', true);  location.reload();
+//   pwSetFlag('dealAnim', false); location.reload();
+// Flags persist in localStorage under 'pw_flags'.
+const PW_FLAGS = (() => {
+  try {
+    const fromStorage = JSON.parse(localStorage.getItem('pw_flags') || '{}');
+    const fromWindow = (typeof window !== 'undefined' && window.PW_FLAGS) ? window.PW_FLAGS : {};
+    return Object.assign({}, fromStorage, fromWindow);
+  } catch {
+    return (typeof window !== 'undefined' && window.PW_FLAGS) ? window.PW_FLAGS : {};
+  }
+})();
+if (typeof window !== 'undefined') {
+  window.PW_FLAGS = PW_FLAGS;
+  window.pwSetFlag = (k, v) => {
+    PW_FLAGS[k] = v;
+    try { localStorage.setItem('pw_flags', JSON.stringify(PW_FLAGS)); } catch {}
+    console.log('PW_FLAGS:', PW_FLAGS);
+  };
+  window.pwClearFlags = () => {
+    try { localStorage.removeItem('pw_flags'); } catch {}
+    for (const k of Object.keys(PW_FLAGS)) delete PW_FLAGS[k];
+    console.log('PW_FLAGS cleared');
+  };
+}
+
 const ENABLE_FLY_CARDS = true;
-const ENABLE_DEAL_ANIM = false;
+const ENABLE_DEAL_ANIM = (PW_FLAGS.dealAnim ?? false) === true;
 // Backwards-compat alias used in a few click handlers
 const ENABLE_FLY = ENABLE_FLY_CARDS;
 const ENABLE_SWEEP = true;
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
+
+// Animation bookkeeping (prevents "double" rendering):
+// - flyIn[seat] = cardKey while a played-card animation is running to the center slot
+// - sweepHide[seat] = true while a sweep-to-winner is running (hide the real slot so only ghosts move)
+const PW_ANIM = (() => {
+  if (typeof window === 'undefined') return { flyIn: {}, sweepHide: {} };
+  window.__pwAnim = window.__pwAnim || { flyIn: {}, sweepHide: {} };
+  window.__pwAnim.flyIn = window.__pwAnim.flyIn || {};
+  window.__pwAnim.sweepHide = window.__pwAnim.sweepHide || {};
+  return window.__pwAnim;
+})();
 
 // Stable client identity across page navigations (keeps host seat on redirect)
 function getClientId(){
@@ -278,6 +317,12 @@ function runPlayAnimation(seat, cardObj, srcRect){
   }
   const dc = rectCenter(dst);
 
+  // Suppress destination rendering while the ghost flies in (prevents double).
+  try{
+    const k = `${cardObj.rank}${cardObj.suit}`;
+    PW_ANIM.flyIn[seat] = k;
+  }catch(e){ /* ignore */ }
+
   // IMPORTANT stability rule:
   // Never hide the real destination slot. If animation fails or is interrupted
   // (reload, phase change, race), hidden slots can leave the table looking empty.
@@ -290,8 +335,11 @@ function runPlayAnimation(seat, cardObj, srcRect){
   const anim = flyArc(fc, dc.x, dc.y, { duration: dur, rotate: (seat === 0 ? -4 : 4), scale: 1.0 });
 
   const finish = () => {
+    try{ delete PW_ANIM.flyIn[seat]; }catch(e){}
     fc.style.opacity = "0";
     setTimeout(()=> fc.remove(), 260);
+    // Re-render so the real card appears at destination after the fly-in completes.
+    try{ render(); }catch(e){ /* ignore */ }
   };
 
   if (anim && typeof anim.finished !== "undefined"){
@@ -316,6 +364,17 @@ function spawnFlyStack(x, y, label){
 function runTrickSweepAnimation(winnerSeat, cardsBySeat){
   const pile = el("olPile");
   if (!pile) return;
+
+  // Hide the real center slots during the sweep so the user only sees
+  // the moving ghost cards (prevents "double" cards).
+  try{
+    const seatCount0 = playerCount();
+    for (let s=0; s<seatCount0; s++){
+      if (cardsBySeat && cardsBySeat[s]) PW_ANIM.sweepHide[s] = true;
+    }
+    // Render once so the slots are hidden immediately.
+    try{ render(); }catch(e){}
+  }catch(e){ /* ignore */ }
 
   // Destination: winner seat's pile/label; fallback to winner seat container.
   const dstEl = el(`olSeatPile${winnerSeat}`) ||
@@ -372,6 +431,14 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
       ghost.remove();
     }).catch(()=>{ try{ghost.remove();}catch(e){} });
   }
+
+  // Clear sweep-hide after the animation time.
+  setTimeout(() => {
+    try{
+      for (let s=0; s<seatCount; s++) delete PW_ANIM.sweepHide[s];
+      render();
+    }catch(e){ /* ignore */ }
+  }, 2100);
 }
 
 
@@ -1105,10 +1172,17 @@ function render(){
         slot.style.visibility = "";
         slot.innerHTML = "";
         const c = state.table ? state.table[i] : null;
-        if (c){
-          const ce = makeCardEl(c);
-          ce.disabled = true;
-          slot.appendChild(ce.firstChild);
+        if (PW_ANIM.sweepHide[i]){
+          // While sweep-to-winner runs, hide the real slot so only the moving ghosts are visible.
+          slot.style.visibility = "hidden";
+        } else if (c){
+          // While fly-in runs, suppress rendering at destination to avoid "double" (ghost + final).
+          const key = `${c.rank}${c.suit}`;
+          if (!PW_ANIM.flyIn[i] || PW_ANIM.flyIn[i] !== key){
+            const ce = makeCardEl(c);
+            ce.disabled = true;
+            slot.appendChild(ce.firstChild);
+          }
         }
       }
     }
