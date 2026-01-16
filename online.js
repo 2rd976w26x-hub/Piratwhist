@@ -1,9 +1,10 @@
-// Piratwhist Online Multiplayer (v0.2.23)
+// Piratwhist Online Multiplayer (v0.2.25)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.23";
-// v0.2.23: Only winner sweep animation. No per-card flying during normal play.
-const ENABLE_FLY = false;
+const APP_VERSION = "0.2.25";
+// v0.2.25: Winner sweep animation ON. No per-card flying during normal play.
+const ENABLE_FLY_CARDS = false;
+const ENABLE_SWEEP = true;
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 // Stable client identity across page navigations (keeps host seat on redirect)
@@ -32,6 +33,7 @@ function setStoredName(v){
 let joinInProgress = false;
 let pendingJoinRoom = null;
 let pendingCreateRoom = false;
+let joinRetryCount = 0;
 
 
 function el(id){ return document.getElementById(id); }
@@ -216,7 +218,7 @@ function flyArc(elm, tx, ty, opts){
 }
 
 function runDealAnimation(){
-  if (!ENABLE_FLY) return;
+  if (!ENABLE_FLY_CARDS) return;
   const deck = el("olDeck");
   if (!deck) return;
   const deckC = rectCenter(deck);
@@ -249,7 +251,7 @@ function runDealAnimation(){
 }
 
 function runPlayAnimation(seat, cardObj, srcRect){
-  if (!ENABLE_FLY) return;
+  if (!ENABLE_FLY_CARDS) return;
   const pile = el("olPile");
   const deck = el("olDeck");
   if (!pile) return;
@@ -608,16 +610,37 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 socket.on("error", (data) => {
+  const msg = (data?.message || "Ukendt fejl");
+
+  // Robust join: During fast redirects between pages, the server may still be
+  // finishing room creation / re-attachment. If we get "Rum ikke fundet" while
+  // we *do* have a join pending, retry a few times before showing the error.
+  if (msg === "Rum ikke fundet." && pendingJoinRoom && joinRetryCount < 6){
+    joinInProgress = false;
+    pendingCreateRoom = false;
+    joinRetryCount += 1;
+    const waitMs = 200 + (joinRetryCount * 150);
+    const status = el("olRoomStatus");
+    if (status) status.textContent = `Forbinder… (forsøg ${joinRetryCount}/6)`;
+    setTimeout(() => {
+      // Keep the pendingJoinRoom; try again.
+      joinRoom(pendingJoinRoom);
+    }, waitMs);
+    return;
+  }
+
   joinInProgress = false;
   pendingJoinRoom = null;
   pendingCreateRoom = false;
-  showRoomWarn(data?.message || "Ukendt fejl");
+  joinRetryCount = 0;
+  showRoomWarn(msg);
 });
 
 socket.on("online_state", (payload) => {
   joinInProgress = false;
   pendingJoinRoom = null;
   pendingCreateRoom = false;
+  joinRetryCount = 0;
   roomCode = payload.room;
   if (payload.seat !== null && payload.seat !== undefined) mySeat = payload.seat;
   prevState = state;
@@ -744,7 +767,11 @@ function createRoom(){
   });
 }
 function joinRoom(roomOverride){
-  const room = normalizeCode(roomOverride ?? el("olRoomCode")?.value);
+  // If used as a click handler, the browser passes an Event object – ignore it.
+  if (roomOverride && typeof roomOverride === "object" && ("preventDefault" in roomOverride || "currentTarget" in roomOverride)){
+    roomOverride = null;
+  }
+  const room = normalizeCode((roomOverride !== undefined && roomOverride !== null) ? roomOverride : el("olRoomCode")?.value);
   if (!room) return;
   setStoredName(myName());
   joinInProgress = true;
@@ -877,7 +904,7 @@ function renderScores(){
 }
 
 function maybeRunAnimations(){
-  if (!ENABLE_FLY) return;
+  if (!ENABLE_FLY_CARDS) return;
   if (!state) return;
 
   // Deal animation: when roundIndex changes OR phase enters bidding and previous wasn't bidding for same round
@@ -927,7 +954,7 @@ function maybeRunAnimations(){
   // the client may miss a phase transition but still receive winner + table.
   // Therefore we trigger the sweep based on (phase in between_tricks/round_finished)
   // AND presence of winner+table, not solely on phase changes.
-  if (state && (state.phase === "between_tricks" || state.phase === "round_finished")){
+  if (ENABLE_SWEEP && state && (state.phase === "between_tricks" || state.phase === "round_finished")){
     if (state.winner !== null && state.winner !== undefined){
       try{
         const sig = JSON.stringify((prevState && prevState.table) ? prevState.table : (state.table || []));

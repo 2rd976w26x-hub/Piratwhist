@@ -719,9 +719,14 @@ def online_leave_room(data):
     if seat is not None:
         st = room["state"]
         st["names"][seat] = None
+        # IMPORTANT: Do NOT delete the room immediately when it becomes empty.
+        # Redirects/navigation between phase pages can briefly leave the room
+        # with 0 live members, and immediate deletion causes "Rum ikke fundet"
+        # on the next page load. We keep the room for a short TTL.
         if not room["members"]:
-            ONLINE_ROOMS.pop(code, None)
+            room["emptySince"] = time.time()
         else:
+            room["emptySince"] = None
             _online_emit_full_state(code, room)
 
     emit("online_left")
