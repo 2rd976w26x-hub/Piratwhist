@@ -1,8 +1,8 @@
-// Piratwhist Online Multiplayer (v0.2.31)
+// Piratwhist Online Multiplayer (v0.2.32)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.31";
-// v0.2.31:
+const APP_VERSION = "0.2.32";
+// v0.2.32:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.

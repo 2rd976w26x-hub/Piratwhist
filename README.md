@@ -1,4 +1,4 @@
-# Piratwhist – Scorekeeper (v0.2.31)
+# Piratwhist – Scorekeeper (v0.2.32)
 
 ## Rum / multiplayer ✅
 - Opret rum og få en 6-tegns kode

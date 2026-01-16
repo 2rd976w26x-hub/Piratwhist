@@ -387,7 +387,12 @@ def _online_schedule_bot_turn(code: str):
 def _online_schedule_auto_next_trick(code: str, round_index: int):
     def _task():
         try:
-            socketio.sleep(1.2)
+            # Wait for the client-side animations to finish before advancing.
+            # In the UI we animate:
+            #  - card flies in: 2s
+            #  - trick sweeps out to winner: 2s
+            # We gate server-side advancement using st["sweepUntil"].
+            socketio.sleep(0.2)
             room = ONLINE_ROOMS.get(code)
             if not room:
                 return
@@ -396,6 +401,17 @@ def _online_schedule_auto_next_trick(code: str, round_index: int):
                 return
             if st.get("roundIndex") != round_index:
                 return
+            # If a sweep lock is present, do not advance early.
+            sweep_until = st.get("sweepUntil")
+            if sweep_until and time.time() < sweep_until:
+                socketio.sleep(max(0.0, sweep_until - time.time()))
+                # room/state may have changed while sleeping
+                room = ONLINE_ROOMS.get(code)
+                if not room:
+                    return
+                st = room["state"]
+                if st.get("phase") != "between_tricks" or st.get("roundIndex") != round_index:
+                    return
             # auto-advance only if there are bots
             if len(st.get("botSeats", set())) == 0:
                 return
@@ -406,6 +422,7 @@ def _online_schedule_auto_next_trick(code: str, round_index: int):
             st["leadSuit"] = None
             st["table"] = [None for _ in range(n)]
             st["winner"] = None
+            st["sweepUntil"] = None
             st["phase"] = "playing"
 
             _online_emit_full_state(code, room)
@@ -460,6 +477,13 @@ def _online_internal_play_card(code: str, room, seat: int, card_key: str):
         st["winner"] = winner
         st["tricksRound"][winner] += 1
         st["tricksTotal"][winner] += 1
+
+        # Prevent the next trick from starting until the UI has finished animating.
+        # UI timing:
+        #  - card flies in to the table: 2 seconds
+        #  - trick sweeps out to the winner: 2 seconds
+        # Total lock: 4 seconds.
+        st["sweepUntil"] = time.time() + 4.0
 
         if all(len(h) == 0 for h in st["hands"]):
             bids = [int(b or 0) for b in st["bids"]]
@@ -930,11 +954,16 @@ def online_next(data):
     n = st["n"]
 
     if st["phase"] == "between_tricks":
+        sweep_until = st.get("sweepUntil")
+        if sweep_until and time.time() < sweep_until:
+            # Ignore early "next" clicks while the trick is still sweeping to the winner.
+            return
         st["leader"] = st["winner"]
         st["turn"] = st["leader"]
         st["leadSuit"] = None
         st["table"] = [None for _ in range(n)]
         st["winner"] = None
+        st["sweepUntil"] = None
         st["phase"] = "playing"
 
     elif st["phase"] == "round_finished":

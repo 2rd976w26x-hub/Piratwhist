@@ -106,7 +106,7 @@ body.page-play .seat-bottom{ bottom: 120px; }
   body.page-play .board{ height: calc(100dvh - 112px); }
 }
 
-/* v0.2.31: dynamic seats/trick slots (2–8 players) */
+/* v0.2.32: dynamic seats/trick slots (2–8 players) */
 .boardSeats{
   position:absolute;
   inset:0;
