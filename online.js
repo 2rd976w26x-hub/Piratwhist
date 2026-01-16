@@ -1,9 +1,11 @@
-// Piratwhist Online Multiplayer (v0.2.25)
+// Piratwhist Online Multiplayer (v0.2.26)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.25";
-// v0.2.25: Winner sweep animation ON. No per-card flying during normal play.
+const APP_VERSION = "0.2.26";
+// v0.2.26: Fix ReferenceError on card click (ENABLE_FLY alias). Winner sweep animation ON. No per-card flying during normal play.
 const ENABLE_FLY_CARDS = false;
+// Backwards-compat alias used in a few click handlers
+const ENABLE_FLY = ENABLE_FLY_CARDS;
 const ENABLE_SWEEP = true;
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
