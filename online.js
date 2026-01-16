@@ -1,8 +1,9 @@
-// Piratwhist Online Multiplayer (v0.2.29)
+// Piratwhist Online Multiplayer (v0.2.30)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.29";
-// v0.2.29: Fix double-appearance during animations by suppressing
+const APP_VERSION = "0.2.30";
+// v0.2.30: Ensure trick sweep waits for the last card fly-in to finish,
+// so you don't see the sweep start before the played card has landed.
 // destination rendering while a fly-in is active, and hiding center slots
 // while sweep-to-winner runs.
 // 1) Card played: player seat -> center table (ghost card)
@@ -43,11 +44,13 @@ const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
 
 // Animation bookkeeping (prevents "double" rendering):
 // - flyIn[seat] = cardKey while a played-card animation is running to the center slot
+// - flyPromises[seat] = Promise while the fly-in animation runs (used to sequence sweep)
 // - sweepHide[seat] = true while a sweep-to-winner is running (hide the real slot so only ghosts move)
 const PW_ANIM = (() => {
-  if (typeof window === 'undefined') return { flyIn: {}, sweepHide: {} };
-  window.__pwAnim = window.__pwAnim || { flyIn: {}, sweepHide: {} };
+  if (typeof window === 'undefined') return { flyIn: {}, flyPromises: {}, sweepHide: {} };
+  window.__pwAnim = window.__pwAnim || { flyIn: {}, flyPromises: {}, sweepHide: {} };
   window.__pwAnim.flyIn = window.__pwAnim.flyIn || {};
+  window.__pwAnim.flyPromises = window.__pwAnim.flyPromises || {};
   window.__pwAnim.sweepHide = window.__pwAnim.sweepHide || {};
   return window.__pwAnim;
 })();
@@ -334,8 +337,15 @@ function runPlayAnimation(seat, cardObj, srcRect){
   const dur = 2000;
   const anim = flyArc(fc, dc.x, dc.y, { duration: dur, rotate: (seat === 0 ? -4 : 4), scale: 1.0 });
 
+  // Track the promise so the trick-sweep can wait until the last played
+  // card has fully landed (prevents "unnatural" overlap of animations).
+  try{
+    PW_ANIM.flyPromises[seat] = (anim && anim.finished) ? anim.finished : new Promise((res)=>setTimeout(res, dur + 80));
+  }catch(e){ /* ignore */ }
+
   const finish = () => {
     try{ delete PW_ANIM.flyIn[seat]; }catch(e){}
+    try{ delete PW_ANIM.flyPromises[seat]; }catch(e){}
     fc.style.opacity = "0";
     setTimeout(()=> fc.remove(), 260);
     // Re-render so the real card appears at destination after the fly-in completes.
@@ -439,6 +449,21 @@ function runTrickSweepAnimation(winnerSeat, cardsBySeat){
       render();
     }catch(e){ /* ignore */ }
   }, 2100);
+}
+
+// Ensure sweep waits for any in-flight "played card" animations.
+// This makes the sequence feel natural: card lands -> trick sweeps to winner.
+function runTrickSweepAnimationQueued(winnerSeat, cardsBySeat){
+  try{
+    const pending = Object.values(PW_ANIM.flyPromises || {}).filter(Boolean);
+    if (pending.length){
+      Promise.allSettled(pending).then(() => {
+        setTimeout(() => runTrickSweepAnimation(winnerSeat, cardsBySeat), 20);
+      });
+      return;
+    }
+  }catch(e){ /* ignore */ }
+  runTrickSweepAnimation(winnerSeat, cardsBySeat);
 }
 
 
@@ -1035,7 +1060,7 @@ function maybeRunAnimations(){
         window.__pwSweepDone = window.__pwSweepDone || {};
         if (!window.__pwSweepDone[key]){
           window.__pwSweepDone[key] = true;
-          setTimeout(()=> runTrickSweepAnimation(state.winner, (prevState && prevState.table) ? prevState.table : (state.table || [])), 30);
+          setTimeout(()=> runTrickSweepAnimationQueued(state.winner, (prevState && prevState.table) ? prevState.table : (state.table || [])), 30);
           setTimeout(highlightWinner, 120);
         }
       }catch(e){ /* ignore */ }
