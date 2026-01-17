@@ -1,7 +1,7 @@
-// Piratwhist Online Multiplayer (v0.2.40)
+// Piratwhist Online Multiplayer (v0.2.41)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.40";
+const APP_VERSION = "0.2.41";
 // v0.2.40:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
@@ -339,8 +339,9 @@ async function runDealAnimation(seq){
   const fallbackTarget = handWrap || deck;
 
   const sleep = (ms) => new Promise((res)=>setTimeout(res, ms));
-  const perCardGap = 120;
-  const flightMs = 420;
+  // Faster deal so it doesn't feel sluggish, but still clearly visible.
+  const perCardGap = 55;
+  const flightMs = 280;
 
   // Show a neutral message while dealing (prevents "cards already there" feeling)
   if (handWrap){
@@ -1027,9 +1028,13 @@ function renderBidUI(cardsPer){
     const parts = [];
     for (let i=0;i<n;i++){
       const b = bids[i];
-      parts.push(`<b>${names[i] || ("Spiller " + (i+1))}</b>: ${(b===null||b===undefined) ? "—" : b}`);
+      // Each item gets data-seat so the deal-animation can target ALL players
+      // even on the bidding page (where the round-table board isn't visible).
+      parts.push(
+        `<span class="bidItem" data-seat="${i}"><b>${names[i] || ("Spiller " + (i+1))}</b>: ${(b===null||b===undefined) ? "—" : b}</span>`
+      );
     }
-    list.innerHTML = parts.join(" · ");
+    list.innerHTML = parts.join(" ");
   }
 }
 

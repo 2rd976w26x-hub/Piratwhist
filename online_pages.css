@@ -12,6 +12,23 @@ html, body { height: 100%; }
 .small { font-size: 0.9rem; opacity: .9; }
 .handDock{ margin-top:auto; }
 
+/* Bidding: show the player's hand at full brightness even though cards are not playable. */
+body.page-bidding .cardbtn:disabled{ opacity: 1; }
+body.page-bidding .cardbtn:disabled .playingcard{ filter: none; }
+
+/* Bids list items (also used as deal-animation targets on the bidding page) */
+.bidItem{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.18);
+  margin: 2px 4px 2px 0;
+  white-space: nowrap;
+}
+
 /* Overlay hand onto the board (more realistic) */
 body.page-play .boardPanel{ position:relative; }
 body.page-play .handDock{
