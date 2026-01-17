@@ -77,11 +77,13 @@ body.page-play .handDock .cards .cardbtn:focus{ z-index: 6; }
 /* Bottom seat should stay visible because the hand is positioned above it. */
 
 @media (max-width: 860px){
-  body.page-play .handDock{ left: 50%; right: auto; transform: translateX(-50%); bottom: 150px; width: 98%; }
+  /* Mobile: place the hand higher so it uses the otherwise empty area under the board,
+     and stays clear of the bottom seat + bottom bar. */
+  body.page-play .handDock{ left: 50%; right: auto; transform: translateX(-50%); bottom: 220px; width: 98%; }
   body.page-play .handDock .cards .cardbtn{ margin-left: -22px; }
 }
 @media (max-width: 480px){
-  body.page-play .handDock{ bottom: 130px; }
+  body.page-play .handDock{ bottom: 200px; }
 }
 
 .centerArea { display:flex; flex-direction:column; gap:12px; min-height: 0; }

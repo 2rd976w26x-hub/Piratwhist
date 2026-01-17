@@ -1,7 +1,30 @@
-// Piratwhist Online Multiplayer (v0.2.46)
+// Piratwhist Online Multiplayer (v0.2.47)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.46";
+// Hand sorting (suit then rank) for the local player's hand.
+// Suit order chosen for readability: ♠, ♥, ♦, ♣.
+const SUIT_ORDER = {"♠": 0, "♥": 1, "♦": 2, "♣": 3};
+// Rank order high-to-low: A, K, Q, J, 10..2.
+const RANK_ORDER = (() => {
+  const m = {};
+  const ranks = ["A","K","Q","J","10","9","8","7","6","5","4","3","2"];
+  for (let i=0;i<ranks.length;i++) m[ranks[i]] = i;
+  return m;
+})();
+
+function sortHand(cards){
+  if (!Array.isArray(cards)) return cards;
+  return [...cards].sort((a,b)=>{
+    const sa = SUIT_ORDER[a.suit] ?? 99;
+    const sb = SUIT_ORDER[b.suit] ?? 99;
+    if (sa !== sb) return sa - sb;
+    // Normalize ranks (server uses 2-10,J,Q,K,A as strings)
+    const ra = RANK_ORDER[String(a.rank)] ?? 99;
+    const rb = RANK_ORDER[String(b.rank)] ?? 99;
+    return ra - rb;
+  });
+}
+const APP_VERSION = "0.2.47";
 // v0.2.40:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
@@ -135,9 +158,16 @@ function positionPlayBoard(n){
   if (!seatsWrap || !slotsWrap || !board) return;
 
   const my = (typeof mySeat === "number" && mySeat >= 0) ? mySeat : 0;
-  // Seat ring radius in % (tuned for desktop + responsive CSS scales it)
-  const seatR = (n <= 2) ? 42 : (n <= 4 ? 44 : 46);
-  const slotR = 18;
+  // Seat ring radius in %.
+  // NOTE: The board container has overflow:hidden, so on small screens we must
+  // keep top seats inside the box (otherwise they get clipped and appear "missing").
+  const isMobile = (typeof window !== "undefined" && window.matchMedia)
+    ? window.matchMedia("(max-width: 520px)").matches
+    : false;
+  const seatR = isMobile
+    ? ((n <= 2) ? 38 : (n <= 4 ? 40 : 42))
+    : ((n <= 2) ? 42 : (n <= 4 ? 44 : 46));
+  const slotR = isMobile ? 16 : 18;
 
   for (let i=0;i<n;i++){
     const rel = (i - my + n) % n;
@@ -1456,7 +1486,8 @@ function render(){
 
       const cards = document.createElement("div");
       cards.className = "cards";
-      for (const c of mine){
+      const mineSorted = sortHand(mine);
+      for (const c of mineSorted){
         const b = makeCardEl(c);
         b.disabled = !isPlayable(c);
         b.addEventListener("click", () => {
