@@ -1,4 +1,7 @@
 :root{
+  --cardback: url("assets/card_back.png");
+  --cardback-url: url("assets/card_back.png");
+
   --bg:#0b1020;
   --card:#121a33;
   --text:#e9eefc;
@@ -282,17 +285,29 @@ table.t th{ font-weight:800; color:var(--text); background: rgba(255,255,255,.04
   height: 90px;
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,.16);
-  background: rgba(0,0,0,.25);
+  background: rgba(0,0,0,.12);
   box-shadow: 0 12px 30px rgba(0,0,0,.30);
   position: relative;
 }
+.pile{
+  background-image: var(--cardback-url);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: saturate(1.05) contrast(1.05);
+}
+
 .deck::before{
   content:"";
   position:absolute;
-  inset:8px;
+  inset:6px;
   border-radius:10px;
   border:1px solid rgba(255,255,255,.10);
-  background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.02));
+  background-image: var(--cardback-url);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: saturate(1.05) contrast(1.05);
 }
 .pile::before{
   content:"STIK";
@@ -326,14 +341,16 @@ table.t th{ font-weight:800; color:var(--text); background: rgba(255,255,255,.04
   /* Keep a subtle shadow so the flight is visible */
   box-shadow: 0 14px 35px rgba(0,0,0,.45);
  }
-.flycard.back::after{
-  content:"🏴‍☠️";
-  position:absolute;
-  inset:0;
-  display:grid;
-  place-items:center;
-  font-size:22px;
-  opacity:.9;
+.flycard.back{
+  width: 72px;
+  height: 102px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.16);
+  background-image: var(--cardback-url);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: 0 14px 35px rgba(0,0,0,.45);
 }
 .cardface{
   position: relative;
@@ -382,4 +399,17 @@ table.t th{ font-weight:800; color:var(--text); background: rgba(255,255,255,.04
   justify-content:center;
   font-weight: 900;
   letter-spacing: .6px;
+}
+
+.pile::after{
+  content:"";
+  position:absolute;
+  inset:6px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.10);
+  background-image: var(--cardback-url);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: .95;
 }

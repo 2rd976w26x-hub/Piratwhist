@@ -303,7 +303,7 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .seat-left { left: 6px; top: 50%; transform: translateY(-50%); }
 .seat-right { right: 6px; top: 50%; transform: translateY(-50%); }
 
-/* No global deck pile on the play board in v0.2.37+ (we use per-seat piles instead). */
+/* No global deck pile on the play board in v0.2.38+ (we use per-seat piles instead). */
 
 /* Prevent overflow in the left panel on the play page */
 .playersPanel .table .slot .name { white-space: normal; }
@@ -350,5 +350,5 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .scoreRow:last-child{ border-bottom: none; }
 .pill.tiny{ padding: 3px 8px; font-size: .82rem; }
 
-/* (deprecated) Older hand-overlay rules removed in v0.2.37.
+/* (deprecated) Older hand-overlay rules removed in v0.2.38.
    The authoritative hand overlay + spacing rules live near the top of this file. */
