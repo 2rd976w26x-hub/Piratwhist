@@ -291,6 +291,10 @@ body.page-play .footer{ display:none; }
 .bottomMid{ justify-content:center; flex: 1; }
 .bottomRight{ justify-content:flex-end; }
 
+/* Bottom bar buttons can render as compact icon-buttons on mobile */
+.bottomBar .ico{ display:none; }
+.bottomBar .lbl{ display:inline; }
+
 /* During actual play we prioritize the board: hide the left panel and let the board take full width */
 body.phase-playing .playersPanel,
 body.phase-between_tricks .playersPanel{ display:none; }
@@ -382,6 +386,58 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   .played-bottom { bottom: -14px; }
   .played-left { left: -14px; }
   .played-right { right: -14px; }
+}
+
+/* === Mobile play polish (compact, no scroll, clear layering) === */
+@media (max-width: 520px){
+  /* Keep the center trick area compact so it never dominates the viewport */
+  .centerPile{ width: min(62vmin, 210px); height: min(62vmin, 210px); }
+
+  /* Compact bottom bar and use icons to save horizontal space */
+  .bottomBar{ padding: 8px 10px; border-radius: 16px; gap: 8px; }
+  .bottomLeft,.bottomMid{ gap: 6px; }
+  .bottomRight{ gap: 6px; }
+  .bottomBar .ico{ display:inline; }
+  .bottomBar .lbl{ display:none; }
+  .bottomRight button{ padding: 8px 10px; min-width: 44px; }
+
+  /* Hand overlay: center it and keep it safely above the bottom bar */
+  body.page-play .handDock{
+    left: 50%;
+    transform: translateX(-50%);
+    width: 98%;
+    bottom: 120px;
+  }
+
+  /* Ensure no "panel" background appears behind the hand */
+  body.page-play .handDock .cards{ background: transparent !important; border: none !important; box-shadow:none !important; }
+
+  /* Slightly tighter fanned hand on small screens */
+  body.page-play .handDock .cards .cardbtn{ margin-left: -20px; }
+}
+
+/* Extra-compact mobile polish (<=520px) based on the agreed layout sketch:
+   - keep the center pile smaller using vmin
+   - keep the hand clear of the bottom bar
+   - render bottom bar actions as icon buttons to save width
+   - ensure the hand area has no background panel */
+@media (max-width: 520px){
+  /* Compact center pile so it never becomes a huge square on narrow screens */
+  .centerPile{ width: min(62vmin, 210px); height: min(62vmin, 210px); }
+
+  /* Hand: keep it above the bottom bar and fully transparent */
+  body.page-play .handDock{
+    bottom: 120px;
+    width: 98%;
+  }
+  body.page-play .handDock .cards{ background: transparent !important; border: none !important; box-shadow: none !important; }
+
+  /* Bottom bar: compact + icon actions */
+  .bottomBar{ padding: 8px 10px; gap: 8px; }
+  .bottomRight{ gap: 6px; }
+  .bottomBar .ico{ display:inline; }
+  .bottomBar .lbl{ display:none; }
+  .bottomRight button{ padding: 8px 10px; min-width: 44px; }
 }
 
 .scoreRow{
