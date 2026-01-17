@@ -74,10 +74,31 @@ body.page-play .handDock .cards .cardbtn:focus{ z-index: 6; }
 .playBoard { flex:1; min-height: 0; }
 .playBoard .board{ height: 100%; min-height: 0; }
 
+/* Deck anchor used for deal-animation (ghost cards fly from here) */
+.olDeck{
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 54px;
+  height: 76px;
+  border-radius: 12px;
+  opacity: .82;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.miniDeckRow{ display:flex; justify-content:flex-end; margin:-6px 0 6px; }
+.miniDeck{ width: 48px; height: 68px; border-radius: 12px; opacity:.9; pointer-events:none; }
+
 
 /* === Round table board === */
 
 .playLayout { grid-template-columns: 360px 1fr; }
+
+/* Optional: hide the left players panel on the play page (user toggle) */
+body.hidePlayersPanel .playersPanel{ display:none !important; }
+body.hidePlayersPanel .twoCol.playLayout{ grid-template-columns: 1fr !important; }
 /* Let the board stretch instead of forcing a fixed minimum height (prevents unused empty space). */
 .playBoard { min-height: 0; }
 .board {
@@ -310,7 +331,7 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .seat-left { left: 6px; top: 50%; transform: translateY(-50%); }
 .seat-right { right: 6px; top: 50%; transform: translateY(-50%); }
 
-/* No global deck pile on the play board in v0.2.39+ (we use per-seat piles instead). */
+/* No global deck pile on the play board in v0.2.40+ (we use per-seat piles instead). */
 
 /* Prevent overflow in the left panel on the play page */
 .playersPanel .table .slot .name { white-space: normal; }
@@ -357,5 +378,5 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .scoreRow:last-child{ border-bottom: none; }
 .pill.tiny{ padding: 3px 8px; font-size: .82rem; }
 
-/* (deprecated) Older hand-overlay rules removed in v0.2.39.
+/* (deprecated) Older hand-overlay rules removed in v0.2.40.
    The authoritative hand overlay + spacing rules live near the top of this file. */

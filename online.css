@@ -116,7 +116,7 @@
   box-shadow: 0 0 24px rgba(255, 215, 0, .55);
 }
 
-/* --- v0.2.39: fixed card back (2 persons + 4 butterflies) --- */
+/* --- v0.2.40: fixed card back (2 persons + 4 butterflies) --- */
 .playingcard.back{
   background-image: var(--cardback-url);
   background-size: cover;

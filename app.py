@@ -330,7 +330,78 @@ def _online_public_state(room):
         "pointsTotal": st["pointsTotal"],
         "history": st["history"],
         "botSeats": sorted(list(st.get("botSeats", set()))),
+        # Deal animation metadata (cards themselves remain private).
+        "dealId": st.get("dealId"),
+        "dealSeq": st.get("dealSeq"),
+        "cardsPer": st.get("cardsPer"),
     }
+
+
+def _online_start_deal_phase(code: str, room, round_index: int):
+    """Deal server-side immediately, but keep phase='dealing' briefly so
+    clients can play a visible deal animation without bots advancing.
+
+    This keeps the 'server authoritative state' rule intact.
+    """
+    st = room["state"]
+    n = st["n"]
+
+    hands, cards_per = _online_deal(n, round_index)
+    st["hands"] = hands
+    st["cardsPer"] = cards_per
+
+    # Deterministic seat sequence (card-by-card) for the animation.
+    st["dealId"] = int(st.get("dealId") or 0) + 1
+    st["dealSeq"] = [i % n for i in range(cards_per * n)]
+
+    # Reset round-specific state.
+    st["leader"] = (st["roundIndex"] % st["n"])
+    st["turn"] = st["leader"]
+    st["leadSuit"] = None
+    st["table"] = [None for _ in range(n)]
+    st["winner"] = None
+    st["bids"] = [None for _ in range(n)]
+    st["tricksRound"] = [0 for _ in range(n)]
+
+    # Enter dealing phase and schedule a transition into bidding.
+    st["phase"] = "dealing"
+
+    # Animation pacing (client mirrors this).
+    per_card_ms = 120
+    duration = max(0.8, min(8.0, (cards_per * n * per_card_ms) / 1000.0 + 0.6))
+    st["dealEndsAt"] = time.time() + duration
+    deal_id = st["dealId"]
+
+    _online_emit_full_state(code, room)
+
+    def _finish():
+        try:
+            socketio.sleep(duration)
+            room2 = ONLINE_ROOMS.get(code)
+            if not room2:
+                return
+            st2 = room2["state"]
+            # Only finish if we're still in the same deal.
+            if st2.get("phase") != "dealing":
+                return
+            if st2.get("dealId") != deal_id:
+                return
+
+            st2["phase"] = "bidding"
+
+            _online_bot_choose_bid(room2)
+            if all(b is not None for b in st2["bids"]):
+                st2["phase"] = "playing"
+                st2["turn"] = st2["leader"]
+
+            _online_emit_full_state(code, room2)
+
+            if st2.get("phase") == "playing" and st2.get("turn") in st2.get("botSeats", set()):
+                _online_schedule_bot_turn(code)
+        except Exception:
+            return
+
+    socketio.start_background_task(_finish)
 
 
 def _online_bot_choose_bid(room) -> None:
@@ -543,21 +614,9 @@ def _online_schedule_auto_next_round(code: str, round_index: int):
                 st["phase"] = "game_finished"
             else:
                 st["roundIndex"] += 1
-                hands, _ = _online_deal(n, st["roundIndex"])
-                st["hands"] = hands
-                st["leader"] = (st["roundIndex"] % st["n"])
-                st["turn"] = st["leader"]
-                st["leadSuit"] = None
-                st["table"] = [None for _ in range(n)]
-                st["winner"] = None
-                st["bids"] = [None for _ in range(n)]
-                st["tricksRound"] = [0 for _ in range(n)]
-                st["phase"] = "bidding"
-
-                _online_bot_choose_bid(room)
-                if all(b is not None for b in st["bids"]):
-                    st["phase"] = "playing"
-                    st["turn"] = st["leader"]
+                # Start next round with a short 'dealing' phase.
+                _online_start_deal_phase(code, room, st["roundIndex"])
+                return
 
             _online_emit_full_state(code, room)
             if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
@@ -645,6 +704,11 @@ def online_create_room(data):
             "phase": "lobby",
             "hands": [None for _ in range(n_players)],
             "bids": [None for _ in range(n_players)],
+            # Deal animation meta
+            "dealId": 0,
+            "dealSeq": None,
+            "cardsPer": None,
+            "dealEndsAt": None,
             "tricksRound": [0 for _ in range(n_players)],
             "tricksTotal": [0 for _ in range(n_players)],
             "pointsTotal": [0 for _ in range(n_players)],
@@ -773,30 +837,10 @@ def online_start_game(data):
         emit("error", {"message": "Der skal være mindst 1 menneske og mindst 2 spillere i alt (inkl. computere)."})
         return
 
+    # Start round 1 with a short 'dealing' phase so clients can animate
+    # the deal visibly before bots can advance the game.
     st["roundIndex"] = 0
-    hands, _ = _online_deal(st["n"], 0)
-    st["hands"] = hands
-    st["leader"] = (st["roundIndex"] % st["n"])
-    st["turn"] = st["leader"]
-    st["leadSuit"] = None
-    st["table"] = [None for _ in range(st["n"])]
-    st["winner"] = None
-    st["bids"] = [None for _ in range(st["n"])]
-    st["tricksRound"] = [0 for _ in range(st["n"])]
-    st["phase"] = "bidding"
-
-    _online_bot_choose_bid(room)
-    if all(b is not None for b in st["bids"]):
-        st["phase"] = "playing"
-        st["turn"] = st["leader"]
-
-    _online_emit_full_state(code, room)
-
-    # If bidding just completed and it's a bot's turn to lead, schedule the bot
-    # immediately. Otherwise the game can stall when a bot is the leader for
-    # the round (common with 2 players).
-    if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
-        _online_schedule_bot_turn(code)
+    _online_start_deal_phase(code, room, 0)
 
 
 @socketio.on("online_update_lobby")
@@ -864,6 +908,11 @@ def online_update_lobby(data):
         "phase": "lobby",
         "hands": [None for _ in range(n_players)],
         "bids": [None for _ in range(n_players)],
+        # Deal animation meta
+        "dealId": 0,
+        "dealSeq": None,
+        "cardsPer": None,
+        "dealEndsAt": None,
         "tricksRound": [0 for _ in range(n_players)],
         "tricksTotal": [0 for _ in range(n_players)],
         "pointsTotal": [0 for _ in range(n_players)],

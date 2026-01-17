@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.2.39 · Spil</title>
+  <title>Piratwhist v0.2.40 · Spil</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
   <link rel="stylesheet" href="/online_pages.css" />
@@ -40,6 +40,9 @@
         <div class="pile centerPile" id="olPile" title="Stik (midt)">
           <div id="olTrickSlots" class="trickSlots"></div>
         </div>
+
+        <!-- Deck anchor for deal-animation (ghost/back cards fly from here) -->
+        <div id="olDeck" class="deck olDeck" aria-hidden="true" title="Kortbunke"></div>
       </div>
     </div>
 
@@ -55,6 +58,7 @@
         <span class="pill">Kulør: <b id="olLeadSuit">-</b></span>
       </div>
       <div class="bottomRight">
+        <button id="olTogglePlayersPanel" class="ghost" title="Vis/skjul venstre panel">Panel</button>
         <button id="olNextRound" class="primary">Næste</button>
         <button id="olLeaveRoom" class="danger">Forlad</button>
       </div>
@@ -73,7 +77,7 @@
       <div class="brand">
         <div class="logo">🏴‍☠️</div>
         <div>
-          <div class="title">Piratwhist <span class="ver">v0.2.39</span></div>
+          <div class="title">Piratwhist <span class="ver">v0.2.40</span></div>
           <div class="sub">Online spil · spar er trumf · bekend kulør</div>
         </div>
       </div>

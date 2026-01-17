@@ -1,8 +1,8 @@
-// Piratwhist Online Multiplayer (v0.2.39)
+// Piratwhist Online Multiplayer (v0.2.40)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.39";
-// v0.2.39:
+const APP_VERSION = "0.2.40";
+// v0.2.40:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -169,6 +169,7 @@ function positionPlayBoard(n){
 function desiredPathForPhase(phase){
   const map = {
     "lobby": "/online_lobby.html",
+    "dealing": "/online_bidding.html",
     "bidding": "/online_bidding.html",
     "playing": "/online_play.html",
     "between_tricks": "/online_play.html",
@@ -316,37 +317,56 @@ function flyArc(elm, tx, ty, opts){
   ], { duration: dur, easing, fill: "forwards" });
 }
 
-function runDealAnimation(){
+async function runDealAnimation(seq){
   if (!ENABLE_FLY_CARDS || !ENABLE_DEAL_ANIM) return;
   const deck = el("olDeck");
   if (!deck) return;
+
+  // Mark animation lock (prevents clicks + suppresses immediate hand render)
+  PW_ANIM.dealInProgress = true;
+
   const deckC = rectCenter(deck);
   const n = state?.n || 0;
-  // Find player cards/areas on screen
-  const targets = [];
+
+  // Targets: prefer board seats (play page). Fallback to the hand container (bidding page).
+  const seatEls = {};
   for (let i=0;i<n;i++){
-    const target = document.querySelector(`[data-seat="${i}"]`);
-    if (target) targets.push({seat:i, el:target});
+    const seatEl = document.querySelector(`.board [data-seat="${i}"]`) ||
+                   document.querySelector(`[data-seat="${i}"]`);
+    if (seatEl) seatEls[i] = seatEl;
   }
-  if (!targets.length) return;
+  const handWrap = el("olHands");
+  const fallbackTarget = handWrap || deck;
 
-  const cardsPer = (state?.hands && state.hands[0] ? state.hands[0].length : null);
-  const per = (typeof cardsPer === "number") ? cardsPer : 1;
+  const sleep = (ms) => new Promise((res)=>setTimeout(res, ms));
+  const perCardGap = 120;
+  const flightMs = 420;
 
-  // deal: per rounds, to each seat
-  let t = 0;
-  for (let c=0;c<per;c++){
-    for (const tg of targets){
-      setTimeout(() => {
-        const cc = rectCenter(tg.el);
-        const fc = spawnFlyCard(deckC.x, deckC.y, "", true);
-        // trigger transition
-        requestAnimationFrame(()=> flyTo(fc, cc.x, cc.y, 0.92, 0.98));
-        setTimeout(()=> { fc.style.opacity="0"; setTimeout(()=> fc.remove(), 240); }, 560);
-      }, t);
-      t += 70;
-    }
+  // Show a neutral message while dealing (prevents "cards already there" feeling)
+  if (handWrap){
+    handWrap.innerHTML = `<div class="sub">Dealer kort...</div>`;
   }
+
+  const useSeq = Array.isArray(seq) && seq.length ? seq : Array.from({length: (state?.cardsPer||0) * n}, (_,i)=>i % Math.max(1,n));
+
+  for (let i=0;i<useSeq.length;i++){
+    const seat = (typeof useSeq[i] === "number") ? useSeq[i] : (i % Math.max(1,n));
+    const targetEl = seatEls[seat] || fallbackTarget;
+    const dc = rectCenter(targetEl);
+    const fc = spawnFlyCard(deckC.x, deckC.y, "", true);
+    fc.style.opacity = "1";
+    const rot = (seat % 2 === 0) ? -6 : 6;
+    const anim = flyArc(fc, dc.x, dc.y, { duration: flightMs, rotate: rot, scale: 0.94, peak: 34 });
+    try{
+      if (anim && anim.finished) await anim.finished;
+      else await sleep(flightMs + 30);
+    }catch(e){ await sleep(flightMs + 30); }
+    try{ fc.remove(); }catch(e){ /* ignore */ }
+    await sleep(perCardGap);
+  }
+
+  PW_ANIM.dealInProgress = false;
+  try{ render(); }catch(e){ /* ignore */ }
 }
 
 function runPlayAnimation(seat, cardObj, srcRect){
@@ -809,7 +829,7 @@ socket.on("online_state", (payload) => {
 
   // Expose the current phase to CSS (for responsive layout + hiding side panels during play)
   try{
-    const phases = ["lobby","bidding","playing","between_tricks","round_finished","game_finished"];
+    const phases = ["lobby","dealing","bidding","playing","between_tricks","round_finished","game_finished"];
     phases.forEach(p=> document.body.classList.remove(`phase-${p}`));
     if (state?.phase) document.body.classList.add(`phase-${state.phase}`);
   }catch(e){ /* ignore */ }
@@ -951,6 +971,7 @@ function playCard(cardKey){ if (roomCode) socket.emit("online_play_card", { room
 
 function isPlayable(card){
   if (!state) return false;
+  if (PW_ANIM?.dealInProgress) return false;
   if (state.phase !== "playing") return false;
   if (mySeat === null || mySeat === undefined) return false;
   if (state.turn !== mySeat) return false;
@@ -984,6 +1005,7 @@ function renderBidUI(cardsPer){
   const status = el("olBidStatus");
   if (status){
     if (state.phase === "lobby") status.textContent = "Lobby";
+    else if (state.phase === "dealing") status.textContent = "Dealer";
     else if (state.phase === "bidding") status.textContent = "Afgiv bud";
     else status.textContent = "Bud låst";
   }
@@ -1069,14 +1091,13 @@ function maybeRunAnimations(){
   if (!state) return;
 
   // Deal animation: when roundIndex changes OR phase enters bidding and previous wasn't bidding for same round
-  const pr = prevState?.roundIndex;
-  const cr = state.roundIndex;
-  const dealKey = `dealDone_${cr}`;
-  if (!window.__pwDealDone) window.__pwDealDone = {};
-  const shouldDeal = ENABLE_DEAL_ANIM && ((pr !== cr) || (prevState?.phase !== "bidding" && state.phase === "bidding"));
-  if (shouldDeal && !window.__pwDealDone[dealKey] && state.hands){
-    window.__pwDealDone[dealKey] = true;
-    setTimeout(runDealAnimation, 260);
+  if (ENABLE_DEAL_ANIM && state.phase === "dealing" && state.dealId){
+    window.__pwDealDone = window.__pwDealDone || {};
+    const key = `dealId_${state.dealId}`;
+    if (!window.__pwDealDone[key]){
+      window.__pwDealDone[key] = true;
+      setTimeout(() => runDealAnimation(state.dealSeq || []), 120);
+    }
   }
 
   // Play animations: detect newly placed cards on table
@@ -1178,6 +1199,8 @@ function render(){
     if (state.phase === "lobby"){
       const joined = state.names.filter(Boolean).length;
       info.textContent = `Lobby · ${joined}/${state.n} spillere`;
+    } else if (state.phase === "dealing"){
+      info.textContent = `Runde ${rNo} · Dealer kort...`;
     } else if (state.phase === "bidding"){
       info.textContent = `Runde ${rNo} · Afgiv bud`;
     } else if (state.phase === "game_finished"){
@@ -1328,6 +1351,12 @@ function render(){
   const hands = el("olHands");
   if (hands){
     hands.innerHTML = "";
+    if (state.phase === "dealing" || PW_ANIM?.dealInProgress){
+      const p = document.createElement("div");
+      p.className = "sub";
+      p.textContent = "Dealer kort...";
+      hands.appendChild(p);
+    } else {
     const mine = (mySeat!==null && mySeat!==undefined && state.hands) ? state.hands[mySeat] : null;
 
     if (mine){
@@ -1367,6 +1396,7 @@ function render(){
       p.textContent = roomCode ? "Vent på start." : "Opret eller join et rum.";
       hands.appendChild(p);
     }
+    }
   }
 
   // buttons
@@ -1384,6 +1414,27 @@ function render(){
 el("olCreateRoom")?.addEventListener("click", createRoom);
 el("olJoinRoom")?.addEventListener("click", joinRoom);
 el("olLeaveRoom")?.addEventListener("click", leaveRoom);
+// Play-page: user toggle for the left players panel
+(function initPlayersPanelToggle(){
+  const btn = el("olTogglePlayersPanel");
+  if (!btn) return;
+  const key = "pw_hide_players_panel";
+  const apply = () => {
+    let hidden = false;
+    try{ hidden = localStorage.getItem(key) === "1"; }catch(e){ hidden = false; }
+    document.body.classList.toggle("hidePlayersPanel", hidden);
+    btn.textContent = hidden ? "Vis panel" : "Skjul panel";
+    btn.setAttribute("aria-pressed", hidden ? "true" : "false");
+  };
+  btn.addEventListener("click", () => {
+    let hidden = false;
+    try{ hidden = localStorage.getItem(key) === "1"; }catch(e){ hidden = false; }
+    const next = !hidden;
+    try{ localStorage.setItem(key, next ? "1" : "0"); }catch(e){ /* ignore */ }
+    apply();
+  });
+  apply();
+})();
 el("olStartOnline")?.addEventListener("click", startOnline);
 el("olNextRound")?.addEventListener("click", onNext);
 el("olBidSubmit")?.addEventListener("click", submitBid);
