@@ -16,11 +16,13 @@ html, body { height: 100%; }
 body.page-play .boardPanel{ position:relative; }
 body.page-play .handDock{
   position:absolute;
-  left:50%;
+  /* Place the hand on the LEFT side of the board so it doesn't cover the bottom seat status. */
+  left: 18px;
+  right: auto;
   /* Hand overlays the board, but must NOT cover the bottom seat (name/tricks/pile). */
-  bottom: 170px;
-  transform: translateX(-50%);
-  width: min(980px, 96%);
+  bottom: 150px;
+  transform: none;
+  width: min(720px, 92%);
   z-index: 7;
   background: transparent !important;
   border: none !important;
@@ -58,7 +60,7 @@ body.page-play .handDock .cards .cardbtn:focus{ z-index: 6; }
 /* Bottom seat should stay visible because the hand is positioned above it. */
 
 @media (max-width: 860px){
-  body.page-play .handDock{ bottom: 150px; width: 98%; }
+  body.page-play .handDock{ left: 50%; right: auto; transform: translateX(-50%); bottom: 150px; width: 98%; }
   body.page-play .handDock .cards .cardbtn{ margin-left: -22px; }
 }
 @media (max-width: 480px){
@@ -297,11 +299,11 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .seatPile::after{ transform: translate(8px, 8px) rotate(8deg); opacity: .30; }
 
 .seat-top { left: 50%; top: 6px; transform: translateX(-50%); text-align:center; }
-.seat-bottom { left: 50%; bottom: 6px; transform: translateX(-50%); text-align:center; }
+.seat-bottom { left: 50%; bottom: 22px; transform: translateX(-50%); text-align:center; }
 .seat-left { left: 6px; top: 50%; transform: translateY(-50%); }
 .seat-right { right: 6px; top: 50%; transform: translateY(-50%); }
 
-/* No global deck pile on the play board in v0.2.36+ (we use per-seat piles instead). */
+/* No global deck pile on the play board in v0.2.37+ (we use per-seat piles instead). */
 
 /* Prevent overflow in the left panel on the play page */
 .playersPanel .table .slot .name { white-space: normal; }
@@ -318,7 +320,7 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   .seat-left { left: 14px; }
   .seat-right { right: 14px; }
   .seat-top { top: auto; left: 14px; bottom: 14px; transform:none; text-align:left; }
-  .seat-bottom { left:auto; right:14px; bottom:14px; transform:none; text-align:right; }
+  .seat-bottom { left:auto; right:14px; bottom:22px; transform:none; text-align:right; }
   .centerPile { width: 280px; height: 280px; }
   .played-top { top: -18px; }
   .played-bottom { bottom: -18px; }
@@ -348,5 +350,5 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .scoreRow:last-child{ border-bottom: none; }
 .pill.tiny{ padding: 3px 8px; font-size: .82rem; }
 
-/* (deprecated) Older hand-overlay rules removed in v0.2.36.
+/* (deprecated) Older hand-overlay rules removed in v0.2.37.
    The authoritative hand overlay + spacing rules live near the top of this file. */
