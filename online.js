@@ -1,7 +1,7 @@
-// Piratwhist Online Multiplayer (v0.2.42)
+// Piratwhist Online Multiplayer (v0.2.44)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.42";
+const APP_VERSION = "0.2.44";
 // v0.2.40:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
@@ -348,7 +348,21 @@ async function runDealAnimation(seq){
     handWrap.innerHTML = `<div class="sub">Dealer kort...</div>`;
   }
 
-  const useSeq = Array.isArray(seq) && seq.length ? seq : Array.from({length: (state?.cardsPer||0) * n}, (_,i)=>i % Math.max(1,n));
+  // Deal animation should be shown ONLY to the current player.
+  // We keep server-authoritative dealing (the hand is still taken from state),
+  // but we only animate the cards that belong to "mySeat".
+  const cardsPer = (state?.cardsPer || 0);
+  const me = (typeof mySeat === "number") ? mySeat : null;
+  let useSeq;
+  if (me !== null){
+    if (Array.isArray(seq) && seq.length){
+      useSeq = seq.filter(s => s === me);
+    } else {
+      useSeq = Array.from({length: cardsPer}, () => me);
+    }
+  } else {
+    useSeq = Array.isArray(seq) && seq.length ? seq : Array.from({length: cardsPer * n}, (_,i)=>i % Math.max(1,n));
+  }
 
   for (let i=0;i<useSeq.length;i++){
     const seat = (typeof useSeq[i] === "number") ? useSeq[i] : (i % Math.max(1,n));
