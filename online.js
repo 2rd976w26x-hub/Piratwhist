@@ -1,7 +1,7 @@
-// Piratwhist Online Multiplayer (v0.2.45)
+// Piratwhist Online Multiplayer (v0.2.46)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
-const APP_VERSION = "0.2.45";
+const APP_VERSION = "0.2.46";
 // v0.2.40:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
@@ -343,16 +343,58 @@ async function runDealAnimation(seq){
   const perCardGap = 55;
   const flightMs = 280;
 
-  // Show a neutral message while dealing (prevents "cards already there" feeling)
-  if (handWrap){
-    handWrap.innerHTML = `<div class="sub">Dealer kort...</div>`;
+  // If we're on the page that shows "Din hånd" (bidding/dealing), we want each
+  // dealt card to fly into its *final* slot in the hand area (not out of view).
+  // We create invisible hand slots up-front so we can target exact positions.
+  const cardsPer = (state?.cardsPer || 0);
+  const me = (typeof mySeat === "number") ? mySeat : null;
+  // Hand slots are the *buttons* (final layout boxes). We animate to each slot
+  // so the flying card lands exactly where the real card will appear.
+  let handSlots = [];
+  if (handWrap && me !== null && cardsPer > 0){
+    try{
+      handWrap.innerHTML = "";
+      const h = document.createElement("div");
+      h.className = "hand dealHand";
+      const head = document.createElement("div");
+      head.className = "head";
+      const left = document.createElement("div");
+      left.innerHTML = `<b>Din hånd</b> <span class="sub">(deales...)</span>`;
+      const right = document.createElement("div");
+      right.className = "sub";
+      right.textContent = "";
+      head.appendChild(left);
+      head.appendChild(right);
+
+      const cards = document.createElement("div");
+      cards.className = "cards dealSlots";
+
+      for (let i=0;i<cardsPer;i++){
+        const b = document.createElement("button");
+        b.className = "cardbtn dealSlot";
+        b.disabled = true;
+        b.setAttribute("aria-hidden", "true");
+
+        const pc = document.createElement("div");
+        pc.className = "playingcard back";
+        pc.style.opacity = "0"; // become visible as each card lands
+        b.appendChild(pc);
+
+        cards.appendChild(b);
+        handSlots.push(b);
+      }
+
+      h.appendChild(head);
+      h.appendChild(cards);
+      handWrap.appendChild(h);
+    }catch(e){
+      handSlots = [];
+    }
   }
 
   // Deal animation should be shown ONLY to the current player.
   // We keep server-authoritative dealing (the hand is still taken from state),
   // but we only animate the cards that belong to "mySeat".
-  const cardsPer = (state?.cardsPer || 0);
-  const me = (typeof mySeat === "number") ? mySeat : null;
   let useSeq;
   if (me !== null){
     if (Array.isArray(seq) && seq.length){
@@ -366,8 +408,18 @@ async function runDealAnimation(seq){
 
   for (let i=0;i<useSeq.length;i++){
     const seat = (typeof useSeq[i] === "number") ? useSeq[i] : (i % Math.max(1,n));
-    const targetEl = seatEls[seat] || fallbackTarget;
-    const dc = rectCenter(targetEl);
+
+    // If dealing to me and we have hand slots, target the *i'th final slot*.
+    // Otherwise fall back to seat/hand container center.
+    let dc;
+    if (me !== null && seat === me && handSlots[i]){
+      const r = handSlots[i].getBoundingClientRect();
+      dc = { x: r.left + r.width/2, y: r.top + r.height/2 };
+    } else {
+      const targetEl = seatEls[seat] || fallbackTarget;
+      dc = rectCenter(targetEl);
+    }
+
     const fc = spawnFlyCard(deckC.x, deckC.y, "", true);
     fc.style.opacity = "1";
     const rot = (seat % 2 === 0) ? -6 : 6;
@@ -377,6 +429,15 @@ async function runDealAnimation(seq){
       else await sleep(flightMs + 30);
     }catch(e){ await sleep(flightMs + 30); }
     try{ fc.remove(); }catch(e){ /* ignore */ }
+
+    // Make the landed card visible in the slot (still face-down during deal)
+    if (me !== null && seat === me && handSlots[i]){
+      try{
+        const pc = handSlots[i].querySelector('.playingcard');
+        if (pc) pc.style.opacity = "1";
+      }catch(e){ /* ignore */ }
+    }
+
     await sleep(perCardGap);
   }
 
