@@ -366,6 +366,8 @@ def _online_start_deal_phase(code: str, room, round_index: int):
     # Enter dealing phase and schedule a transition into bidding.
     st["phase"] = "dealing"
 
+    st["lastActionAt"] = time.time()
+
     # Animation pacing (client mirrors this).
     per_card_ms = 120
     duration = max(0.8, min(8.0, (cards_per * n * per_card_ms) / 1000.0 + 0.6))
@@ -389,10 +391,13 @@ def _online_start_deal_phase(code: str, room, round_index: int):
 
             st2["phase"] = "bidding"
 
+            st2["lastActionAt"] = time.time()
+
             _online_bot_choose_bid(room2)
             if all(b is not None for b in st2["bids"]):
                 st2["phase"] = "playing"
                 st2["turn"] = st2["leader"]
+                st2["lastActionAt"] = time.time()
 
             _online_emit_full_state(code, room2)
 
@@ -453,8 +458,68 @@ def _online_schedule_bot_turn(code: str):
             _online_internal_play_card(code, room, turn, _online_card_key(card))
         except Exception:
             return
+    room = ONLINE_ROOMS.get(code)
+    if room and room.get('state'):
+        st = room['state']
+        st['botScheduledAt'] = time.time()
+        st['botScheduledTurn'] = st.get('turn')
+    _online_ensure_bot_watchdog(code)
     socketio.start_background_task(_task)
 
+
+
+def _online_ensure_bot_watchdog(code: str):
+    """Fail-safe: ensures bots don't stall the game if a background task is missed.
+
+    Starts one lightweight watchdog loop per room. It periodically checks whether
+    it is a bot's turn in phase='playing' and no action has occurred recently.
+    If so, it re-schedules the bot turn.
+    """
+    room = ONLINE_ROOMS.get(code)
+    if not room:
+        return
+    st = room.get('state', {})
+    if st.get('botWatchdogStarted'):
+        return
+    st['botWatchdogStarted'] = True
+
+    def _loop():
+        try:
+            while True:
+                socketio.sleep(1.0)
+                room2 = ONLINE_ROOMS.get(code)
+                if not room2:
+                    return
+                st2 = room2.get('state', {})
+
+                # Stop if game ended.
+                if st2.get('phase') in ('game_finished',):
+                    return
+
+                if st2.get('phase') != 'playing':
+                    continue
+
+                turn = st2.get('turn')
+                bots = st2.get('botSeats', set()) or set()
+                if turn is None or turn not in bots:
+                    continue
+
+                now = time.time()
+                last_action = st2.get('lastActionAt') or now
+                # If nothing has happened for a bit, re-schedule.
+                if now - last_action < 2.5:
+                    continue
+
+                # Avoid scheduling too aggressively.
+                last_sched = st2.get('botScheduledAt') or 0.0
+                if now - last_sched < 2.0 and st2.get('botScheduledTurn') == turn:
+                    continue
+
+                _online_schedule_bot_turn(code)
+        except Exception:
+            return
+
+    socketio.start_background_task(_loop)
 def _online_schedule_auto_next_trick(code: str, round_index: int):
     def _task():
         try:
@@ -527,6 +592,9 @@ def _online_internal_play_card(code: str, room, seat: int, card_key: str):
     if st.get("leadSuit") is None:
         st["leadSuit"] = card["suit"]
     st["table"][seat] = card
+
+    # Track last action to support bot watchdog
+    st["lastActionAt"] = time.time()
 
     n = st["n"]
     nxt = (seat + 1) % n
@@ -714,6 +782,10 @@ def online_create_room(data):
             "pointsTotal": [0 for _ in range(n_players)],
             "history": [],
             "autoNextDoneFor": None,
+        "lastActionAt": time.time(),
+        "botScheduledAt": 0.0,
+        "botScheduledTurn": None,
+        "botWatchdogStarted": False,
         }
     }
     if client_id:
@@ -918,6 +990,10 @@ def online_update_lobby(data):
         "pointsTotal": [0 for _ in range(n_players)],
         "history": [],
         "autoNextDoneFor": None,
+        "lastActionAt": time.time(),
+        "botScheduledAt": 0.0,
+        "botScheduledTurn": None,
+        "botWatchdogStarted": False,
     }
 
     _online_emit_full_state(code, room)
@@ -958,6 +1034,7 @@ def online_set_bid(data):
     if all(b is not None for b in st["bids"]):
         st["phase"] = "playing"
         st["turn"] = st["leader"]
+        st["lastActionAt"] = time.time()
 
     _online_emit_full_state(code, room)
 
@@ -1035,6 +1112,7 @@ def online_next(data):
     if all(b is not None for b in st["bids"]):
         st["phase"] = "playing"
         st["turn"] = st["leader"]
+        st["lastActionAt"] = time.time()
 
     _online_emit_full_state(code, room)
     if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
