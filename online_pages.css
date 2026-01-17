@@ -278,7 +278,11 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   width: 44px;
   height: 60px;
   border-radius: 10px;
-  background: rgba(0,0,0,.18);
+  /* Per-seat won-tricks pile uses the fixed card back image */
+  background-image: var(--cardback-url);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   border: 1px solid rgba(255,255,255,.14);
   position: relative;
   overflow: visible;
@@ -292,7 +296,10 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   width: 44px;
   height: 60px;
   border-radius: 10px;
-  background: rgba(0,0,0,.18);
+  background-image: var(--cardback-url);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   border: 1px solid rgba(255,255,255,.10);
 }
 .seatPile::before{ transform: translate(4px, 4px) rotate(4deg); opacity: .55; }
@@ -303,7 +310,7 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .seat-left { left: 6px; top: 50%; transform: translateY(-50%); }
 .seat-right { right: 6px; top: 50%; transform: translateY(-50%); }
 
-/* No global deck pile on the play board in v0.2.38+ (we use per-seat piles instead). */
+/* No global deck pile on the play board in v0.2.39+ (we use per-seat piles instead). */
 
 /* Prevent overflow in the left panel on the play page */
 .playersPanel .table .slot .name { white-space: normal; }
@@ -350,5 +357,5 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .scoreRow:last-child{ border-bottom: none; }
 .pill.tiny{ padding: 3px 8px; font-size: .82rem; }
 
-/* (deprecated) Older hand-overlay rules removed in v0.2.38.
+/* (deprecated) Older hand-overlay rules removed in v0.2.39.
    The authoritative hand overlay + spacing rules live near the top of this file. */
