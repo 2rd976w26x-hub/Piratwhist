@@ -1,8 +1,8 @@
-// Piratwhist Online Multiplayer (v0.2.34)
+// Piratwhist Online Multiplayer (v0.2.35)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const APP_VERSION = "0.2.33";
-// v0.2.34:
+// v0.2.35:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -112,6 +112,7 @@ function ensurePlayBoard(n){
         <span class="chip trickChip">Stik: <span id="olSeatTricks${i}">0</span></span>
         <span class="chip totalChip ghost">Total: <span id="olSeatTotal${i}">0</span></span>
       </div>
+      <div class="trickViz" id="olSeatViz${i}" aria-label="Stik i runden"></div>
       <div class="seatPile" id="olSeatPile${i}" title="Stik vundet"></div>
     `;
     seatsWrap.appendChild(seat);
@@ -145,6 +146,11 @@ function positionPlayBoard(n){
     if (seatEl){
       seatEl.style.left = x.toFixed(2) + "%";
       seatEl.style.top  = y.toFixed(2) + "%";
+
+      // Tag relative positions so CSS can treat bottom seat (me) differently.
+      // rel==0 is always the local player (bottom).
+      seatEl.classList.toggle("seat-bottom", rel === 0);
+      seatEl.classList.toggle("seat-top", n >= 2 && rel === Math.floor(n/2));
     }
 
     const sx = 50 + slotR * Math.cos(ang);
@@ -1216,6 +1222,18 @@ function render(){
       if (b) b.textContent = (bids[i]===null || bids[i]===undefined) ? "—" : String(bids[i]);
       const tr = el(`olSeatTricks${i}`);
       if (tr) tr.textContent = String(taken[i] ?? 0);
+
+      // Visual trick counter: dots/chips so the user can read trick counts at a glance.
+      const viz = el(`olSeatViz${i}`);
+      if (viz){
+        const k = Math.max(0, Number(taken[i] ?? 0));
+        const maxDots = 10;
+        let dots = "";
+        const show = Math.min(k, maxDots);
+        for (let d=0; d<show; d++) dots += '<span class="dot" aria-hidden="true"></span>';
+        if (k > maxDots) dots += `<span class="more">+${k-maxDots}</span>`;
+        viz.innerHTML = dots || '<span class="zero">0</span>';
+      }
       const tt = el(`olSeatTotal${i}`);
       if (tt) tt.textContent = String(total[i] ?? 0);
 

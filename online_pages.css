@@ -17,7 +17,8 @@ body.page-play .boardPanel{ position:relative; }
 body.page-play .handDock{
   position:absolute;
   left:50%;
-  bottom: 10px;
+  /* Hand overlays the board, but must NOT cover the bottom seat (name/tricks/pile). */
+  bottom: 170px;
   transform: translateX(-50%);
   width: min(980px, 96%);
   z-index: 7;
@@ -54,17 +55,14 @@ body.page-play .handDock .cards .cardbtn{
 body.page-play .handDock .cards .cardbtn:hover{ z-index: 5; }
 body.page-play .handDock .cards .cardbtn:focus{ z-index: 6; }
 
-/* Move the bottom seat up to make room for the overlapping hand */
-body.page-play .seat-bottom{ bottom: 120px; }
+/* Bottom seat should stay visible because the hand is positioned above it. */
 
 @media (max-width: 860px){
-  body.page-play .handDock{ bottom: 72px; width: 98%; }
-  body.page-play .seat-bottom{ bottom: 108px; }
+  body.page-play .handDock{ bottom: 150px; width: 98%; }
   body.page-play .handDock .cards .cardbtn{ margin-left: -22px; }
 }
 @media (max-width: 480px){
-  body.page-play .handDock{ bottom: 58px; }
-  body.page-play .seat-bottom{ bottom: 112px; }
+  body.page-play .handDock{ bottom: 130px; }
 }
 
 .centerArea { display:flex; flex-direction:column; gap:12px; }
@@ -125,6 +123,29 @@ body.page-play .seat-bottom{ bottom: 120px; }
   gap:6px;
   flex-wrap:wrap;
   justify-content:center;
+}
+
+/* Visual trick counter (at-a-glance) */
+.boardSeats .trickViz{
+  display:flex;
+  gap:4px;
+  justify-content:center;
+  align-items:center;
+  margin-top:6px;
+  min-height: 12px;
+}
+.boardSeats .trickViz .dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.85);
+  box-shadow: 0 2px 6px rgba(0,0,0,.35);
+}
+.boardSeats .trickViz .more,
+.boardSeats .trickViz .zero{
+  font-size: .85rem;
+  font-weight: 900;
+  opacity: .9;
 }
 
 .trickSlots{
@@ -275,7 +296,7 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .seat-left { left: 6px; top: 50%; transform: translateY(-50%); }
 .seat-right { right: 6px; top: 50%; transform: translateY(-50%); }
 
-/* No global deck pile on the play board in v0.2.34+ (we use per-seat piles instead). */
+/* No global deck pile on the play board in v0.2.35+ (we use per-seat piles instead). */
 
 /* Prevent overflow in the left panel on the play page */
 .playersPanel .table .slot .name { white-space: normal; }
@@ -322,59 +343,5 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .scoreRow:last-child{ border-bottom: none; }
 .pill.tiny{ padding: 3px 8px; font-size: .82rem; }
 
-/* === v0.2.16: Hand overlaps the board, remove background bar === */
-body.page-play .boardPanel{ position:relative; }
-
-/* Place the hand dock on top of the board area */
-body.page-play .handDock{
-  position:absolute;
-  left:50%;
-  bottom: 10px;
-  transform: translateX(-50%);
-  width: min(980px, 96%);
-  z-index: 7;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
-
-/* The hand container itself should be transparent (no bar) */
-body.page-play .hands,
-body.page-play .hand{
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
-
-/* Remove hand header spacing if present */
-body.page-play .hand .head{ margin-bottom: 6px; }
-
-/* Fan/overlap cards a bit (desktop) */
-body.page-play .cards{
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: visible;
-  padding: 10px 8px;
-  gap: 0;
-  -webkit-overflow-scrolling: touch;
-}
-body.page-play .cards .cardbtn{ margin-left: -30px; }
-body.page-play .cards .cardbtn:first-child{ margin-left: 0; }
-body.page-play .cards .cardbtn{ position: relative; }
-body.page-play .cards .cardbtn:hover,
-body.page-play .cards .cardbtn:focus-within{ z-index: 10; }
-
-/* Give the bottom seat room so the hand doesn't cover it */
-body.page-play .seat-bottom{ bottom: 120px; }
-
-@media (max-width: 860px){
-  body.page-play .handDock{ bottom: 72px; width: 98%; }
-  body.page-play .seat-bottom{ bottom: 104px; }
-  body.page-play .cards .cardbtn{ margin-left: -22px; }
-}
-@media (max-width: 480px){
-  body.page-play .seat-bottom{ bottom: 96px; }
-  body.page-play .cards .cardbtn{ margin-left: -18px; }
-}
+/* (deprecated) Older hand-overlay rules removed in v0.2.35.
+   The authoritative hand overlay + spacing rules live near the top of this file. */
