@@ -65,18 +65,23 @@ body.page-play .handDock .cards .cardbtn:focus{ z-index: 6; }
   body.page-play .handDock{ bottom: 130px; }
 }
 
-.centerArea { display:flex; flex-direction:column; gap:12px; }
-.playBoard { flex:1; min-height: 220px; }
+.centerArea { display:flex; flex-direction:column; gap:12px; min-height: 0; }
+
+/* The board should use all available vertical space (avoid unused gap above the bottom bar).
+   The inner .board must stretch to the flexed container height. */
+.playBoard { flex:1; min-height: 0; }
+.playBoard .board{ height: 100%; min-height: 0; }
 
 
 /* === Round table board === */
 
 .playLayout { grid-template-columns: 360px 1fr; }
-.playBoard { min-height: 700px; }
+/* Let the board stretch instead of forcing a fixed minimum height (prevents unused empty space). */
+.playBoard { min-height: 0; }
 .board {
   position: relative;
   width: 100%;
-  min-height: 700px;
+  min-height: 0;
   border-radius: 22px;
   background: radial-gradient(ellipse at center, rgba(255,255,255,.08) 0%, rgba(0,0,0,.18) 58%, rgba(0,0,0,.28) 100%);
   border: 1px solid rgba(255,255,255,.08);
@@ -296,7 +301,7 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .seat-left { left: 6px; top: 50%; transform: translateY(-50%); }
 .seat-right { right: 6px; top: 50%; transform: translateY(-50%); }
 
-/* No global deck pile on the play board in v0.2.35+ (we use per-seat piles instead). */
+/* No global deck pile on the play board in v0.2.36+ (we use per-seat piles instead). */
 
 /* Prevent overflow in the left panel on the play page */
 .playersPanel .table .slot .name { white-space: normal; }
@@ -343,5 +348,5 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 .scoreRow:last-child{ border-bottom: none; }
 .pill.tiny{ padding: 3px 8px; font-size: .82rem; }
 
-/* (deprecated) Older hand-overlay rules removed in v0.2.35.
+/* (deprecated) Older hand-overlay rules removed in v0.2.36.
    The authoritative hand overlay + spacing rules live near the top of this file. */
