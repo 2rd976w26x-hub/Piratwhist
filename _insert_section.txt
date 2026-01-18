@@ -1,0 +1,24 @@
+
+<section class="card tight panel">
+  <h2>Vælg spiltype</h2>
+  <p class="sub">Vælg mellem fysisk spil (point-tavle) eller online multiplayer.</p>
+
+  <div class="grid2" style="margin-top:10px;">
+    <div class="card" style="background: rgba(0,0,0,.12);">
+      <h3>Fysisk spil (point-tavle)</h3>
+      <p class="sub">Før point mens I sidder sammen. I kan dele data i et rum.</p>
+      <div class="row gap wrap" style="margin-top:12px;">
+        <a class="primary linkbtn" href="/piratwhist.html">Åbn point-tavle</a>
+      </div>
+    </div>
+
+    <div class="card" style="background: rgba(0,0,0,.12);">
+      <h3>Online spil</h3>
+      <p class="sub">Opret eller join et rum og spil online.</p>
+      <div class="row gap wrap" style="margin-top:12px;">
+        <a class="primary linkbtn" href="#onlineStart">Gå til online</a>
+      </div>
+    </div>
+  </div>
+</section>
+
