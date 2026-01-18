@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.48-preview)
+// Piratwhist Online Multiplayer (v0.2.49-preview)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.

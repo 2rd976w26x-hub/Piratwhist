@@ -81,11 +81,11 @@ body.page-play .handDock .cards .cardbtn:focus{ z-index: 6; }
      and stays clear of the bottom seat + bottom bar. */
   /* Preview: move the hand into the lower "unused" area of the board (above the bottom bar)
      and keep the bottom seat readable. */
-  body.page-play .handDock{ left: 50%; right: auto; transform: translateX(-50%); bottom: 150px; width: 98%; }
+  body.page-play .handDock{ left: 50%; right: auto; transform: translateX(-50%); bottom: 280px; width: 98%; }
   body.page-play .handDock .cards .cardbtn{ margin-left: -22px; }
 }
 @media (max-width: 480px){
-  body.page-play .handDock{ bottom: 140px; }
+  body.page-play .handDock{ bottom: 270px; }
 }
 
 .centerArea { display:flex; flex-direction:column; gap:12px; min-height: 0; }
@@ -383,12 +383,16 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   .boardPanel { order: 1; }
   .playersPanel { order: 2; }
   .board { min-height: 420px; }
-  .seat { width: 46%; max-width: 46%; padding: 8px 10px; }
-  .seat-left, .seat-right { top: 14px; transform: none; }
-  .seat-left { left: 14px; }
-  .seat-right { right: 14px; }
-  .seat-top { top: auto; left: 14px; bottom: 14px; transform:none; text-align:left; }
-  .seat-bottom { left:auto; right:14px; bottom:22px; transform:none; text-align:right; }
+  /* Mobile seats: keep them around the board (top/left/right/bottom).
+     Make left/right seats narrower to avoid overlapping the center image.
+     Seats may be taller (name + badges) without crowding the board. */
+  .seat { width: 34%; max-width: 34%; padding: 8px 10px; }
+  .seat-left, .seat-right { top: 50%; transform: translateY(-50%); }
+  .seat-left { left: 10px; }
+  .seat-right { right: 10px; }
+  .seat-top { left: 50%; top: 8px; transform: translateX(-50%); text-align:center; }
+  /* Pull bottom seat up under the center image (so the very bottom area is free for the hand) */
+  .seat-bottom { left: 50%; bottom: 110px; transform: translateX(-50%); text-align:center; }
   .centerPile { width: 280px; height: 280px; }
   .played-top { top: -18px; }
   .played-bottom { bottom: -18px; }
