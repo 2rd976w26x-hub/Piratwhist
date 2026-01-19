@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.50-preview)
+// Piratwhist Online Multiplayer (v0.2.51)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -164,8 +164,7 @@ function positionPlayBoard(n){
   const isMobile = (typeof window !== "undefined" && window.matchMedia)
     ? window.matchMedia("(max-width: 520px)").matches
     : false;
-  // Mobile tweak (preview): pull seats slightly inward so top seats never get clipped.
-  // This is a temporary, conservative setting while we finalize the approved mobile layout.
+  // Mobile tweak: pull seats slightly inward so top seats never get clipped.
   const seatR = isMobile
     ? ((n <= 2) ? 34 : (n <= 4 ? 36 : 38))
     : ((n <= 2) ? 42 : (n <= 4 ? 44 : 46));
@@ -181,6 +180,16 @@ function positionPlayBoard(n){
     if (seatEl){
       seatEl.style.left = x.toFixed(2) + "%";
       seatEl.style.top  = y.toFixed(2) + "%";
+
+      // Tag relative side groups so mobile CSS can anchor left/right seats
+      // without affecting desktop layout.
+      // For 8 players (and other >=6 cases), rel 1..(n/2-1) are the left arc,
+      // and rel (n/2+1)..(n-1) are the right arc.
+      const half = Math.floor(n/2);
+      const isLeftArc  = (n >= 6) && (rel >= 1) && (rel <= (half - 1));
+      const isRightArc = (n >= 6) && (rel >= (half + 1)) && (rel <= (n - 1));
+      seatEl.classList.toggle("seat-leftArc", isLeftArc);
+      seatEl.classList.toggle("seat-rightArc", isRightArc);
 
       // Tag relative positions so CSS can treat bottom seat (me) differently.
       // rel==0 is always the local player (bottom).
