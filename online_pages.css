@@ -88,6 +88,14 @@ body.page-play .handDock .cards .cardbtn:focus{ z-index: 6; }
   body.page-play .handDock{ bottom: 270px; }
 }
 
+/* v0.2.54: approved mobile 8-player anchoring + narrower mid-side seats */
+@media (max-width: 520px){
+  .boardSeats .seat.anchor-left{ transform: translate(0,-50%); text-align:left; }
+  .boardSeats .seat.anchor-right{ transform: translate(-100%,-50%); text-align:right; }
+  /* Mid-side seats are the ones most likely to overlap the center image */
+  .boardSeats .seat.mid-side{ max-width: 180px; width: 28%; }
+}
+
 .centerArea { display:flex; flex-direction:column; gap:12px; min-height: 0; }
 
 /* The board should use all available vertical space (avoid unused gap above the bottom bar).

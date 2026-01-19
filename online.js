@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.52)
+// Piratwhist Online Multiplayer (v0.2.54)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -171,16 +171,36 @@ function positionPlayBoard(n){
     : ((n <= 2) ? 42 : (n <= 4 ? 44 : 46));
   const slotR = isMobile ? 16 : 18;
 
+  // Mobile layout: approved 8-player board tweaks
+  // - Bottom seat (local player) should sit at same vertical level as the two bottom-diagonal seats.
+  // - Left-side seats should be anchored from the left edge (so they don't overlap the center).
+  // - Right-side seats should be anchored from the right edge.
+  const mobile8 = isMobile && n === 8;
+  const diagSin = 0.70710678; // sin(45deg)
+
   for (let i=0;i<n;i++){
     const rel = (i - my + n) % n;
     const ang = (90 + (rel * 360 / n)) * Math.PI / 180;
     const x = 50 + seatR * Math.cos(ang);
-    const y = 50 + seatR * Math.sin(ang);
+    // For 8 players on mobile, lift the bottom seat so it matches the bottom-diagonal seats.
+    const y = (mobile8 && rel === 0)
+      ? (50 + seatR * diagSin)
+      : (50 + seatR * Math.sin(ang));
 
     const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
     if (seatEl){
       seatEl.style.left = x.toFixed(2) + "%";
       seatEl.style.top  = y.toFixed(2) + "%";
+
+      // Anchor side seats on mobile (8 players): left anchor for rel 1..3 and right anchor for rel 5..7.
+      // This prevents the seat panel from overlapping the center image.
+      if (mobile8){
+        seatEl.classList.toggle("anchor-left", rel === 1 || rel === 2 || rel === 3);
+        seatEl.classList.toggle("anchor-right", rel === 5 || rel === 6 || rel === 7);
+        seatEl.classList.toggle("mid-side", rel === 2 || rel === 6);
+      } else {
+        seatEl.classList.remove("anchor-left","anchor-right","mid-side");
+      }
 
       // Tag relative positions so CSS can treat bottom seat (me) differently.
       // rel==0 is always the local player (bottom).
@@ -194,6 +214,25 @@ function positionPlayBoard(n){
     if (slotEl){
       slotEl.style.left = sx.toFixed(2) + "%";
       slotEl.style.top  = sy.toFixed(2) + "%";
+    }
+  }
+
+  // Place the deck (kortbunken) just under the bottom seat on mobile 8-player layout.
+  if (mobile8){
+    const deck = el("olDeck");
+    if (deck){
+      deck.style.left = "50%";
+      // Bottom seat is lifted to 50+seatR*sin(45deg); place deck slightly below it.
+      deck.style.top = (50 + seatR * diagSin + 9).toFixed(2) + "%";
+      deck.style.transform = "translate(-50%, -50%)";
+    }
+  } else {
+    // Default: keep deck anchored at board center.
+    const deck = el("olDeck");
+    if (deck){
+      deck.style.left = "50%";
+      deck.style.top = "50%";
+      deck.style.transform = "translate(-50%, -50%)";
     }
   }
 }
@@ -1153,7 +1192,7 @@ function renderScores(){
   const taken = state?.tricksRound || Array.from({length:n}, ()=>0);
 
   const rNo = (state?.roundIndex ?? 0) + 1;
-  const cardsPer = ROUND_CARDS[state?.roundIndex ?? 0] ?? "-";
+  const cardsPer = (state?.cardsPer ?? (ROUND_CARDS[state?.roundIndex ?? 0] ?? '-'));
   if (el("olResRound")) el("olResRound").textContent = String(rNo);
   if (el("olResCards")) el("olResCards").textContent = String(cardsPer);
 
@@ -1302,7 +1341,7 @@ function render(){
   setHidden("olScores", false);
 
   const rNo = (state.roundIndex ?? 0) + 1;
-  const cardsPer = ROUND_CARDS[state.roundIndex ?? 0] ?? 0;
+  const cardsPer = (state.cardsPer ?? (ROUND_CARDS[state.roundIndex ?? 0] ?? 0));
   if (roundSpan) roundSpan.textContent = String(rNo);
   if (cardsPerEl) cardsPerEl.textContent = String(cardsPer);
 

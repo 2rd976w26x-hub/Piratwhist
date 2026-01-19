@@ -292,7 +292,11 @@ def _online_compare_cards(a, b, lead_suit):
     return (av > bv) - (av < bv)
 
 def _online_deal(n_players, round_index):
-    cards_per = ONLINE_ROUND_CARDS[round_index]
+    base_cards_per = ONLINE_ROUND_CARDS[round_index]
+    # Dynamic cap so we never exceed a single 52-card deck.
+    # Example: 8 players => max 6 cards each (48 cards).
+    max_per = max(1, len(ONLINE_SUITS) * len(ONLINE_RANKS) // max(1, n_players))
+    cards_per = min(base_cards_per, max_per)
     needed = cards_per * n_players
     deck = _online_make_deck()
     random.shuffle(deck)
@@ -411,7 +415,7 @@ def _online_start_deal_phase(code: str, room, round_index: int):
 
 def _online_bot_choose_bid(room) -> None:
     st = room["state"]
-    max_bid = ONLINE_ROUND_CARDS[st["roundIndex"]]
+    max_bid = int(st.get("cardsPer") or ONLINE_ROUND_CARDS[st["roundIndex"]])
     for seat in st.get("botSeats", set()):
         if st["bids"][seat] is not None:
             continue
@@ -632,7 +636,7 @@ def _online_internal_play_card(code: str, room, seat: int, card_key: str):
                 st["pointsTotal"][i] += points[i]
             st["history"].append({
                 "round": st["roundIndex"] + 1,
-                "cardsPer": ONLINE_ROUND_CARDS[st["roundIndex"]],
+                "cardsPer": st.get("cardsPer") or ONLINE_ROUND_CARDS[st["roundIndex"]],
                 "bids": bids,
                 "taken": taken,
                 "points": points,
@@ -1019,7 +1023,7 @@ def online_set_bid(data):
         emit("error", {"message": "Dit bud er allerede gemt."})
         return
 
-    max_bid = ONLINE_ROUND_CARDS[st["roundIndex"]]
+    max_bid = int(st.get("cardsPer") or ONLINE_ROUND_CARDS[st["roundIndex"]])
     try:
         bid = int(data.get("bid"))
     except Exception:
