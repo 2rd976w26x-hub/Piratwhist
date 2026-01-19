@@ -321,7 +321,7 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   -webkit-box-orient: vertical;
 }
 
-/* v0.2.57: Mobile 8-player square layout helpers (used when JS applies anchor-* classes) */
+/* v0.2.58: Mobile 8-player square layout helpers (used when JS applies anchor-* classes) */
 @media (max-width: 520px){
   .boardSeats .seat.anchor-left{ text-align:left; }
   .boardSeats .seat.anchor-right{ text-align:right; }

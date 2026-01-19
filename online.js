@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.57)
+// Piratwhist Online Multiplayer (v0.2.58)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -173,19 +173,34 @@ function positionPlayBoard(n){
     // rel==0 is always the local player (bottom). Seat order around the table:
     // 0 bottom (P1), 1 bottom-right (C7), 2 mid-right (C6), 3 top-right (C5),
     // 4 top (C4), 5 top-left (C3), 6 mid-left (C2), 7 bottom-left (C1)
+    // Seat positions (in % of board) tuned for mobile.
+    // Requested polish:
+    // - side seats 2–4vw in (x a bit closer to center)
+    // - top seat ~12px down
+    // - use some of the empty space above the top corners (raise C3/C5)
     const pos = {
-      4: { x: 50, y: 10, anchor: "center" },
-      5: { x: 28, y: 24, anchor: "left" },
-      3: { x: 72, y: 24, anchor: "right" },
-      6: { x: 20, y: 52, anchor: "left",  midSide: true },
-      2: { x: 80, y: 52, anchor: "right", midSide: true },
-      7: { x: 28, y: 78, anchor: "left" },
-      1: { x: 72, y: 78, anchor: "right" },
-      0: { x: 50, y: 78, anchor: "center", bottom: true }
+      4: { x: 50, y: 12, anchor: "center" },          // top (C4)
+      5: { x: 32, y: 22, anchor: "left" },            // upper-left (C3)
+      3: { x: 68, y: 22, anchor: "right" },           // upper-right (C5)
+      6: { x: 24, y: 52, anchor: "left",  midSide: true },   // mid-left (C2)
+      2: { x: 76, y: 52, anchor: "right", midSide: true },   // mid-right (C6)
+      7: { x: 32, y: 80, anchor: "left" },            // lower-left (C1)
+      1: { x: 68, y: 80, anchor: "right" },           // lower-right (C7)
+      0: { x: 50, y: 80, anchor: "center", bottom: true }    // bottom (P1)
     };
 
-    // Trick slots: keep a small ring around center.
-    const slotR = 18;
+    // Trick slots (played-card landing spots): fixed positions aligned with the
+    // player who played the card. This keeps values readable for all cards.
+    const slotPos = {
+      4: { x: 50, y: 34 }, // C4 (top)
+      5: { x: 40, y: 38 }, // C3 (upper-left)
+      3: { x: 60, y: 38 }, // C5 (upper-right)
+      6: { x: 36, y: 52 }, // C2 (left)
+      2: { x: 64, y: 52 }, // C6 (right)
+      7: { x: 42, y: 66 }, // C1 (lower-left)
+      1: { x: 58, y: 66 }, // C7 (lower-right)
+      0: { x: 50, y: 70 }  // P1 (bottom)
+    };
     for (let i=0;i<n;i++){
       const rel = (i - my + n) % n;
       const p = pos[rel] || { x: 50, y: 50, anchor: "center" };
@@ -211,13 +226,11 @@ function positionPlayBoard(n){
         else seatEl.style.transform = "translate(-50%, -50%)";
       }
 
-      const ang = (90 + (rel * 360 / n)) * Math.PI / 180;
-      const sx = 50 + slotR * Math.cos(ang);
-      const sy = 50 + slotR * Math.sin(ang);
+      const sp = slotPos[rel] || { x: 50, y: 50 };
       const slotEl = el(`olTrickSlot${i}`);
       if (slotEl){
-        slotEl.style.left = sx.toFixed(2) + "%";
-        slotEl.style.top  = sy.toFixed(2) + "%";
+        slotEl.style.left = sp.x.toFixed(2) + "%";
+        slotEl.style.top  = sp.y.toFixed(2) + "%";
       }
     }
 
