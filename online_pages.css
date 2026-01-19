@@ -228,42 +228,6 @@ body.hidePlayersPanel .twoCol.playLayout{ grid-template-columns: 1fr !important;
 .seat{ z-index: 2; }
 .centerPile{ z-index: 3; }
 .played{ z-index: 4; pointer-events:none; }
-
-/* v0.2.56: Mobile square layout for 8 players (replaces ring on small screens)
-   - Left column seats anchor from their LEFT edge (no center overlap)
-   - Right column seats anchor from their RIGHT edge
-   - Center column seats remain centered
-   - Computer 2/6 (midline) stay narrower; long names wrap to 2 lines
-*/
-@media (max-width: 520px){
-  body[data-players="8"] .boardSeats .seat.seat-col-left{
-    transform: translate(0%,-50%);
-    text-align: left;
-  }
-  body[data-players="8"] .boardSeats .seat.seat-col-right{
-    transform: translate(-100%,-50%);
-    text-align: right;
-  }
-  body[data-players="8"] .boardSeats .seat.seat-col-center{
-    transform: translate(-50%,-50%);
-    text-align: center;
-  }
-
-  /* Keep columns tight; midline (Computer 2/6) extra narrow */
-  body[data-players="8"] .boardSeats .seat.seat-col-left,
-  body[data-players="8"] .boardSeats .seat.seat-col-right{ max-width: 190px; }
-  body[data-players="8"] .boardSeats .seat.seat-midline.seat-col-left,
-  body[data-players="8"] .boardSeats .seat.seat-midline.seat-col-right{ max-width: 150px; }
-
-  body[data-players="8"] .seatName{
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-}
-
 .centerPile {
   position: absolute;
   left: 50%;
@@ -356,6 +320,30 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+
+/* v0.2.57: Mobile 8-player square layout helpers (used when JS applies anchor-* classes) */
+@media (max-width: 520px){
+  .boardSeats .seat.anchor-left{ text-align:left; }
+  .boardSeats .seat.anchor-right{ text-align:right; }
+  .boardSeats .seat.anchor-center{ text-align:center; }
+
+  .boardSeats .seat.anchor-left .seatBadges,
+  .boardSeats .seat.anchor-left .trickViz{ justify-content:flex-start; }
+  .boardSeats .seat.anchor-right .seatBadges,
+  .boardSeats .seat.anchor-right .trickViz{ justify-content:flex-end; }
+
+  /* Keep mid-side seats (C2/C6) narrower so they never overlap the center image */
+  .boardSeats .seat.mid-side{ width: 26%; max-width: 26%; }
+
+  /* Allow long names to wrap up to 2 lines instead of increasing width */
+  .boardSeats .seat .seatName{
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+}
 .seatBadges{ margin-top:6px; display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
 .chip{
   display:inline-flex;
@@ -401,6 +389,9 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 }
 .seatPile::before{ transform: translate(4px, 4px) rotate(4deg); opacity: .55; }
 .seatPile::after{ transform: translate(8px, 8px) rotate(8deg); opacity: .30; }
+
+/* Deal/deck anchor should not be visible on the play board (deal happens on bidding page) */
+body.page-play #olDeck{ display:none !important; }
 
 .seat-top { left: 50%; top: 6px; transform: translateX(-50%); text-align:center; }
 .seat-bottom { left: 50%; bottom: 22px; transform: translateX(-50%); text-align:center; }
@@ -512,24 +503,3 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 
 /* (deprecated) Older hand-overlay rules removed in v0.2.40.
    The authoritative hand overlay + spacing rules live near the top of this file. */
-
-
-/* v0.2.52 mobile layout tweaks */
-@media (max-width: 520px) {
-  .seat.left.mid, .seat.right.mid {
-    max-width: 64%;
-  }
-  .seat .name {
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .seat.bottom {
-    transform: translateY(14px);
-  }
-  .dealPile, #dealPile {
-    display: none !important;
-  }
-}

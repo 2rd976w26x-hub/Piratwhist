@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.56)
+// Piratwhist Online Multiplayer (v0.2.57)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -164,6 +164,72 @@ function positionPlayBoard(n){
   const isMobile = (typeof window !== "undefined" && window.matchMedia)
     ? window.matchMedia("(max-width: 520px)").matches
     : false;
+
+  // --- Mobile 8-player rectangular layout (approved) ---
+  // For 8 players on small screens we use a deterministic "square" layout
+  // instead of the trig/ring layout. This prevents overlap and keeps all seats
+  // visible inside the board container.
+  if (isMobile && n === 8){
+    // rel==0 is always the local player (bottom). Seat order around the table:
+    // 0 bottom (P1), 1 bottom-right (C7), 2 mid-right (C6), 3 top-right (C5),
+    // 4 top (C4), 5 top-left (C3), 6 mid-left (C2), 7 bottom-left (C1)
+    const pos = {
+      4: { x: 50, y: 10, anchor: "center" },
+      5: { x: 28, y: 24, anchor: "left" },
+      3: { x: 72, y: 24, anchor: "right" },
+      6: { x: 20, y: 52, anchor: "left",  midSide: true },
+      2: { x: 80, y: 52, anchor: "right", midSide: true },
+      7: { x: 28, y: 78, anchor: "left" },
+      1: { x: 72, y: 78, anchor: "right" },
+      0: { x: 50, y: 78, anchor: "center", bottom: true }
+    };
+
+    // Trick slots: keep a small ring around center.
+    const slotR = 18;
+    for (let i=0;i<n;i++){
+      const rel = (i - my + n) % n;
+      const p = pos[rel] || { x: 50, y: 50, anchor: "center" };
+      const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
+      if (seatEl){
+        seatEl.style.left = p.x.toFixed(2) + "%";
+        seatEl.style.top  = p.y.toFixed(2) + "%";
+
+        // Reset/assign anchor classes
+        seatEl.classList.remove("anchor-left","anchor-right","anchor-center","mid-side");
+        seatEl.classList.add(
+          p.anchor === "left" ? "anchor-left" : (p.anchor === "right" ? "anchor-right" : "anchor-center")
+        );
+        if (p.midSide) seatEl.classList.add("mid-side");
+
+        // Tag bottom/top like before (useful for other CSS)
+        seatEl.classList.toggle("seat-bottom", !!p.bottom);
+        seatEl.classList.toggle("seat-top", rel === 4);
+
+        // Apply transform anchoring directly to avoid layout drift
+        if (p.anchor === "left") seatEl.style.transform = "translate(-100%, -50%)";
+        else if (p.anchor === "right") seatEl.style.transform = "translate(0%, -50%)";
+        else seatEl.style.transform = "translate(-50%, -50%)";
+      }
+
+      const ang = (90 + (rel * 360 / n)) * Math.PI / 180;
+      const sx = 50 + slotR * Math.cos(ang);
+      const sy = 50 + slotR * Math.sin(ang);
+      const slotEl = el(`olTrickSlot${i}`);
+      if (slotEl){
+        slotEl.style.left = sx.toFixed(2) + "%";
+        slotEl.style.top  = sy.toFixed(2) + "%";
+      }
+    }
+
+    // Place deck just below the bottom seat (for visibility while dealing if ever enabled here)
+    const deck = el("olDeck");
+    if (deck){
+      deck.style.left = "50%";
+      deck.style.top = "88%";
+      deck.style.transform = "translate(-50%, -50%)";
+    }
+    return;
+  }
   // Mobile tweak (stable): pull seats slightly inward so top seats never get clipped.
   // This is a temporary, conservative setting while we finalize the approved mobile layout.
   const seatR = isMobile
@@ -171,64 +237,16 @@ function positionPlayBoard(n){
     : ((n <= 2) ? 42 : (n <= 4 ? 44 : 46));
   const slotR = isMobile ? 16 : 18;
 
-  // Expose player count to CSS (used for approved mobile layout tweaks)
-  try{ document.body.dataset.players = String(n); }catch(e){}
-
   for (let i=0;i<n;i++){
     const rel = (i - my + n) % n;
     const ang = (90 + (rel * 360 / n)) * Math.PI / 180;
-
-    // === Mobile square layout (8 players) ===
-    // Ring geometry is great for desktop, but on narrow mobile screens it causes
-    // overlap/clipping. For 8 players we use a deterministic grid-like layout:
-    //   rel4 top-center, rel3 top-left, rel5 top-right,
-    //   rel2 mid-left,  rel6 mid-right,
-    //   rel1 bottom-left, rel0 bottom-center (local player), rel7 bottom-right.
-    // Note: User requested that Computer 2/6 are NOT too close to the center,
-    // but also NOT too far away; these x positions are intentionally moderate.
-    let x, y;
-    const useSquare = isMobile && n === 8;
-    if (useSquare){
-      const map = {
-        4: { x: 50, y: 14 },
-        3: { x: 20, y: 26 },
-        5: { x: 80, y: 26 },
-        2: { x: 22, y: 54 },
-        6: { x: 78, y: 54 },
-        1: { x: 20, y: 78 },
-        0: { x: 50, y: 78 },
-        7: { x: 80, y: 78 }
-      };
-      const p = map[rel] || { x: 50, y: 50 };
-      x = p.x;
-      y = p.y;
-    } else {
-      x = 50 + seatR * Math.cos(ang);
-      y = 50 + seatR * Math.sin(ang);
-    }
+    const x = 50 + seatR * Math.cos(ang);
+    const y = 50 + seatR * Math.sin(ang);
 
     const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
     if (seatEl){
       seatEl.style.left = x.toFixed(2) + "%";
       seatEl.style.top  = y.toFixed(2) + "%";
-
-      // For the 8-player mobile square layout we set explicit column classes so
-      // CSS can anchor left/right seats without relying on trigonometry buckets.
-      const colLeft = useSquare && (rel === 1 || rel === 2 || rel === 3);
-      const colRight = useSquare && (rel === 5 || rel === 6 || rel === 7);
-      seatEl.classList.toggle("seat-col-left", colLeft);
-      seatEl.classList.toggle("seat-col-right", colRight);
-      seatEl.classList.toggle("seat-col-center", useSquare && !colLeft && !colRight);
-
-      // Tag side so CSS can anchor seats away from the center on mobile.
-      // We use x-position buckets so this works for any seat assignment.
-      const isLeft = x < 42;
-      const isRight = x > 58;
-      seatEl.classList.toggle("seat-side-left", isLeft);
-      seatEl.classList.toggle("seat-side-right", isRight);
-      seatEl.classList.toggle("seat-side-mid", !isLeft && !isRight);
-      // Mark seats near the horizontal midline (these are the ones that can overlap the center image).
-      seatEl.classList.toggle("seat-midline", Math.abs(y - 50) < 10);
 
       // Tag relative positions so CSS can treat bottom seat (me) differently.
       // rel==0 is always the local player (bottom).
@@ -1201,7 +1219,7 @@ function renderScores(){
   const taken = state?.tricksRound || Array.from({length:n}, ()=>0);
 
   const rNo = (state?.roundIndex ?? 0) + 1;
-  const cardsPer = (state?.cardsPer ?? (ROUND_CARDS[state?.roundIndex ?? 0] ?? '-'));
+  const cardsPer = ROUND_CARDS[state?.roundIndex ?? 0] ?? "-";
   if (el("olResRound")) el("olResRound").textContent = String(rNo);
   if (el("olResCards")) el("olResCards").textContent = String(cardsPer);
 
@@ -1350,7 +1368,7 @@ function render(){
   setHidden("olScores", false);
 
   const rNo = (state.roundIndex ?? 0) + 1;
-  const cardsPer = (state.cardsPer ?? (ROUND_CARDS[state.roundIndex ?? 0] ?? 0));
+  const cardsPer = ROUND_CARDS[state.roundIndex ?? 0] ?? 0;
   if (roundSpan) roundSpan.textContent = String(rNo);
   if (cardsPerEl) cardsPerEl.textContent = String(cardsPer);
 

@@ -413,24 +413,3 @@ table.t th{ font-weight:800; color:var(--text); background: rgba(255,255,255,.04
   background-repeat: no-repeat;
   opacity: .95;
 }
-
-
-/* v0.2.52 mobile layout tweaks */
-@media (max-width: 520px) {
-  .seat.left.mid, .seat.right.mid {
-    max-width: 64%;
-  }
-  .seat .name {
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .seat.bottom {
-    transform: translateY(14px);
-  }
-  .dealPile, #dealPile {
-    display: none !important;
-  }
-}
