@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.54)
+// Piratwhist Online Multiplayer (v0.2.55)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -171,36 +171,35 @@ function positionPlayBoard(n){
     : ((n <= 2) ? 42 : (n <= 4 ? 44 : 46));
   const slotR = isMobile ? 16 : 18;
 
-  // Mobile layout: approved 8-player board tweaks
-  // - Bottom seat (local player) should sit at same vertical level as the two bottom-diagonal seats.
-  // - Left-side seats should be anchored from the left edge (so they don't overlap the center).
-  // - Right-side seats should be anchored from the right edge.
-  const mobile8 = isMobile && n === 8;
-  const diagSin = 0.70710678; // sin(45deg)
+  // Expose player count to CSS (used for approved mobile layout tweaks)
+  try{ document.body.dataset.players = String(n); }catch(e){}
 
   for (let i=0;i<n;i++){
     const rel = (i - my + n) % n;
     const ang = (90 + (rel * 360 / n)) * Math.PI / 180;
-    const x = 50 + seatR * Math.cos(ang);
-    // For 8 players on mobile, lift the bottom seat so it matches the bottom-diagonal seats.
-    const y = (mobile8 && rel === 0)
-      ? (50 + seatR * diagSin)
-      : (50 + seatR * Math.sin(ang));
+    let x = 50 + seatR * Math.cos(ang);
+    let y = 50 + seatR * Math.sin(ang);
+
+    // Approved mobile layout: with 8 players, lift the bottom seat so it aligns
+    // with the bottom-left/right seats (prevents the bottom player sitting too low).
+    if (isMobile && n === 8 && rel === 0){
+      y = 50 + seatR * (-0.866); // match sin(240deg/300deg)
+    }
 
     const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
     if (seatEl){
       seatEl.style.left = x.toFixed(2) + "%";
       seatEl.style.top  = y.toFixed(2) + "%";
 
-      // Anchor side seats on mobile (8 players): left anchor for rel 1..3 and right anchor for rel 5..7.
-      // This prevents the seat panel from overlapping the center image.
-      if (mobile8){
-        seatEl.classList.toggle("anchor-left", rel === 1 || rel === 2 || rel === 3);
-        seatEl.classList.toggle("anchor-right", rel === 5 || rel === 6 || rel === 7);
-        seatEl.classList.toggle("mid-side", rel === 2 || rel === 6);
-      } else {
-        seatEl.classList.remove("anchor-left","anchor-right","mid-side");
-      }
+      // Tag side so CSS can anchor seats away from the center on mobile.
+      // We use x-position buckets so this works for any seat assignment.
+      const isLeft = x < 42;
+      const isRight = x > 58;
+      seatEl.classList.toggle("seat-side-left", isLeft);
+      seatEl.classList.toggle("seat-side-right", isRight);
+      seatEl.classList.toggle("seat-side-mid", !isLeft && !isRight);
+      // Mark seats near the horizontal midline (these are the ones that can overlap the center image).
+      seatEl.classList.toggle("seat-midline", Math.abs(y - 50) < 10);
 
       // Tag relative positions so CSS can treat bottom seat (me) differently.
       // rel==0 is always the local player (bottom).
@@ -214,25 +213,6 @@ function positionPlayBoard(n){
     if (slotEl){
       slotEl.style.left = sx.toFixed(2) + "%";
       slotEl.style.top  = sy.toFixed(2) + "%";
-    }
-  }
-
-  // Place the deck (kortbunken) just under the bottom seat on mobile 8-player layout.
-  if (mobile8){
-    const deck = el("olDeck");
-    if (deck){
-      deck.style.left = "50%";
-      // Bottom seat is lifted to 50+seatR*sin(45deg); place deck slightly below it.
-      deck.style.top = (50 + seatR * diagSin + 9).toFixed(2) + "%";
-      deck.style.transform = "translate(-50%, -50%)";
-    }
-  } else {
-    // Default: keep deck anchored at board center.
-    const deck = el("olDeck");
-    if (deck){
-      deck.style.left = "50%";
-      deck.style.top = "50%";
-      deck.style.transform = "translate(-50%, -50%)";
     }
   }
 }
