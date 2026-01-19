@@ -387,34 +387,12 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
      Make left/right seats narrower to avoid overlapping the center image.
      Seats may be taller (name + badges) without crowding the board. */
   .seat { width: 34%; max-width: 34%; padding: 8px 10px; }
-
-  /* For 6–8 players on mobile we anchor the left/right arc seats by their
-     nearest edge instead of centering the whole box on the ring point.
-     This gives more breathing room around the center image and matches the
-     requested alignment:
-       - seats 1/2/3 (left arc) are "left centered"
-       - seats 5/6/7 (right arc) are "right centered" */
-  .boardSeats .seat.seat-leftArc{
-    transform: translate(0, -50%);
-    text-align: left;
-  }
-  .boardSeats .seat.seat-rightArc{
-    transform: translate(-100%, -50%);
-    text-align: right;
-  }
-  .boardSeats .seat.seat-leftArc .seatBadges,
-  .boardSeats .seat.seat-leftArc .trickViz{ justify-content: flex-start; }
-  .boardSeats .seat.seat-rightArc .seatBadges,
-  .boardSeats .seat.seat-rightArc .trickViz{ justify-content: flex-end; }
   .seat-left, .seat-right { top: 50%; transform: translateY(-50%); }
   .seat-left { left: 10px; }
   .seat-right { right: 10px; }
   .seat-top { left: 50%; top: 8px; transform: translateX(-50%); text-align:center; }
-  /* Pull bottom seat up under the center image (so the very bottom area is free for the hand).
-     On the dynamic (2–8) board we also lift the bottom seat further so it starts
-     roughly "2/3 up" on the lower-left/lower-right seats in an 8-player layout. */
+  /* Pull bottom seat up under the center image (so the very bottom area is free for the hand) */
   .seat-bottom { left: 50%; bottom: 110px; transform: translateX(-50%); text-align:center; }
-  .boardSeats .seat.seat-bottom{ transform: translate(-50%,-50%) translateY(-78px); }
   .centerPile { width: 280px; height: 280px; }
   .played-top { top: -18px; }
   .played-bottom { bottom: -18px; }
