@@ -321,7 +321,7 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   -webkit-box-orient: vertical;
 }
 
-/* v0.2.58: Mobile 8-player square layout helpers (used when JS applies anchor-* classes) */
+/* v0.2.59: Mobile 8-player square layout helpers (used when JS applies anchor-* classes) */
 @media (max-width: 520px){
   .boardSeats .seat.anchor-left{ text-align:left; }
   .boardSeats .seat.anchor-right{ text-align:right; }
@@ -392,6 +392,9 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 
 /* Deal/deck anchor should not be visible on the play board (deal happens on bidding page) */
 body.page-play #olDeck{ display:none !important; }
+
+/* v0.2.59: Room code should not be visible on the play board (still shown in lobby/bidding). */
+body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important; }
 
 .seat-top { left: 50%; top: 6px; transform: translateX(-50%); text-align:center; }
 .seat-bottom { left: 50%; bottom: 22px; transform: translateX(-50%); text-align:center; }

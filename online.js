@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.58)
+// Piratwhist Online Multiplayer (v0.2.59)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -186,7 +186,9 @@ function positionPlayBoard(n){
       2: { x: 76, y: 52, anchor: "right", midSide: true },   // mid-right (C6)
       7: { x: 32, y: 80, anchor: "left" },            // lower-left (C1)
       1: { x: 68, y: 80, anchor: "right" },           // lower-right (C7)
-      0: { x: 50, y: 80, anchor: "center", bottom: true }    // bottom (P1)
+      // Bottom (P1): lift a bit so it aligns visually with the lower-corner seats
+      // and frees more space for the hand on mobile.
+      0: { x: 50, y: 78, anchor: "center", bottom: true }    // bottom (P1)
     };
 
     // Trick slots (played-card landing spots): fixed positions aligned with the
