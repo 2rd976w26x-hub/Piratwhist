@@ -229,32 +229,31 @@ body.hidePlayersPanel .twoCol.playLayout{ grid-template-columns: 1fr !important;
 .centerPile{ z-index: 3; }
 .played{ z-index: 4; pointer-events:none; }
 
-/* v0.2.55: approved 8-player mobile anchoring (prevents center overlap)
-   - Left column seats anchor to the left of their ring point
-   - Right column seats anchor to the right of their ring point
-   - Mid-side seats (Computer 2/6 positions) get narrower, names wrap instead of widening
+/* v0.2.56: Mobile square layout for 8 players (replaces ring on small screens)
+   - Left column seats anchor from their LEFT edge (no center overlap)
+   - Right column seats anchor from their RIGHT edge
+   - Center column seats remain centered
+   - Computer 2/6 (midline) stay narrower; long names wrap to 2 lines
 */
 @media (max-width: 520px){
-  body[data-players="8"] .boardSeats .seat.seat-side-left{
-    transform: translate(-100%,-50%);
+  body[data-players="8"] .boardSeats .seat.seat-col-left{
+    transform: translate(0%,-50%);
     text-align: left;
   }
-  body[data-players="8"] .boardSeats .seat.seat-side-right{
-    transform: translate(0%,-50%);
+  body[data-players="8"] .boardSeats .seat.seat-col-right{
+    transform: translate(-100%,-50%);
     text-align: right;
   }
-  body[data-players="8"] .boardSeats .seat.seat-side-mid{
+  body[data-players="8"] .boardSeats .seat.seat-col-center{
     transform: translate(-50%,-50%);
     text-align: center;
   }
 
-  /* Keep side seats reasonably narrow on mobile */
-  body[data-players="8"] .boardSeats .seat.seat-side-left,
-  body[data-players="8"] .boardSeats .seat.seat-side-right{ max-width: 200px; }
-
-  /* Midline side seats (Computer 2 & 6 positions) must be extra narrow to avoid center overlap */
-  body[data-players="8"] .boardSeats .seat.seat-midline.seat-side-left,
-  body[data-players="8"] .boardSeats .seat.seat-midline.seat-side-right{ max-width: 160px; }
+  /* Keep columns tight; midline (Computer 2/6) extra narrow */
+  body[data-players="8"] .boardSeats .seat.seat-col-left,
+  body[data-players="8"] .boardSeats .seat.seat-col-right{ max-width: 190px; }
+  body[data-players="8"] .boardSeats .seat.seat-midline.seat-col-left,
+  body[data-players="8"] .boardSeats .seat.seat-midline.seat-col-right{ max-width: 150px; }
 
   body[data-players="8"] .seatName{
     white-space: normal;
@@ -264,6 +263,7 @@ body.hidePlayersPanel .twoCol.playLayout{ grid-template-columns: 1fr !important;
     overflow: hidden;
   }
 }
+
 .centerPile {
   position: absolute;
   left: 50%;

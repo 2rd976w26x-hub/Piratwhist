@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.55)
+// Piratwhist Online Multiplayer (v0.2.56)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -177,19 +177,48 @@ function positionPlayBoard(n){
   for (let i=0;i<n;i++){
     const rel = (i - my + n) % n;
     const ang = (90 + (rel * 360 / n)) * Math.PI / 180;
-    let x = 50 + seatR * Math.cos(ang);
-    let y = 50 + seatR * Math.sin(ang);
 
-    // Approved mobile layout: with 8 players, lift the bottom seat so it aligns
-    // with the bottom-left/right seats (prevents the bottom player sitting too low).
-    if (isMobile && n === 8 && rel === 0){
-      y = 50 + seatR * (-0.866); // match sin(240deg/300deg)
+    // === Mobile square layout (8 players) ===
+    // Ring geometry is great for desktop, but on narrow mobile screens it causes
+    // overlap/clipping. For 8 players we use a deterministic grid-like layout:
+    //   rel4 top-center, rel3 top-left, rel5 top-right,
+    //   rel2 mid-left,  rel6 mid-right,
+    //   rel1 bottom-left, rel0 bottom-center (local player), rel7 bottom-right.
+    // Note: User requested that Computer 2/6 are NOT too close to the center,
+    // but also NOT too far away; these x positions are intentionally moderate.
+    let x, y;
+    const useSquare = isMobile && n === 8;
+    if (useSquare){
+      const map = {
+        4: { x: 50, y: 14 },
+        3: { x: 20, y: 26 },
+        5: { x: 80, y: 26 },
+        2: { x: 22, y: 54 },
+        6: { x: 78, y: 54 },
+        1: { x: 20, y: 78 },
+        0: { x: 50, y: 78 },
+        7: { x: 80, y: 78 }
+      };
+      const p = map[rel] || { x: 50, y: 50 };
+      x = p.x;
+      y = p.y;
+    } else {
+      x = 50 + seatR * Math.cos(ang);
+      y = 50 + seatR * Math.sin(ang);
     }
 
     const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
     if (seatEl){
       seatEl.style.left = x.toFixed(2) + "%";
       seatEl.style.top  = y.toFixed(2) + "%";
+
+      // For the 8-player mobile square layout we set explicit column classes so
+      // CSS can anchor left/right seats without relying on trigonometry buckets.
+      const colLeft = useSquare && (rel === 1 || rel === 2 || rel === 3);
+      const colRight = useSquare && (rel === 5 || rel === 6 || rel === 7);
+      seatEl.classList.toggle("seat-col-left", colLeft);
+      seatEl.classList.toggle("seat-col-right", colRight);
+      seatEl.classList.toggle("seat-col-center", useSquare && !colLeft && !colRight);
 
       // Tag side so CSS can anchor seats away from the center on mobile.
       // We use x-position buckets so this works for any seat assignment.
