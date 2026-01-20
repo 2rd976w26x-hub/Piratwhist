@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.2.60 · Spil</title>
+  <title>Piratwhist v0.2.61 · Spil</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
   <link rel="stylesheet" href="/online_pages.css" />
@@ -46,10 +46,35 @@
       </div>
     </div>
 
+    
+    <!-- PC HUD (corners) -->
+    <div class="pcHud" aria-hidden="false">
+      <div class="hudBox hudTL" role="status" aria-live="polite">
+        <span class="pill">Du: <b id="pcSeatLabel">-</b></span>
+        <span class="pill">Runde: <b id="pcRoundLabel">-</b></span>
+      </div>
+      <div class="hudBox hudTR" role="status" aria-live="polite">
+        <span class="pill">Leader: <b id="pcLeader">-</b></span>
+        <span class="pill">Kulør: <b id="pcLeadSuit">-</b></span>
+      </div>
+      <div class="hudBox hudBR">
+        <button id="pcTogglePlayersPanel" class="ghost" title="Vis/skjul venstre panel">
+          <span class="ico" aria-hidden="true">📋</span><span class="lbl">Panel</span>
+        </button>
+        <button id="pcNextRound" class="primary">
+          <span class="ico" aria-hidden="true">➡️</span><span class="lbl">Næste</span>
+        </button>
+        <button id="pcLeave" class="ghost" title="Forlad spillet">
+          <span class="ico" aria-hidden="true">🚪</span><span class="lbl">Forlad</span>
+        </button>
+      </div>
+      <div class="handNoFly" aria-hidden="true"></div>
+    </div>
+
     <!-- Bottom bar (replaces the old top header + the 'Spil' section) -->
     <div class="bottomBar" role="status" aria-live="polite">
       <div class="bottomLeft">
-        <span class="pill">Rum: <b id="olRoomLabel">-</b></span>
+        <span class="pill roomPill">Rum: <b id="olRoomLabel">-</b></span>
         <span class="pill">Du: <b id="olSeatLabel">-</b></span>
         <span class="pill ghost" id="olInfo">-</span>
       </div>
@@ -83,7 +108,7 @@
       <div class="brand">
         <div class="logo">🏴‍☠️</div>
         <div>
-          <div class="title">Piratwhist <span class="ver">v0.2.60</span></div>
+          <div class="title">Piratwhist <span class="ver">v0.2.61</span></div>
           <div class="sub">Online spil · spar er trumf · bekend kulør</div>
         </div>
       </div>

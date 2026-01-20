@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.60)
+// Piratwhist Online Multiplayer (v0.2.61)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -1663,4 +1663,61 @@ el("olMyName")?.addEventListener("blur", () => {
 if (el("olMyName")) {
   const s = getStoredName();
   if (s && !el("olMyName").value) el("olMyName").value = s;
+}
+// v0.2.61 PC HUD sync + button wiring
+function syncPcHud(){
+  const seatLbl = el("olSeatLabel")?.textContent || "-";
+  const leader = el("olLeader")?.textContent || "-";
+  const suit = el("olLeadSuit")?.textContent || "-";
+  const info = el("olInfo")?.textContent || "-";
+  const round = (el("olRoundLabel")?.textContent || el("olRound")?.textContent || "-");
+
+  const pcSeat = el("pcSeatLabel"); if (pcSeat) pcSeat.textContent = seatLbl;
+  const pcLeader = el("pcLeader"); if (pcLeader) pcLeader.textContent = leader;
+  const pcSuit = el("pcLeadSuit"); if (pcSuit) pcSuit.textContent = suit;
+  const pcRound = el("pcRoundLabel"); if (pcRound) pcRound.textContent = round;
+
+  // Optional: mirror olInfo into TL if present as ghost pill (not added now)
+}
+
+function wirePcHudButtons(){
+  const map = [
+    ["pcTogglePlayersPanel","olTogglePlayersPanel"],
+    ["pcNextRound","olNextRound"],
+    ["pcLeave","olLeave"]
+  ];
+  for (const [pcId, srcId] of map){
+    const pcBtn = el(pcId);
+    const srcBtn = el(srcId);
+    if (pcBtn && srcBtn){
+      pcBtn.onclick = () => srcBtn.click();
+      pcBtn.disabled = !!srcBtn.disabled;
+      pcBtn.style.display = (getComputedStyle(srcBtn).display === "none") ? "none" : "";
+    }
+  }
+}
+
+// v0.2.61 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+function applyPcNoFlyZoneForSeats(){
+  if (window.innerWidth < 900) return;
+  const nf = document.querySelector(".handNoFly");
+  if (!nf) return;
+  const nfRect = nf.getBoundingClientRect();
+  // Find the bottom-left seat (closest to left+bottom among non-local seats)
+  const seats = Array.from(document.querySelectorAll(".boardSeats .seat"));
+  let best = null;
+  let bestScore = 1e18;
+  for (const s of seats){
+    if (s.classList.contains("seat-bottom")) continue; // skip local seat
+    const r = s.getBoundingClientRect();
+    const score = (r.left + (window.innerWidth - r.right)) + (window.innerHeight - r.bottom);
+    if (score < bestScore){ bestScore = score; best = s; }
+  }
+  if (!best) return;
+  const r = best.getBoundingClientRect();
+  const overlap = !(r.right < nfRect.left || r.left > nfRect.right || r.bottom < nfRect.top || r.top > nfRect.bottom);
+  if (overlap){
+    // Solution A: move the offending seat slightly up/left
+    best.style.transform = (best.style.transform || "translate(-50%, -50%)") + " translate(-18px, -42px)";
+  }
 }
