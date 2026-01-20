@@ -3,65 +3,55 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.2.63 · Online</title>
-  <link rel="stylesheet" href="/piratwhist.css" />
-  <link rel="stylesheet" href="/online.css" />
-  <link rel="stylesheet" href="/online_pages.css" />
+  <title>Piratwhist v0.2.64 · Online</title>
+  <link rel="stylesheet" href="/pw_mini.css" />
 </head>
-<body>
-  <div class="app">
-    <header class="top">
-      <div>
-        <div class="title">Piratwhist</div>
-        <div class="sub">Online · v0.2.63</div>
+<body class="pwPage">
+  <header class="pwHeader">
+    <div class="pwBrand">
+      <div class="pwTitle">Piratwhist</div>
+      <div class="pwVersion">v0.2.64</div>
+    </div>
+    <div class="pwPills">
+      <a class="pwBtn pwBtnSecondary" href="/piratwhist.html">← Tilbage</a>
+    </div>
+  </header>
+
+  <main class="pwMain">
+    <h1>Online multiplayer</h1>
+    <p class="pwSubtitle">Opret et nyt rum eller join et eksisterende.</p>
+
+    <section class="pwPanel" id="olOnlineRoomPanel">
+      <div class="pwField">
+        <label class="pwLabel" for="olMyName">Dit navn</label>
+        <input id="olMyName" class="pwInput" placeholder="Dit navn" value="Spiller 1" />
       </div>
-      <div class="pill">Rum: <span>-</span></div>
-      <div class="pill">Du er: <span>-</span></div>
-    </header>
 
-    <main class="main">
-      <section class="card tight panel">
-        <h2>Online multiplayer</h2>
-        <p class="sub">Opret/join til online multiplayer er flyttet til point-tavle-siden, så du kan starte online spil derfra.</p>
-
-        <div class="grid2" style="margin-top:10px;">
-          <div class="card" style="background: rgba(0,0,0,.12);">
-            <h3>Start online her</h3>
-            <p class="sub">Gå til point-tavlen og brug online-panelet (nederst på siden) til at oprette/j...</p>
-            <div class="row gap wrap" style="margin-top:12px;">
-              <a class="primary linkbtn" href="/piratwhist.html#onlineStart">Åbn point-tavle + online</a>
-            </div>
-          </div>
-
-          <div class="card" style="background: rgba(0,0,0,.12);">
-            <h3>Regler</h3>
-            <p class="sub">Læs reglerne for online spil (spar er trumf, bekend kulør).</p>
-            <div class="row gap wrap" style="margin-top:12px;">
-              <a class="ghost linkbtn" href="/rules.html">Åbn regler</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="hsep"></div>
-        <div class="sub small">Tip: Du kan stadig åbne lobby direkte hvis du har en kode: <b>/online_lobby.html?code=XXXX</b></div>
-      </section>
-    </main>
-
-    <footer class="footer">
-      <div class="brand">
-        <div class="logo">🏴‍☠️</div>
-        <div>
-          <div class="title">Piratwhist <span class="ver">v0.2.63</span></div>
-          <div class="sub">Online spil · spar er trumf · bekend kulør</div>
-        </div>
+      <div class="pwField">
+        <label class="pwLabel" for="olRoomCode">Rumkode (4 tal)</label>
+        <input id="olRoomCode" class="pwInput" placeholder="1234" inputmode="numeric" maxlength="4" />
       </div>
-      <div class="nav">
-        <a class="linkbtn" href="/online.html">Online</a>
-        <a class="linkbtn" href="/piratwhist.html">Point-tavle</a>
-        <a class="linkbtn ghost" href="/rules.html">Regler</a>
-      </div>
-    </footer>
 
-  </div>
+      <div class="pwRow">
+        <button id="olCreateRoom" class="pwBtn pwBtnPrimary" type="button">Opret online-rum</button>
+        <button id="olJoinRoom" class="pwBtn pwBtnSecondary" type="button">Join online-rum</button>
+      </div>
+
+      <div id="olRoomStatus" class="pwHint" aria-live="polite"></div>
+      <div id="olRoomWarn" class="pwWarn" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <footer class="pwFooter">
+    <div class="pwSubtitle">Piratwhist v0.2.64</div>
+    <nav class="pwPills" aria-label="Footer navigation">
+      <a class="pwPill" href="/piratwhist.html">Start</a>
+      <a class="pwPill" href="/score.html">Fysisk spil</a>
+      <a class="pwPill" href="/rules.html">Regler</a>
+    </nav>
+  </footer>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="/online.js"></script>
 </body>
 </html>

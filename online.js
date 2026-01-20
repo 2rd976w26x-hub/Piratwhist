@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.63)
+// Piratwhist Online Multiplayer (v0.2.64)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -24,7 +24,7 @@ function sortHand(cards){
     return ra - rb;
   });
 }
-const APP_VERSION = "0.2.63";
+const APP_VERSION = "0.2.64";
 // v0.2.40:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
@@ -1643,7 +1643,7 @@ if (el("olMyName")) {
   const s = getStoredName();
   if (s && !el("olMyName").value) el("olMyName").value = s;
 }
-// v0.2.62 PC HUD sync + button wiring
+// v0.2.64 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -1676,7 +1676,7 @@ function wirePcHudButtons(){
   }
 }
 
-// v0.2.62 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.64 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
