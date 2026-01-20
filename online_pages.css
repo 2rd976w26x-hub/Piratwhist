@@ -33,13 +33,13 @@ body.page-bidding .cardbtn:disabled .playingcard{ filter: none; }
 body.page-play .boardPanel{ position:relative; }
 body.page-play .handDock{
   position:absolute;
-  /* Place the hand on the LEFT side of the board so it doesn't cover the bottom seat status. */
-  left: 18px;
+  /* PC: Dock the hand in the lower mid-left area (as agreed),
+     so it doesn't overlap the left/bottom opponent seat. */
+  left: 24%;
   right: auto;
-  /* Hand overlays the board, but must NOT cover the bottom seat (name/tricks/pile). */
-  bottom: 150px;
+  bottom: 90px;
   transform: none;
-  width: min(720px, 92%);
+  width: min(900px, 70%);
   z-index: 7;
   background: transparent !important;
   border: none !important;
@@ -228,7 +228,7 @@ body.hidePlayersPanel .twoCol.playLayout{ grid-template-columns: 1fr !important;
 }
 .played {
   position: absolute;
-  /* v0.2.65: played cards on the table are ~20% larger for readability */
+  /* v0.2.66: played cards on the table are ~20% larger for readability */
   width: 125px;
   height: 175px;
   border-radius: 14px;
@@ -533,9 +533,10 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
 @media (min-width: 900px) {
   body.page-play .handNoFly{
     position:absolute;
-    left: 0;
-    bottom: 0;
-    width: 420px;
+    /* Match the PC hand dock area so seats can avoid overlapping it. */
+    left: 18%;
+    bottom: 40px;
+    width: min(980px, 78%);
     height: 260px;
     pointer-events:none;
     opacity:0; /* invisible marker */

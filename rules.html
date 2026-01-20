@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist – Regler v0.2.65</title>
+  <title>Piratwhist – Regler v0.2.66</title>
   <link rel="stylesheet" href="piratwhist.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="title">
-      Piratwhist – Regler <span class="badge">v0.2.65</span>
+      Piratwhist – Regler <span class="badge">v0.2.66</span>
     </div>
     <div class="actions">
       <button id="rulesBack" class="ghost linkbtn" type="button">← Tilbage</button>
@@ -72,7 +72,7 @@
   </main>
 
   <footer class="footer">
-    Piratwhist v0.2.65
+    Piratwhist v0.2.66
   </footer>
 
   <script>
@@ -84,8 +84,12 @@
         try { return new URLSearchParams(window.location.search).get(name); } catch(e){ return null; }
       }
       const fromParam = getParam('from');
+      let storedReturn = null;
+      try { storedReturn = sessionStorage.getItem('pw_rules_return'); } catch(_) { storedReturn = null; }
       let fallback = 'piratwhist.html';
-      if (fromParam) {
+      if (storedReturn && sameOrigin(storedReturn)) {
+        fallback = storedReturn;
+      } else if (fromParam) {
         try { fallback = decodeURIComponent(fromParam); } catch(e){ fallback = fromParam; }
       } else if (document.referrer && sameOrigin(document.referrer)) {
         fallback = document.referrer;
@@ -100,6 +104,9 @@
         // Fallback: explicit URL.
         window.location.href = fallback;
       });
+
+      // Clear stored return once we've used the rules page (prevents stale returns later)
+      try { sessionStorage.removeItem('pw_rules_return'); } catch(_) {}
 
       // If the rules page was opened in a new tab, the user might "close" the tab.
       // Provide a safe close attempt via ESC (optional):

@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.65)
+// Piratwhist Online Multiplayer (v0.2.66)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -262,8 +262,24 @@ function positionPlayBoard(n){
   for (let i=0;i<n;i++){
     const rel = (i - my + n) % n;
     const ang = (90 + (rel * 360 / n)) * Math.PI / 180;
-    const x = 50 + seatR * Math.cos(ang);
-    const y = 50 + seatR * Math.sin(ang);
+    let x = 50 + seatR * Math.cos(ang);
+    let y = 50 + seatR * Math.sin(ang);
+
+    // PC polish (approved): bring top + bottom seats closer to the center,
+    // and shift the bottom seat slightly right so the docked hand has room.
+    if (!isMobile && window.innerWidth >= 900) {
+      const topRel = Math.floor(n/2);
+      if (rel === 0) { // local (bottom)
+        x += 8;   // slightly right
+        y -= 10;  // up toward center
+      }
+      if (n >= 2 && rel === topRel) { // top seat
+        y += 10;  // down toward center
+      }
+      // Clamp to keep seats safely inside the board container.
+      x = Math.max(6, Math.min(94, x));
+      y = Math.max(6, Math.min(94, y));
+    }
 
     const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
     if (seatEl){
@@ -1600,6 +1616,17 @@ function render(){
     else el("olNextRound").textContent = "Næste";
   }
 
+  // PC HUD: keep values in the corners (and wire buttons, incl. Regler)
+  syncPcHud();
+  wirePcHudButtons();
+  const rulesBtn = el("olRules");
+  if (rulesBtn) rulesBtn.onclick = goToRules;
+  const pcRules = el("pcRules");
+  if (pcRules) pcRules.onclick = goToRules;
+
+  // PC layout: enforce the hand no-fly zone after seats have been positioned
+  applyPcNoFlyZoneForSeats();
+
   renderScores();
 }
 
@@ -1658,7 +1685,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.65 PC HUD sync + button wiring
+// v0.2.66 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -1678,7 +1705,7 @@ function wirePcHudButtons(){
   const map = [
     ["pcTogglePlayersPanel","olTogglePlayersPanel"],
     ["pcNextRound","olNextRound"],
-    ["pcLeave","olLeave"]
+    ["pcLeave","olLeaveRoom"]
   ];
   for (const [pcId, srcId] of map){
     const pcBtn = el(pcId);
@@ -1691,7 +1718,16 @@ function wirePcHudButtons(){
   }
 }
 
-// v0.2.65 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+function goToRules(){
+  try {
+    // Remember the exact URL so the rules page can return even if browser back is unavailable.
+    sessionStorage.setItem("pw_rules_return", window.location.href);
+  } catch(_) {}
+  const from = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+  window.location.href = `/rules.html?from=${from}`;
+}
+
+// v0.2.66 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
