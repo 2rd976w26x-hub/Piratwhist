@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.61)
+// Piratwhist Online Multiplayer (v0.2.62)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -746,19 +746,6 @@ function runTrickSweepAnimationQueued(winnerSeat, cardsBySeat){
 }
 
 
-function highlightWinner(){
-  const w = state?.winner;
-  if (w === null || w === undefined) return;
-
-  const els = [];
-  const cardEl = document.querySelector(`#olTable [data-seat-card="${w}"]`);
-  if (cardEl) els.push(cardEl);
-  const slot = el(`olTrickSlot${w}`);
-  if (slot) els.push(slot);
-
-  els.forEach(e=> e.classList.add("winnerGlow"));
-  setTimeout(()=> els.forEach(e=> e.classList.remove("winnerGlow")), 950);
-}
 
 
 function setHidden(id, hidden){
@@ -1241,7 +1228,7 @@ function renderScores(){
   const taken = state?.tricksRound || Array.from({length:n}, ()=>0);
 
   const rNo = (state?.roundIndex ?? 0) + 1;
-  const cardsPer = ROUND_CARDS[state?.roundIndex ?? 0] ?? "-";
+  const cardsPer = (state?.cardsPer ?? "-");
   if (el("olResRound")) el("olResRound").textContent = String(rNo);
   if (el("olResCards")) el("olResCards").textContent = String(cardsPer);
 
@@ -1390,7 +1377,8 @@ function render(){
   setHidden("olScores", false);
 
   const rNo = (state.roundIndex ?? 0) + 1;
-  const cardsPer = ROUND_CARDS[state.roundIndex ?? 0] ?? 0;
+  // Server-authoritative cards-per-round (52-card safe).
+  const cardsPer = Number(state.cardsPer || 0);
   if (roundSpan) roundSpan.textContent = String(rNo);
   if (cardsPerEl) cardsPerEl.textContent = String(cardsPer);
 
@@ -1414,15 +1402,6 @@ function render(){
       info.textContent = `Runde ${rNo} · Tur: ${state.names[state.turn]}`;
     }
   }
-
-  // Remove winner toast/marking on the board. The trick sweep animation
-  // (cards moving to the winner) is the visual cue.
-  (function hideWinnerToast(){
-    const t = el("olWinnerToast");
-    if (!t) return;
-    t.classList.add("hidden");
-    t.textContent = "";
-  })();
 
   if (el("olLeader")) el("olLeader").textContent = state.names[state.leader] ?? "-";
   if (el("olLeadSuit")) el("olLeadSuit").textContent = state.leadSuit ? `${state.leadSuit} (${SUIT_NAME[state.leadSuit]})` : "-";
@@ -1664,7 +1643,7 @@ if (el("olMyName")) {
   const s = getStoredName();
   if (s && !el("olMyName").value) el("olMyName").value = s;
 }
-// v0.2.61 PC HUD sync + button wiring
+// v0.2.62 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -1697,7 +1676,7 @@ function wirePcHudButtons(){
   }
 }
 
-// v0.2.61 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.62 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");

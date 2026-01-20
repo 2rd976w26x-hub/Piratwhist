@@ -371,12 +371,6 @@ table.t th{ font-weight:800; color:var(--text); background: rgba(255,255,255,.04
   color: rgba(255,255,255,.90);
   letter-spacing:.08em;
 }
-.winnerGlow{
-  animation: winnerGlow 900ms ease-in-out 1;
-  box-shadow: 0 0 0 2px rgba(255,255,255,.18), 0 18px 45px rgba(0,0,0,.55);
-}
-@keyframes winnerGlow{
-  0%{ transform: translateY(0); filter: brightness(1); }
   30%{ transform: translateY(-3px); filter: brightness(1.2); }
   100%{ transform: translateY(0); filter: brightness(1); }
 }

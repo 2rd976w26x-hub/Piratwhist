@@ -111,10 +111,6 @@
   height:102px;
 }
 
-.winnerGlow{
-  outline: 3px solid rgba(255, 215, 0, .85);
-  box-shadow: 0 0 24px rgba(255, 215, 0, .55);
-}
 
 /* --- v0.2.40: fixed card back (2 persons + 4 butterflies) --- */
 .playingcard.back{

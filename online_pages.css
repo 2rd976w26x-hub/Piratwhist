@@ -207,21 +207,6 @@ body.hidePlayersPanel .twoCol.playLayout{ grid-template-columns: 1fr !important;
   transform:translate(-50%,-50%);
 }
 
-/* Winner toast (shown after each trick and at end of round) */
-.winnerToast{
-  position:absolute;
-  left:50%;
-  top:14px;
-  transform:translateX(-50%);
-  padding:10px 14px;
-  border-radius: 999px;
-  background: rgba(0,0,0,.55);
-  border: 1px solid rgba(255,255,255,.16);
-  box-shadow: 0 18px 45px rgba(0,0,0,.45);
-  font-weight: 900;
-  letter-spacing: .2px;
-  z-index: 6;
-}
 
 /* Ensure center trick area + played cards always render above seats */
 .deck{ z-index: 1; }
@@ -321,7 +306,7 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
   -webkit-box-orient: vertical;
 }
 
-/* v0.2.61: Mobile 8-player square layout helpers (used when JS applies anchor-* classes) */
+/* v0.2.62: Mobile 8-player square layout helpers (used when JS applies anchor-* classes) */
 @media (max-width: 520px){
   .boardSeats .seat.anchor-left{ text-align:left; }
   .boardSeats .seat.anchor-right{ text-align:right; }
@@ -393,7 +378,7 @@ body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
 /* Deal/deck anchor should not be visible on the play board (deal happens on bidding page) */
 body.page-play #olDeck{ display:none !important; }
 
-/* v0.2.61: Room code should not be visible on the play board (still shown in lobby/bidding). */
+/* v0.2.62: Room code should not be visible on the play board (still shown in lobby/bidding). */
 body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important; }
 
 .seat-top { left: 50%; top: 6px; transform: translateX(-50%); text-align:center; }
@@ -509,7 +494,7 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
 
 
 
-/* v0.2.61 PC HUD: remove bottom bar on play board and move info to corners */
+/* v0.2.62 PC HUD: remove bottom bar on play board and move info to corners */
 @media (min-width: 900px) {
   body.page-play .bottomBar{
     display:none !important;
@@ -543,7 +528,7 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
   body.page-play .pill.roomPill{ display:none !important; }
 }
 
-/* v0.2.61 no-fly zone helper class for PC overlap avoidance */
+/* v0.2.62 no-fly zone helper class for PC overlap avoidance */
 @media (min-width: 900px) {
   body.page-play .handNoFly{
     position:absolute;
