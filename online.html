@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.2.62 · Online</title>
+  <title>Piratwhist v0.2.63 · Online</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
   <link rel="stylesheet" href="/online_pages.css" />
@@ -13,86 +13,45 @@
     <header class="top">
       <div>
         <div class="title">Piratwhist</div>
-        <div class="sub">Online · v0.2.62</div>
+        <div class="sub">Online · v0.2.63</div>
       </div>
-      <div class="pill">Rum: <span id="olRoomLabel">-</span></div>
-      <div class="pill">Du er: <span id="olSeatLabel">-</span></div>
+      <div class="pill">Rum: <span>-</span></div>
+      <div class="pill">Du er: <span>-</span></div>
     </header>
+
     <main class="main">
+      <section class="card tight panel">
+        <h2>Online multiplayer</h2>
+        <p class="sub">Opret/join til online multiplayer er flyttet til point-tavle-siden, så du kan starte online spil derfra.</p>
 
+        <div class="grid2" style="margin-top:10px;">
+          <div class="card" style="background: rgba(0,0,0,.12);">
+            <h3>Start online her</h3>
+            <p class="sub">Gå til point-tavlen og brug online-panelet (nederst på siden) til at oprette/j...</p>
+            <div class="row gap wrap" style="margin-top:12px;">
+              <a class="primary linkbtn" href="/piratwhist.html#onlineStart">Åbn point-tavle + online</a>
+            </div>
+          </div>
 
-<section class="card tight panel">
-  <h2>Vælg spiltype</h2>
-  <p class="sub">Vælg mellem fysisk spil (point-tavle) eller online multiplayer.</p>
+          <div class="card" style="background: rgba(0,0,0,.12);">
+            <h3>Regler</h3>
+            <p class="sub">Læs reglerne for online spil (spar er trumf, bekend kulør).</p>
+            <div class="row gap wrap" style="margin-top:12px;">
+              <a class="ghost linkbtn" href="/rules.html">Åbn regler</a>
+            </div>
+          </div>
+        </div>
 
-  <div class="grid2" style="margin-top:10px;">
-    <div class="card" style="background: rgba(0,0,0,.12);">
-      <h3>Fysisk spil (point-tavle)</h3>
-      <p class="sub">Før point mens I sidder sammen. I kan dele data i et rum.</p>
-      <div class="row gap wrap" style="margin-top:12px;">
-        <a class="primary linkbtn" href="/piratwhist.html">Åbn point-tavle</a>
-      </div>
-    </div>
-
-    <div class="card" style="background: rgba(0,0,0,.12);">
-      <h3>Online spil</h3>
-      <p class="sub">Opret eller join et rum og spil online.</p>
-      <div class="row gap wrap" style="margin-top:12px;">
-        <a class="primary linkbtn" href="#onlineStart">Gå til online</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<section class="card tight panel">
-  <h2>Vælg spiltype</h2>
-  <p class="sub">Du kan enten føre point for et fysisk spil (delt rum), eller spille online multiplayer.</p>
-
-  <div class="grid2">
-    <div class="card" style="background: rgba(0,0,0,.12);">
-      <h3>Fysisk spil (point-tavle)</h3>
-      <p class="sub">Bruges når I sidder sammen. Data kan deles i et rum, så flere kan taste.</p>
-      <a class="primary linkbtn" href="/piratwhist.html">Åbn point-tavle</a>
-    </div>
-    <div class="card" style="background: rgba(0,0,0,.12);">
-      <h3>Online multiplayer</h3>
-      <p class="sub">Opret eller join et online rum og spil mod andre (og bots).</p>
-      <div class="sub small">Fortsæt herunder for at oprette/j...
-<section class="card tight panel" id="onlineStart">
-  <h2>Online</h2>
-  <p class="sub">Opret eller join et rum. Når du er inde i et rum, skifter siden automatisk til den rigtige fase.</p>
-
-  <div class="grid2">
-    <div>
-      <label class="label">Dit navn</label>
-      <input id="olMyName" class="input" placeholder="Dit navn" value="Spiller 1" />
-    </div>
-    <div>
-      <label class="label">Rumkode (4 tal)</label>
-      <input id="olRoomCode" class="input" placeholder="1234" inputmode="numeric" />
-    </div>
-  </div>
-
-  <div class="row gap wrap" style="margin-top:12px;">
-    <button id="olCreateRoom" class="primary">Opret online-rum</button>
-    <button id="olJoinRoom" class="ghost">Join online-rum</button>
-  </div>
-
-  <div id="olRoomStatus" class="sub" style="margin-top:10px;"></div>
-  <div id="olRoomWarn" class="warn hidden"></div>
-
-  <div class="hsep"></div>
-  <div class="sub small">Tip: Del rumkoden med de andre spillere. Du kan også åbne direkte: <b>/online_lobby.html?code=XXXX</b></div>
-</section>
-
+        <div class="hsep"></div>
+        <div class="sub small">Tip: Du kan stadig åbne lobby direkte hvis du har en kode: <b>/online_lobby.html?code=XXXX</b></div>
+      </section>
     </main>
 
     <footer class="footer">
       <div class="brand">
         <div class="logo">🏴‍☠️</div>
         <div>
-          <div class="title">Piratwhist <span class="ver">v0.2.62</span></div>
+          <div class="title">Piratwhist <span class="ver">v0.2.63</span></div>
           <div class="sub">Online spil · spar er trumf · bekend kulør</div>
         </div>
       </div>
@@ -104,7 +63,5 @@
     </footer>
 
   </div>
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script src="/online.js"></script>
 </body>
 </html>

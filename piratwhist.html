@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist – Score v0.2.62</title>
+  <title>Piratwhist – Score v0.2.63</title>
   <link rel="stylesheet" href="piratwhist.css" />
 </head>
 <body>
@@ -12,7 +12,7 @@
       Piratwhist <span id="appVersion" class="badge"></span>
     </div>
     <div class="actions">
-      <a href="online.html" class="ghost linkbtn">Spil online</a>
+      <a href="#onlineStart" class="ghost linkbtn">Spil online</a>
       <a href="rules.html" class="ghost linkbtn">Regler</a>
       <button id="btnLeaveRoom" class="ghost">Forlad rum</button>
       <button id="btnResetRoom" class="danger ghost" title="Nulstil spil i rummet">Nulstil rum</button>
@@ -53,6 +53,38 @@
         <div id="roomStatus" class="badge">Ikke i rum</div>
         <div class="sub" id="roomHint"></div>
       </div>
+    </section>
+
+    <!-- ONLINE MULTIPLAYER (moved from online.html) -->
+    <section id="onlineStart" class="card">
+      <h2>Online multiplayer</h2>
+      <p class="sub" style="margin-top:-6px">
+        Opret eller join et online rum og spil mod andre (og bots). Når du er inde i et rum,
+        skifter siden automatisk til den rigtige fase (lobby/bud/spil/resultat).
+      </p>
+
+      <div class="grid2" style="margin-top:10px;">
+        <label class="field">
+          <span>Dit navn</span>
+          <input id="olMyName" type="text" placeholder="Dit navn" value="Spiller 1" />
+        </label>
+
+        <label class="field">
+          <span>Rumkode (4 tal)</span>
+          <input id="olRoomCode" type="text" placeholder="1234" inputmode="numeric" maxlength="4" />
+        </label>
+      </div>
+
+      <div class="row" style="gap:10px; margin-top:12px; flex-wrap: wrap;">
+        <button id="olCreateRoom" class="primary">Opret online-rum</button>
+        <button id="olJoinRoom" class="ghost">Join online-rum</button>
+      </div>
+
+      <div id="olRoomStatus" class="sub" style="margin-top:10px;"></div>
+      <div id="olRoomWarn" class="warn hidden"></div>
+
+      <hr style="border-color: rgba(255,255,255,.10); margin-top:14px;" />
+      <div class="sub small">Tip: Del rumkoden med de andre spillere. Du kan også åbne direkte: <b>/online_lobby.html?code=XXXX</b></div>
     </section>
 
     <!-- SETUP -->
@@ -110,5 +142,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="piratwhist.js"></script>
+  <!-- Online multiplayer (create/join moved onto this page) -->
+  <script src="online.js"></script>
 </body>
 </html>
