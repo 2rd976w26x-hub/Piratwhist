@@ -118,9 +118,25 @@ body.page-play .handDock .cards .cardbtn:focus{ z-index: 6; }
 
 .playLayout { grid-template-columns: 360px 1fr; }
 
-/* Optional: hide the left players panel on the play page (user toggle) */
-body.hidePlayersPanel .playersPanel{ display:none !important; }
-body.hidePlayersPanel .twoCol.playLayout{ grid-template-columns: 1fr !important; }
+/* Optional: user toggle for the players panel on the play page.
+   v0.2.68: Make it an overlay so it never changes board width (no seat shifting). */
+body.page-play .twoCol.playLayout{ grid-template-columns: 1fr !important; }
+body.page-play .playersPanel{
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  bottom: 12px;
+  width: 320px;
+  max-width: min(360px, 80vw);
+  z-index: 40;
+  transform: translateX(0);
+  transition: transform .18s ease, opacity .18s ease;
+}
+body.hidePlayersPanel.page-play .playersPanel{
+  transform: translateX(calc(-100% - 18px));
+  opacity: .0;
+  pointer-events: none;
+}
 /* Let the board stretch instead of forcing a fixed minimum height (prevents unused empty space). */
 .playBoard { min-height: 0; }
 .board {
@@ -135,15 +151,41 @@ body.hidePlayersPanel .twoCol.playLayout{ grid-template-columns: 1fr !important;
 
 /* Mobile/compact play: use the full viewport and avoid vertical scrolling */
 @media (max-width: 860px){
-  body.page-play .playersPanel{ display:none; }
+  /* Treat play as a full-screen app: no page scroll. */
+  html, body{ height: 100dvh; overflow: hidden; }
+  body.page-play .app{ min-height: 100dvh; height: 100dvh; overflow: hidden; }
+  body.page-play .main{ flex: 1; min-height: 0; overflow: hidden; }
+
+  /* Hide PC HUD on mobile (it caused duplicate HUD and overlap). */
+  body.page-play .pcHud{ display:none !important; }
+
+  /* Keep the board in one column; the panel is an overlay (can be toggled). */
   body.page-play .playLayout{ grid-template-columns: 1fr; }
   body.page-play .centerArea{ gap: 8px; }
 
-  /* Give the board the screen; the hand overlays it */
+  /* Give the board the screen; HUD and hand are fixed overlays. */
   body.page-play .playBoard{ min-height: 0; }
-  body.page-play .board{
-    min-height: 0;
-    height: calc(100dvh - 120px);
+  body.page-play .board{ min-height: 0; height: 100dvh; }
+
+  /* Fixed bottom HUD: does not take layout height (prevents scroll). */
+  body.page-play{ --mobileHudH: 86px; }
+  body.page-play .bottomBar{
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    z-index: 30;
+  }
+
+  /* Fixed hand above the HUD so cards never overlap HUD text. */
+  body.page-play .handDock{
+    position: fixed;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    bottom: calc(var(--mobileHudH) + max(12px, env(safe-area-inset-bottom)));
+    width: 98% !important;
+    z-index: 25;
   }
 
   /* Hide the footer on the play page to save space */
@@ -151,7 +193,7 @@ body.hidePlayersPanel .twoCol.playLayout{ grid-template-columns: 1fr !important;
 }
 
 @media (max-width: 480px){
-  body.page-play .board{ height: calc(100dvh - 112px); }
+  body.page-play{ --mobileHudH: 92px; }
 }
 
 /* v0.2.32: dynamic seats/trick slots (2–8 players) */
@@ -294,15 +336,8 @@ body.hideBottomHud .bottomBar{ display:none !important; }
   body.hideBottomHud.page-play .handDock{ bottom: 16px !important; }
 }
 
-/* During actual play we prioritize the board on MOBILE: hide the players panel by default
-   (user can still toggle it back on with the Panel button).
-   On PC we allow the panel to be shown/hidden via the toggle. */
-@media (max-width: 860px){
-  body.phase-playing .playersPanel,
-  body.phase-between_tricks .playersPanel{ display:none; }
-  body.phase-playing .playLayout,
-  body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
-}
+/* v0.2.68: The players panel is always available as an overlay (toggle controls visibility).
+   Do NOT force-hide it by phase, otherwise the Panel button appears broken. */
 /* Seat player name must always remain readable on the board.
    Mobile especially can have long names, so clamp to max 2 lines
    and auto-scale the font slightly to avoid clipping. */
