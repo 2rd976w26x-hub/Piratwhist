@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.59)
+// Piratwhist Online Multiplayer (v0.2.60)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -165,70 +165,77 @@ function positionPlayBoard(n){
     ? window.matchMedia("(max-width: 520px)").matches
     : false;
 
-  // --- Mobile 8-player rectangular layout (approved) ---
-  // For 8 players on small screens we use a deterministic "square" layout
-  // instead of the trig/ring layout. This prevents overlap and keeps all seats
-  // visible inside the board container.
-  if (isMobile && n === 8){
-    // rel==0 is always the local player (bottom). Seat order around the table:
-    // 0 bottom (P1), 1 bottom-right (C7), 2 mid-right (C6), 3 top-right (C5),
-    // 4 top (C4), 5 top-left (C3), 6 mid-left (C2), 7 bottom-left (C1)
-    // Seat positions (in % of board) tuned for mobile.
-    // Requested polish:
-    // - side seats 2–4vw in (x a bit closer to center)
-    // - top seat ~12px down
-    // - use some of the empty space above the top corners (raise C3/C5)
-    const pos = {
-      4: { x: 50, y: 12, anchor: "center" },          // top (C4)
-      5: { x: 32, y: 22, anchor: "left" },            // upper-left (C3)
-      3: { x: 68, y: 22, anchor: "right" },           // upper-right (C5)
-      6: { x: 24, y: 52, anchor: "left",  midSide: true },   // mid-left (C2)
-      2: { x: 76, y: 52, anchor: "right", midSide: true },   // mid-right (C6)
-      7: { x: 32, y: 80, anchor: "left" },            // lower-left (C1)
-      1: { x: 68, y: 80, anchor: "right" },           // lower-right (C7)
-      // Bottom (P1): lift a bit so it aligns visually with the lower-corner seats
-      // and frees more space for the hand on mobile.
-      0: { x: 50, y: 78, anchor: "center", bottom: true }    // bottom (P1)
+  // --- Mobile rectangular grid layout (approved) ---
+  // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
+  // This prevents overlap and keeps all seats visible inside the board container.
+  if (isMobile){
+    // Slot positions (in % of board), tuned for mobile.
+    const slot = {
+      top:      { x: 50, y: 12, anchor: "center", isTop: true },
+      topLeft:  { x: 32, y: 22, anchor: "left"   },
+      topRight: { x: 68, y: 22, anchor: "right"  },
+      midLeft:  { x: 24, y: 52, anchor: "left",  midSide: true },
+      midRight: { x: 76, y: 52, anchor: "right", midSide: true },
+      botLeft:  { x: 32, y: 80, anchor: "left"   },
+      botRight: { x: 68, y: 80, anchor: "right"  },
+      bottom:   { x: 50, y: 78, anchor: "center", bottom: true }
     };
 
-    // Trick slots (played-card landing spots): fixed positions aligned with the
-    // player who played the card. This keeps values readable for all cards.
-    const slotPos = {
-      4: { x: 50, y: 34 }, // C4 (top)
-      5: { x: 40, y: 38 }, // C3 (upper-left)
-      3: { x: 60, y: 38 }, // C5 (upper-right)
-      6: { x: 36, y: 52 }, // C2 (left)
-      2: { x: 64, y: 52 }, // C6 (right)
-      7: { x: 42, y: 66 }, // C1 (lower-left)
-      1: { x: 58, y: 66 }, // C7 (lower-right)
-      0: { x: 50, y: 70 }  // P1 (bottom)
+    // Trick-slot positions aligned with the player who played the card.
+    const trick = {
+      top:      { x: 50, y: 34 },
+      topLeft:  { x: 40, y: 38 },
+      topRight: { x: 60, y: 38 },
+      midLeft:  { x: 36, y: 52 },
+      midRight: { x: 64, y: 52 },
+      botLeft:  { x: 42, y: 66 },
+      botRight: { x: 58, y: 66 },
+      bottom:   { x: 50, y: 70 }
     };
+
+    // Per player-count mapping: relOffset 0 is always local player at "bottom".
+    // Offsets 1..n-1 are assigned to fixed slots in clockwise-ish order that
+    // matches the desired mobile UI (not the ring math).
+    const orderByN = {
+      2: ["top"],
+      3: ["topLeft","topRight"],
+      4: ["midLeft","top","midRight"],
+      5: ["botLeft","topLeft","topRight","botRight"],
+      6: ["botLeft","midLeft","top","midRight","botRight"],
+      7: ["botLeft","midLeft","topLeft","topRight","midRight","botRight"],
+      8: ["botRight","midRight","topRight","top","topLeft","midLeft","botLeft"]
+    };
+
+    const ord = orderByN[n] || orderByN[8];
+
     for (let i=0;i<n;i++){
       const rel = (i - my + n) % n;
-      const p = pos[rel] || { x: 50, y: 50, anchor: "center" };
+      let slotName = "bottom";
+      if (rel === 0) slotName = "bottom";
+      else slotName = ord[rel - 1] || "top";
+
+      const p = slot[slotName] || slot.bottom;
       const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
       if (seatEl){
         seatEl.style.left = p.x.toFixed(2) + "%";
         seatEl.style.top  = p.y.toFixed(2) + "%";
 
-        // Reset/assign anchor classes
         seatEl.classList.remove("anchor-left","anchor-right","anchor-center","mid-side");
         seatEl.classList.add(
           p.anchor === "left" ? "anchor-left" : (p.anchor === "right" ? "anchor-right" : "anchor-center")
         );
         if (p.midSide) seatEl.classList.add("mid-side");
 
-        // Tag bottom/top like before (useful for other CSS)
         seatEl.classList.toggle("seat-bottom", !!p.bottom);
-        seatEl.classList.toggle("seat-top", rel === 4);
+        seatEl.classList.toggle("seat-top", !!p.isTop);
 
-        // Apply transform anchoring directly to avoid layout drift
+        // Apply transform anchoring directly
         if (p.anchor === "left") seatEl.style.transform = "translate(-100%, -50%)";
         else if (p.anchor === "right") seatEl.style.transform = "translate(0%, -50%)";
         else seatEl.style.transform = "translate(-50%, -50%)";
       }
 
-      const sp = slotPos[rel] || { x: 50, y: 50 };
+      const sp = trick[slotName] || { x: 50, y: 50 };
       const slotEl = el(`olTrickSlot${i}`);
       if (slotEl){
         slotEl.style.left = sp.x.toFixed(2) + "%";
@@ -236,7 +243,7 @@ function positionPlayBoard(n){
       }
     }
 
-    // Place deck just below the bottom seat (for visibility while dealing if ever enabled here)
+    // Deck anchor (if present) stays below bottom seat; on the play board the deck is hidden.
     const deck = el("olDeck");
     if (deck){
       deck.style.left = "50%";
