@@ -119,7 +119,7 @@ body.page-play .handDock .cards .cardbtn:focus{ z-index: 6; }
 .playLayout { grid-template-columns: 360px 1fr; }
 
 /* Optional: user toggle for the players panel on the play page.
-   v0.2.68: Make it an overlay so it never changes board width (no seat shifting). */
+   v0.2.69: Make it an overlay so it never changes board width (no seat shifting). */
 body.page-play .twoCol.playLayout{ grid-template-columns: 1fr !important; }
 body.page-play .playersPanel{
   position: fixed;
@@ -336,7 +336,7 @@ body.hideBottomHud .bottomBar{ display:none !important; }
   body.hideBottomHud.page-play .handDock{ bottom: 16px !important; }
 }
 
-/* v0.2.68: The players panel is always available as an overlay (toggle controls visibility).
+/* v0.2.69: The players panel is always available as an overlay (toggle controls visibility).
    Do NOT force-hide it by phase, otherwise the Panel button appears broken. */
 /* Seat player name must always remain readable on the board.
    Mobile especially can have long names, so clamp to max 2 lines
