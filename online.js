@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.66)
+// Piratwhist Online Multiplayer (v0.2.67)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -24,7 +24,7 @@ function sortHand(cards){
     return ra - rb;
   });
 }
-const APP_VERSION = "0.2.65";
+const APP_VERSION = "0.2.67";
 // v0.2.40:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
@@ -171,14 +171,16 @@ function positionPlayBoard(n){
   if (isMobile){
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      top:      { x: 50, y: 12, anchor: "center", isTop: true },
+      // Mobile polish: bring top seat slightly down so it never clips under the browser UI.
+      top:      { x: 50, y: 18, anchor: "center", isTop: true },
       topLeft:  { x: 32, y: 22, anchor: "left"   },
       topRight: { x: 68, y: 22, anchor: "right"  },
       midLeft:  { x: 24, y: 52, anchor: "left",  midSide: true },
       midRight: { x: 76, y: 52, anchor: "right", midSide: true },
-      botLeft:  { x: 32, y: 80, anchor: "left"   },
-      botRight: { x: 68, y: 80, anchor: "right"  },
-      bottom:   { x: 50, y: 78, anchor: "center", bottom: true }
+      // Move the bottom row up so it stays clear of the docked hand.
+      botLeft:  { x: 32, y: 74, anchor: "left"   },
+      botRight: { x: 68, y: 74, anchor: "right"  },
+      bottom:   { x: 50, y: 70, anchor: "center", bottom: true }
     };
 
     // Trick-slot positions aligned with the player who played the card.
@@ -188,9 +190,9 @@ function positionPlayBoard(n){
       topRight: { x: 60, y: 38 },
       midLeft:  { x: 36, y: 52 },
       midRight: { x: 64, y: 52 },
-      botLeft:  { x: 42, y: 66 },
-      botRight: { x: 58, y: 66 },
-      bottom:   { x: 50, y: 70 }
+      botLeft:  { x: 42, y: 62 },
+      botRight: { x: 58, y: 62 },
+      bottom:   { x: 50, y: 66 }
     };
 
     // Per player-count mapping: relOffset 0 is always local player at "bottom".
@@ -1170,7 +1172,22 @@ function joinRoom(roomOverride){
   pendingJoinRoom = room;
   emitWhenConnected(() => socket.emit("online_join_room", { room, clientId: getClientId(), name: myName() }));
 }
-function leaveRoom(){ if (roomCode) socket.emit("online_leave_room", { room: roomCode, clientId: getClientId() }); }
+function leaveRoom(){
+  // Emit leave-room (server authoritative) and navigate user back immediately.
+  // This makes the "Forlad" button feel responsive even if network/server is slow.
+  try{
+    if (roomCode) socket.emit("online_leave_room", { room: roomCode, clientId: getClientId() });
+  } catch(_) {}
+
+  // Clear local room so redirects don't bounce back into play.
+  try{
+    roomCode = null;
+    state = null;
+  } catch(_) {}
+
+  // Go to the official start page.
+  window.location.href = "/piratwhist.html";
+}
 function startOnline(){ if (roomCode) socket.emit("online_start_game", { room: roomCode }); }
 function onNext(){ if (roomCode) socket.emit("online_next", { room: roomCode }); }
 function submitBid(){ 
@@ -1638,11 +1655,21 @@ el("olLeaveRoom")?.addEventListener("click", leaveRoom);
   const btn = el("olTogglePlayersPanel");
   if (!btn) return;
   const key = "pw_hide_players_panel";
+  const setBtnLabel = (hidden) => {
+    // Preserve icon spans; update only the label text if present.
+    const lbl = btn.querySelector ? btn.querySelector('.lbl') : null;
+    if (lbl) lbl.textContent = hidden ? "Vis panel" : "Skjul panel";
+    else btn.textContent = hidden ? "Vis panel" : "Skjul panel";
+  };
   const apply = () => {
     let hidden = false;
     try{ hidden = localStorage.getItem(key) === "1"; }catch(e){ hidden = false; }
     document.body.classList.toggle("hidePlayersPanel", hidden);
-    btn.textContent = hidden ? "Vis panel" : "Skjul panel";
+    // On small screens the "Panel" button acts as a space-saver for the bottom HUD as well.
+    // This keeps the board + hand readable (avoids overlap with HUD text).
+    const small = (window.innerWidth || 0) < 900;
+    document.body.classList.toggle("hideBottomHud", hidden && small);
+    setBtnLabel(hidden);
     btn.setAttribute("aria-pressed", hidden ? "true" : "false");
   };
   btn.addEventListener("click", () => {
@@ -1685,7 +1712,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.66 PC HUD sync + button wiring
+// v0.2.67 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -1727,7 +1754,7 @@ function goToRules(){
   window.location.href = `/rules.html?from=${from}`;
 }
 
-// v0.2.66 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.67 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");

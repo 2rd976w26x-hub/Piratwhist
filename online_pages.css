@@ -81,11 +81,12 @@ body.page-play .handDock .cards .cardbtn:focus{ z-index: 6; }
      and stays clear of the bottom seat + bottom bar. */
   /* Preview: move the hand into the lower "unused" area of the board (above the bottom bar)
      and keep the bottom seat readable. */
-  body.page-play .handDock{ left: 50%; right: auto; transform: translateX(-50%); bottom: 280px; width: 98%; }
+  /* Mobile: dock the hand low (blue box) and keep it from covering HUD text. */
+  body.page-play .handDock{ left: 50%; right: auto; transform: translateX(-50%); bottom: 120px; width: 98%; z-index: 10; }
   body.page-play .handDock .cards .cardbtn{ margin-left: -22px; }
 }
 @media (max-width: 480px){
-  body.page-play .handDock{ bottom: 270px; }
+  body.page-play .handDock{ bottom: 110px; }
 }
 
 .centerArea { display:flex; flex-direction:column; gap:12px; min-height: 0; }
@@ -228,7 +229,7 @@ body.hidePlayersPanel .twoCol.playLayout{ grid-template-columns: 1fr !important;
 }
 .played {
   position: absolute;
-  /* v0.2.66: played cards on the table are ~20% larger for readability */
+  /* v0.2.67: played cards on the table are ~20% larger for readability */
   width: 125px;
   height: 175px;
   border-radius: 14px;
@@ -276,6 +277,8 @@ body.page-play .footer{ display:none; }
   border-radius: 18px;
   background: rgba(0,0,0,.22);
   border: 1px solid rgba(255,255,255,.10);
+  position: relative;
+  z-index: 20; /* keep HUD above the hand/cards on mobile */
 }
 .bottomLeft,.bottomMid,.bottomRight{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
 .bottomMid{ justify-content:center; flex: 1; }
@@ -285,11 +288,21 @@ body.page-play .footer{ display:none; }
 .bottomBar .ico{ display:none; }
 .bottomBar .lbl{ display:inline; }
 
-/* During actual play we prioritize the board: hide the left panel and let the board take full width */
-body.phase-playing .playersPanel,
-body.phase-between_tricks .playersPanel{ display:none; }
-body.phase-playing .playLayout,
-body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
+/* If user hides the HUD on small screens (Panel button), reclaim the space */
+body.hideBottomHud .bottomBar{ display:none !important; }
+@media (max-width: 860px){
+  body.hideBottomHud.page-play .handDock{ bottom: 16px !important; }
+}
+
+/* During actual play we prioritize the board on MOBILE: hide the players panel by default
+   (user can still toggle it back on with the Panel button).
+   On PC we allow the panel to be shown/hidden via the toggle. */
+@media (max-width: 860px){
+  body.phase-playing .playersPanel,
+  body.phase-between_tricks .playersPanel{ display:none; }
+  body.phase-playing .playLayout,
+  body.phase-between_tricks .playLayout{ grid-template-columns: 1fr; }
+}
 /* Seat player name must always remain readable on the board.
    Mobile especially can have long names, so clamp to max 2 lines
    and auto-scale the font slightly to avoid clipping. */
