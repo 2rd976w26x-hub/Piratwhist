@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist – Regler v0.2.64</title>
+  <title>Piratwhist – Regler v0.2.65</title>
   <link rel="stylesheet" href="piratwhist.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="title">
-      Piratwhist – Regler <span class="badge">v0.2.64</span>
+      Piratwhist – Regler <span class="badge">v0.2.65</span>
     </div>
     <div class="actions">
-      <a href="piratwhist.html" class="ghost linkbtn">← Tilbage</a>
+      <button id="rulesBack" class="ghost linkbtn" type="button">← Tilbage</button>
     </div>
   </header>
 
@@ -72,7 +72,45 @@
   </main>
 
   <footer class="footer">
-    Piratwhist v0.2.64
+    Piratwhist v0.2.65
   </footer>
+
+  <script>
+    (function(){
+      function sameOrigin(url){
+        try { return new URL(url, window.location.href).origin === window.location.origin; } catch(e){ return false; }
+      }
+      function getParam(name){
+        try { return new URLSearchParams(window.location.search).get(name); } catch(e){ return null; }
+      }
+      const fromParam = getParam('from');
+      let fallback = 'piratwhist.html';
+      if (fromParam) {
+        try { fallback = decodeURIComponent(fromParam); } catch(e){ fallback = fromParam; }
+      } else if (document.referrer && sameOrigin(document.referrer)) {
+        fallback = document.referrer;
+      }
+
+      document.getElementById('rulesBack')?.addEventListener('click', () => {
+        // Preferred: browser back (returns to the exact state, incl. mid-game).
+        if (document.referrer && sameOrigin(document.referrer) && history.length > 1) {
+          history.back();
+          return;
+        }
+        // Fallback: explicit URL.
+        window.location.href = fallback;
+      });
+
+      // If the rules page was opened in a new tab, the user might "close" the tab.
+      // Provide a safe close attempt via ESC (optional):
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          try { window.close(); } catch(_) {}
+          // If closing is blocked, navigate back instead.
+          window.location.href = fallback;
+        }
+      });
+    })();
+  </script>
 </body>
 </html>

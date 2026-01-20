@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.64)
+// Piratwhist Online Multiplayer (v0.2.65)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -24,7 +24,7 @@ function sortHand(cards){
     return ra - rb;
   });
 }
-const APP_VERSION = "0.2.64";
+const APP_VERSION = "0.2.65";
 // v0.2.40:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
@@ -1030,6 +1030,18 @@ socket.on("online_state", (payload) => {
   maybeRunAnimations();
 
 render();
+
+// Ensure the "Regler" link returns to the current page after reading rules.
+// We do this by adding ?from=<current path> to any rules links on the page.
+try{
+  const from = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+  document.querySelectorAll('a[href$="/rules.html"], a[href$="rules.html"]').forEach(a => {
+    const href = a.getAttribute('href') || '';
+    if (!href || href.includes('from=')) return;
+    const sep = href.includes('?') ? '&' : '?';
+    a.setAttribute('href', `${href}${sep}from=${from}`);
+  });
+}catch(e){ /* ignore */ }
 });
 
 socket.on("online_left", () => {
@@ -1641,9 +1653,12 @@ el("olMyName")?.addEventListener("blur", () => {
 // Pre-fill name inputs on pages that have them
 if (el("olMyName")) {
   const s = getStoredName();
-  if (s && !el("olMyName").value) el("olMyName").value = s;
+  const cur = (el("olMyName").value || "").trim();
+  // If the field still contains the default placeholder name, replace it so the user
+  // does not have to type their name twice (online.html -> lobby/bidding/play).
+  if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.64 PC HUD sync + button wiring
+// v0.2.65 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -1676,7 +1691,7 @@ function wirePcHudButtons(){
   }
 }
 
-// v0.2.64 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.65 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
