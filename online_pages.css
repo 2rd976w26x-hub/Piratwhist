@@ -615,21 +615,25 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
 /* ===== Scroll-down results on play page (desktop only) ===== */
 #olScrollResults{ margin: 14px 0 0; }
 @media (max-width: 760px){
-  /* Mobile: allow scrolling DOWN to the results table, while keeping the play scene visible (sticky). 
-     Sticky (not fixed) is important so iOS can start a scroll gesture on the play area. */
+  /* Mobile: allow scrolling DOWN to the results table.
+     IMPORTANT: the play scene must NOT sit on top of the results while scrolling.
+     Using sticky/fixed for the whole play scene can cause iOS gesture-locks and
+     makes the hand/buttons overlap the table. So on mobile we keep the play scene
+     in normal flow (full viewport height), then results come directly after.
+   */
   html, body{ height: auto; min-height: 100dvh; overflow-x: hidden; }
   body.page-play{ overflow-y:auto; -webkit-overflow-scrolling: touch; }
   body.page-play .app{ height:auto; min-height:100dvh; }
   body.page-play .main{ height:auto; overflow:visible; }
 
-  /* Keep the play scene pinned while the page scrolls to the results below. */
+  /* The play scene occupies the first screen, then scroll reveals results. */
   body.page-play .twoCol.playLayout{
-    position: sticky;
-    top: 0;
+    position: relative;
+    top: auto;
     height: 100dvh;
-    overflow: hidden;
+    overflow: hidden; /* keep the hand/ghosts from bleeding into the results */
     z-index: 10;
-    background: rgba(0,0,0,.0); /* board already has its own bg */
+    background: rgba(0,0,0,.0);
   }
 
   /* Results are in normal flow right after the play scene. */

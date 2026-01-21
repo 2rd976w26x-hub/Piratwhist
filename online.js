@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.81)
+// Piratwhist Online Multiplayer (v0.2.82)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -24,7 +24,7 @@ function sortHand(cards){
     return ra - rb;
   });
 }
-const APP_VERSION = "0.2.74";
+const APP_VERSION = "0.2.82";
 // v0.2.40:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
@@ -169,7 +169,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v0.2.81 Dev + layout: SceneShift for mobile to utilize top space and
+    // v0.2.82 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n <= 4) ? -5.0 : -4.0; // mobile scene shift (4p needs extra lift; 8p baseline)
@@ -197,7 +197,7 @@ function positionPlayBoard(n){
 
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      // v0.2.81 Mobile: push the whole "scene" up to utilize top space and
+      // v0.2.82 Mobile: push the whole "scene" up to utilize top space and
       // create more vertical room for the hand row (no scroll).
       top:      { x: 50, y: 10, anchor: "center", isTop: true },
       topLeft:  { x: 32, y: 14, anchor: "left"   },
@@ -1021,6 +1021,23 @@ document.addEventListener("DOMContentLoaded", () => {
   // from bfcache.
   bootFromUrl();
 
+  // Mobile Safari/Chrome can restore the play page from the back-forward cache
+  // when navigating to rules.html and back. In that case, JS timers/listeners
+  // and socket state can become stale, causing the game UI to "lock".
+  // When this happens, the safest behavior is to reload the current page so
+  // we re-attach to the room and re-render state.
+  window.addEventListener("pageshow", (ev) => {
+    try{
+      const nav = performance.getEntriesByType?.("navigation")?.[0];
+      const backForward = nav && nav.type === "back_forward";
+      const restored = !!ev.persisted || backForward;
+      if (restored && document.body && document.body.classList.contains("page-play")){
+        // Preserve URL (room code) and force a clean re-init.
+        window.location.reload();
+      }
+    }catch(e){ /* ignore */ }
+  }, { passive: true });
+
   // Keep the round-table layout stable on resize / orientation change.
   window.addEventListener("resize", () => {
     try{
@@ -1723,7 +1740,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.81 PC HUD sync + button wiring
+// v0.2.82 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -1764,7 +1781,7 @@ function goToRules(){
   window.location.href = `/rules.html?from=${from}`;
 }
 
-// v0.2.81 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.82 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
