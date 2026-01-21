@@ -615,19 +615,27 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
 /* ===== Scroll-down results on play page (desktop only) ===== */
 #olScrollResults{ margin: 14px 0 0; }
 @media (max-width: 760px){
-  /* Mobile: keep the play scene fixed, but allow scrolling DOWN to the results table. */
-  body.page-play{ overflow-y:auto; }
-  body.page-play .app{ height:auto; }
+  /* Mobile: allow scrolling DOWN to the results table, while keeping the play scene visible (sticky). 
+     Sticky (not fixed) is important so iOS can start a scroll gesture on the play area. */
+  html, body{ height: auto; min-height: 100dvh; overflow-x: hidden; }
+  body.page-play{ overflow-y:auto; -webkit-overflow-scrolling: touch; }
+  body.page-play .app{ height:auto; min-height:100dvh; }
+  body.page-play .main{ height:auto; overflow:visible; }
+
+  /* Keep the play scene pinned while the page scrolls to the results below. */
   body.page-play .twoCol.playLayout{
-    position: fixed;
-    inset: 0;
+    position: sticky;
+    top: 0;
     height: 100dvh;
     overflow: hidden;
     z-index: 10;
+    background: rgba(0,0,0,.0); /* board already has its own bg */
   }
-  /* The results section lives below the fixed play scene. */
-  #olScrollResults{ display:block; margin-top: calc(100dvh + 14px); }
+
+  /* Results are in normal flow right after the play scene. */
+  #olScrollResults{ display:block; margin-top: 14px; }
 }
+
 
 @media (min-width: 761px){
   html, body{ height:auto; overflow-y:auto; }
