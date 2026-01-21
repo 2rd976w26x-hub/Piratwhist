@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.72)
+// Piratwhist Online Multiplayer (v0.2.73)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -171,7 +171,7 @@ function positionPlayBoard(n){
   if (isMobile){
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      // v0.2.72 Mobile: push the whole "scene" up to utilize top space and
+      // v0.2.73 Mobile: push the whole "scene" up to utilize top space and
       // create more vertical room for the hand row (no scroll).
       top:      { x: 50, y: 10, anchor: "center", isTop: true },
       topLeft:  { x: 32, y: 14, anchor: "left"   },
@@ -1650,46 +1650,6 @@ function render(){
 el("olCreateRoom")?.addEventListener("click", createRoom);
 el("olJoinRoom")?.addEventListener("click", joinRoom);
 el("olLeaveRoom")?.addEventListener("click", leaveRoom);
-// Play-page: user toggle for the left players panel
-(function initPlayersPanelToggle(){
-  const btn = el("olTogglePlayersPanel");
-  if (!btn) return;
-  const key = "pw_hide_players_panel";
-  const setBtnLabel = (hidden) => {
-    // Preserve icon spans; update only the label text if present.
-    const lbl = btn.querySelector ? btn.querySelector('.lbl') : null;
-    if (lbl) lbl.textContent = hidden ? "Vis panel" : "Skjul panel";
-    else btn.textContent = hidden ? "Vis panel" : "Skjul panel";
-  };
-  const apply = () => {
-    let hidden = false;
-    let raw = null;
-    try{ raw = localStorage.getItem(key); }catch(e){ raw = null; }
-    const small = (window.innerWidth || 0) < 900;
-    // v0.2.72: On small screens default to hidden so the overlay panel doesn't cover the board.
-    if (raw === null && small) {
-      hidden = true;
-      try{ localStorage.setItem(key, "1"); }catch(_){ /* ignore */ }
-    } else {
-      hidden = (raw === "1");
-    }
-    document.body.classList.toggle("hidePlayersPanel", hidden);
-    // v0.2.72: Never hide the bottom button bar; otherwise users can get stuck without controls.
-    document.body.classList.remove("hideBottomHud");
-    // On small screens, when the panel is shown we hide only the bottom HUD text (not the buttons) to save space.
-    document.body.classList.toggle("panelOpenMobile", (!hidden) && small);
-    setBtnLabel(hidden);
-    btn.setAttribute("aria-pressed", hidden ? "true" : "false");
-  };
-  btn.addEventListener("click", () => {
-    let hidden = false;
-    try{ hidden = localStorage.getItem(key) === "1"; }catch(e){ hidden = false; }
-    const next = !hidden;
-    try{ localStorage.setItem(key, next ? "1" : "0"); }catch(e){ /* ignore */ }
-    apply();
-  });
-  apply();
-})();
 el("olStartOnline")?.addEventListener("click", startOnline);
 el("olNextRound")?.addEventListener("click", onNext);
 el("olBidSubmit")?.addEventListener("click", submitBid);
@@ -1721,7 +1681,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.72 PC HUD sync + button wiring
+// v0.2.73 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -1739,7 +1699,6 @@ function syncPcHud(){
 
 function wirePcHudButtons(){
   const map = [
-    ["pcTogglePlayersPanel","olTogglePlayersPanel"],
     ["pcNextRound","olNextRound"],
     ["pcLeave","olLeaveRoom"]
   ];
@@ -1763,7 +1722,7 @@ function goToRules(){
   window.location.href = `/rules.html?from=${from}`;
 }
 
-// v0.2.72 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.73 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
