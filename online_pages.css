@@ -608,3 +608,18 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
   border-radius: 8px;
   white-space: nowrap;
 }
+
+
+/* ===== Scroll-down results on play page (desktop only) ===== */
+#olScrollResults{ margin: 14px 0 0; }
+@media (max-width: 760px){
+  /* Mobile: keep play as a full-screen scene (no scroll); results shown on result page. */
+  #olScrollResults{ display:none; }
+}
+@media (min-width: 761px){
+  html, body{ height:auto; overflow-y:auto; }
+  body.page-play{ overflow-y:auto; }
+  body.page-play .app{ height:auto; min-height:100vh; overflow:visible; }
+  body.page-play .main{ height:auto; overflow:visible; }
+  body.page-play .playLayout{ min-height:100vh; }
+}
