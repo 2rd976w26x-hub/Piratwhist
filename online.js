@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.69)
+// Piratwhist Online Multiplayer (v0.2.70)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -24,7 +24,7 @@ function sortHand(cards){
     return ra - rb;
   });
 }
-const APP_VERSION = "0.2.69";
+const APP_VERSION = "0.2.70";
 // v0.2.40:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
@@ -171,7 +171,7 @@ function positionPlayBoard(n){
   if (isMobile){
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      // v0.2.69 Mobile: tuned to avoid scroll and prevent hand/HUD overlap.
+      // v0.2.70 Mobile: tuned to avoid scroll and prevent hand/HUD overlap.
       // - Top seat comes a bit further down (blue box)
       // - Bottom trio moves up (green box) to leave room for the fixed hand + HUD
       top:      { x: 50, y: 22, anchor: "center", isTop: true },
@@ -197,7 +197,7 @@ function positionPlayBoard(n){
     };
 
 
-    // v0.2.69 Mobile compact mode for 7–8 players:
+    // v0.2.70 Mobile compact mode for 7–8 players:
     // Move the bottom row seats up to avoid overlap with fixed HUD/hand,
     // and pull the trick cluster slightly upward to keep the center clear.
     if (n >= 7){
@@ -1680,7 +1680,7 @@ el("olLeaveRoom")?.addEventListener("click", leaveRoom);
     let raw = null;
     try{ raw = localStorage.getItem(key); }catch(e){ raw = null; }
     const small = (window.innerWidth || 0) < 900;
-    // v0.2.69: On small screens default to hidden so the overlay panel doesn't cover the board.
+    // v0.2.70: On small screens default to hidden so the overlay panel doesn't cover the board.
     if (raw === null && small) {
       hidden = true;
       try{ localStorage.setItem(key, "1"); }catch(_){ /* ignore */ }
@@ -1688,9 +1688,10 @@ el("olLeaveRoom")?.addEventListener("click", leaveRoom);
       hidden = (raw === "1");
     }
     document.body.classList.toggle("hidePlayersPanel", hidden);
-    // On small screens the "Panel" button acts as a space-saver for the bottom HUD as well.
-    // This keeps the board + hand readable (avoids overlap with HUD text).
-    document.body.classList.toggle("hideBottomHud", hidden && small);
+    // v0.2.70: Never hide the bottom button bar; otherwise users can get stuck without controls.
+    document.body.classList.remove("hideBottomHud");
+    // On small screens, when the panel is shown we hide only the bottom HUD text (not the buttons) to save space.
+    document.body.classList.toggle("panelOpenMobile", (!hidden) && small);
     setBtnLabel(hidden);
     btn.setAttribute("aria-pressed", hidden ? "true" : "false");
   };
@@ -1734,7 +1735,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.69 PC HUD sync + button wiring
+// v0.2.70 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -1776,7 +1777,7 @@ function goToRules(){
   window.location.href = `/rules.html?from=${from}`;
 }
 
-// v0.2.69 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.70 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");

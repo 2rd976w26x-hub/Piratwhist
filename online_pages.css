@@ -119,7 +119,7 @@ body.page-play .handDock .cards .cardbtn:focus{ z-index: 6; }
 .playLayout { grid-template-columns: 360px 1fr; }
 
 /* Optional: user toggle for the players panel on the play page.
-   v0.2.69: Make it an overlay so it never changes board width (no seat shifting). */
+   v0.2.70: Make it an overlay so it never changes board width (no seat shifting). */
 body.page-play .twoCol.playLayout{ grid-template-columns: 1fr !important; }
 body.page-play .playersPanel{
   position: fixed;
@@ -331,12 +331,18 @@ body.page-play .footer{ display:none; }
 .bottomBar .lbl{ display:inline; }
 
 /* If user hides the HUD on small screens (Panel button), reclaim the space */
-body.hideBottomHud .bottomBar{ display:none !important; }
+/* v0.2.70: Do NOT hide the bottomBar (it contains the only way to restore UI). */
+body.hideBottomHud .bottomBar{ display:flex !important; }
+
+/* v0.2.70: When the players panel is open on mobile, hide only HUD text to avoid overlap.
+   Keep the bottomRight buttons (Panel/Regler/Forlad) always visible. */
+body.panelOpenMobile .bottomBar .bottomLeft,
+body.panelOpenMobile .bottomBar .bottomMid{ display:none !important; }
 @media (max-width: 860px){
   body.hideBottomHud.page-play .handDock{ bottom: 16px !important; }
 }
 
-/* v0.2.69: The players panel is always available as an overlay (toggle controls visibility).
+/* v0.2.70: The players panel is always available as an overlay (toggle controls visibility).
    Do NOT force-hide it by phase, otherwise the Panel button appears broken. */
 /* Seat player name must always remain readable on the board.
    Mobile especially can have long names, so clamp to max 2 lines
