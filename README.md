@@ -1,4 +1,9 @@
-# Piratwhist – Scorekeeper (v0.2.74)
+# Piratwhist – Scorekeeper (v0.2.75)
+
+
+## Fast layout-regel (masterprompt)
+- **Visuel sæde-rækkefølge skal matche tur-rækkefølgen (clockwise)** på både PC (ring) og mobil (grid).
+- Den eneste tilladte forskel er en **rotation**, så den lokale spiller altid står nederst (bottom).
 
 ## Rum / multiplayer ✅
 - Opret rum og få en 6-tegns kode
