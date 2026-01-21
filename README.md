@@ -1,4 +1,4 @@
-# Piratwhist – Scorekeeper (v0.2.84)
+# Piratwhist – Scorekeeper (v0.2.85)
 
 
 ## Fast layout-regel (masterprompt)
