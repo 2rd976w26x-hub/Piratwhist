@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.77)
+// Piratwhist Online Multiplayer (v0.2.78)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -169,13 +169,13 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v0.2.77 Dev + layout: SceneShift for mobile to utilize top space and
+    // v0.2.78 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
-    const sceneShiftVh = (n >= 7) ? -4.0 : -3.0; // negative = up
+    const sceneShiftVh = -4.0; // unified mobile scene shift (match 8-player layout)
     // Extra tiny lift for the *table image + trick cards* only (keeps seats stable),
     // so the center never overlaps the bottom player on small phones.
-    const pileExtraVh = (n >= 7) ? -0.9 : -0.7; // negative = up (slightly more than sceneShift)
+    const pileExtraVh = -0.9; // unified: keep center pile slightly higher (match 8-player layout)
     const lowerSideFactor = 0.85;               // follow the scene, but slightly less
 
     const boardH = (board.getBoundingClientRect && board.getBoundingClientRect().height)
@@ -197,7 +197,7 @@ function positionPlayBoard(n){
 
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      // v0.2.77 Mobile: push the whole "scene" up to utilize top space and
+      // v0.2.78 Mobile: push the whole "scene" up to utilize top space and
       // create more vertical room for the hand row (no scroll).
       top:      { x: 50, y: 10, anchor: "center", isTop: true },
       topLeft:  { x: 32, y: 14, anchor: "left"   },
@@ -1715,7 +1715,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.77 PC HUD sync + button wiring
+// v0.2.78 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -1756,7 +1756,7 @@ function goToRules(){
   window.location.href = `/rules.html?from=${from}`;
 }
 
-// v0.2.77 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.78 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
