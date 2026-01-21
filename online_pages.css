@@ -133,12 +133,14 @@ body.page-play .twoCol.playLayout{ grid-template-columns: 1fr !important; }
 
 /* Mobile/compact play: use the full viewport and avoid vertical scrolling */
 @media (max-width: 860px){
-  /* Treat play as a full-screen app: no page scroll. */
-  html, body{ height: 100dvh; overflow: hidden; }
-  body.page-play .app{ min-height: 100dvh; height: 100dvh; overflow: hidden; }
-  body.page-play .main{ flex: 1; min-height: 0; overflow: hidden; }
+  /* Mobile play: allow vertical scroll ONLY for the results section below the fixed play scene.
+     Keep horizontal overflow hidden to avoid side-scrolling. */
+  html, body{ height: auto; min-height: 100dvh; overflow-x: hidden; }
+  body.page-play{ overflow-y: auto; }
+  body.page-play .app{ min-height: 100dvh; height: auto; overflow: visible; }
+  body.page-play .main{ flex: 1; min-height: 0; overflow: visible; }
 
-  /* Hide PC HUD on mobile (it caused duplicate HUD and overlap). */
+/* Hide PC HUD on mobile (it caused duplicate HUD and overlap). */
   body.page-play .pcHud{ display:none !important; }
 
   /* Keep the board in one column; the panel is an overlay (can be toggled). */
