@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.78)
+// Piratwhist Online Multiplayer (v0.2.79)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -169,13 +169,13 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v0.2.78 Dev + layout: SceneShift for mobile to utilize top space and
+    // v0.2.79 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
-    const sceneShiftVh = -4.0; // unified mobile scene shift (match 8-player layout)
+    const sceneShiftVh = (n <= 4) ? -5.0 : -4.0; // mobile scene shift (4p needs extra lift; 8p baseline)
     // Extra tiny lift for the *table image + trick cards* only (keeps seats stable),
     // so the center never overlaps the bottom player on small phones.
-    const pileExtraVh = -0.9; // unified: keep center pile slightly higher (match 8-player layout)
+    const pileExtraVh = (n <= 4) ? -1.2 : -0.9; // center pile a bit higher on 4p to reduce gap to top seat
     const lowerSideFactor = 0.85;               // follow the scene, but slightly less
 
     const boardH = (board.getBoundingClientRect && board.getBoundingClientRect().height)
@@ -197,7 +197,7 @@ function positionPlayBoard(n){
 
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      // v0.2.78 Mobile: push the whole "scene" up to utilize top space and
+      // v0.2.79 Mobile: push the whole "scene" up to utilize top space and
       // create more vertical room for the hand row (no scroll).
       top:      { x: 50, y: 10, anchor: "center", isTop: true },
       topLeft:  { x: 32, y: 14, anchor: "left"   },
@@ -208,6 +208,14 @@ function positionPlayBoard(n){
       botRight: { x: 68, y: 64, anchor: "right"  },
       bottom:   { x: 50, y: 62, anchor: "center", bottom: true }
     };
+
+    // 4-player mobile layout: reduce the vertical gap between the top seat and the table scene.
+    // Keep the same slot *shape* as 8-player, but pull the active seats slightly upward.
+    if (n <= 4){
+      slot.midLeft.y  = 36;
+      slot.midRight.y = 36;
+      slot.bottom.y   = 60;
+    }
 
     // Trick-slot positions aligned with the player who played the card.
     const trick = {
@@ -1715,7 +1723,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.78 PC HUD sync + button wiring
+// v0.2.79 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -1756,7 +1764,7 @@ function goToRules(){
   window.location.href = `/rules.html?from=${from}`;
 }
 
-// v0.2.78 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.79 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");

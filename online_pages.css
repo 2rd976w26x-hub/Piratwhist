@@ -613,9 +613,20 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
 /* ===== Scroll-down results on play page (desktop only) ===== */
 #olScrollResults{ margin: 14px 0 0; }
 @media (max-width: 760px){
-  /* Mobile: keep play as a full-screen scene (no scroll); results shown on result page. */
-  #olScrollResults{ display:none; }
+  /* Mobile: keep the play scene fixed, but allow scrolling DOWN to the results table. */
+  body.page-play{ overflow-y:auto; }
+  body.page-play .app{ height:auto; }
+  body.page-play .twoCol.playLayout{
+    position: fixed;
+    inset: 0;
+    height: 100dvh;
+    overflow: hidden;
+    z-index: 10;
+  }
+  /* The results section lives below the fixed play scene. */
+  #olScrollResults{ display:block; margin-top: calc(100dvh + 14px); }
 }
+
 @media (min-width: 761px){
   html, body{ height:auto; overflow-y:auto; }
   body.page-play{ overflow-y:auto; }
