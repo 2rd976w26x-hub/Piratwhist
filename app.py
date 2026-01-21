@@ -662,7 +662,13 @@ def _online_emit_full_state(code: str, room):
     for sid, seat in list(room["members"].items()):
         hand = st["hands"][seat] if st["hands"][seat] else []
         payload_state = dict(_online_public_state(room))
-        payload_state["hands"] = [hand if i == seat else None for i in range(st["n"])]
+        # Special rule: when cardsPer==1 in bidding/dealing, players see opponents' cards but not their own
+        cards_per = int(st.get("cardsPer") or 0)
+        phase = st.get("phase")
+        if cards_per == 1 and phase in ("dealing","bidding"):
+            payload_state["hands"] = [ (st["hands"][i] if i != seat else None) for i in range(st["n"]) ]
+        else:
+            payload_state["hands"] = [hand if i == seat else None for i in range(st["n"])]
         socketio.emit("online_state", {"room": code, "seat": seat, "state": payload_state}, to=sid)
 def _online_schedule_auto_next_round(code: str, round_index: int):
     # Start next round automatically 2 seconds after the final card of a round is played.

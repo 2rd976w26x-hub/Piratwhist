@@ -648,3 +648,28 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
   body.page-play .main{ height:auto; overflow:visible; }
   body.page-play .playLayout{ min-height:100vh; }
 }
+
+
+/* --- Bidding: cardsPer==1 reveal rule (opponents shown, own hidden) --- */
+.page-bidding .cards.bidReveal{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 6px;
+}
+.page-bidding .bidCardSlot{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 76px;
+}
+.page-bidding .bidCardSlot .bidName{
+  font-size: 12px;
+  line-height: 1.1;
+  opacity: 0.92;
+  text-align: center;
+  max-width: 110px;
+  word-break: break-word;
+}
