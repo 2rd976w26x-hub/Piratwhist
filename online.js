@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.73)
+// Piratwhist Online Multiplayer (v0.2.74)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -24,7 +24,7 @@ function sortHand(cards){
     return ra - rb;
   });
 }
-const APP_VERSION = "0.2.72";
+const APP_VERSION = "0.2.74";
 // v0.2.40:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
@@ -169,9 +169,24 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
+    // v0.2.74 Dev + layout: SceneShift for mobile to utilize top space and
+    // give more room for the hand/HUD area. Moves the center pile + trick slots
+    // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
+    const sceneShiftVh = (n >= 7) ? -4.0 : -3.0; // negative = up
+    const lowerSideFactor = 0.85;               // follow the scene, but slightly less
+    const boardH = (board.getBoundingClientRect && board.getBoundingClientRect().height) ? board.getBoundingClientRect().height : (board.clientHeight || 1);
+    const shiftPx = (sceneShiftVh / 100) * (window.innerHeight || 800);
+    const shiftPct = (shiftPx / boardH) * 100;
+
+    // Move the center pile itself via transform (keeps CSS top% intact)
+    const pile = el("olPile");
+    if (pile){
+      pile.style.transform = `translate(-50%, -50%) translateY(${shiftPx.toFixed(1)}px)`;
+    }
+
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      // v0.2.73 Mobile: push the whole "scene" up to utilize top space and
+      // v0.2.74 Mobile: push the whole "scene" up to utilize top space and
       // create more vertical room for the hand row (no scroll).
       top:      { x: 50, y: 10, anchor: "center", isTop: true },
       topLeft:  { x: 32, y: 14, anchor: "left"   },
@@ -219,8 +234,10 @@ function positionPlayBoard(n){
       const p = slot[slotName] || slot.bottom;
       const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
       if (seatEl){
+        const isLowerSide = (slotName === "midLeft" || slotName === "midRight" || slotName === "botLeft" || slotName === "botRight");
+        const yAdj = isLowerSide ? (p.y + (shiftPct * lowerSideFactor)) : p.y;
         seatEl.style.left = p.x.toFixed(2) + "%";
-        seatEl.style.top  = p.y.toFixed(2) + "%";
+        seatEl.style.top  = yAdj.toFixed(2) + "%";
 
         seatEl.classList.remove("anchor-left","anchor-right","anchor-center","mid-side");
         seatEl.classList.add(
@@ -241,7 +258,7 @@ function positionPlayBoard(n){
       const slotEl = el(`olTrickSlot${i}`);
       if (slotEl){
         slotEl.style.left = sp.x.toFixed(2) + "%";
-        slotEl.style.top  = sp.y.toFixed(2) + "%";
+        slotEl.style.top  = (sp.y + shiftPct).toFixed(2) + "%";
       }
     }
 
@@ -1681,7 +1698,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.73 PC HUD sync + button wiring
+// v0.2.74 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -1722,7 +1739,7 @@ function goToRules(){
   window.location.href = `/rules.html?from=${from}`;
 }
 
-// v0.2.73 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.74 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
@@ -1746,3 +1763,88 @@ function applyPcNoFlyZoneForSeats(){
     best.style.transform = (best.style.transform || "translate(-50%, -50%)") + " translate(-18px, -42px)";
   }
 }
+
+// =========================================================
+// Dev debug overlay (toggle with ?debug=1 or localStorage PW_DEBUG_OVERLAY=1)
+// =========================================================
+(function initPwDebugOverlay(){
+  try {
+    const qs = new URLSearchParams(location.search);
+    const urlHasDebug = qs.get("debug") === "1";
+    const lsHasDebug = (typeof localStorage !== "undefined") && localStorage.getItem("PW_DEBUG_OVERLAY") === "1";
+    const enabled = urlHasDebug || lsHasDebug;
+    if (!enabled) return;
+
+    const SEL = {
+      table: "#olPile",       // center pile
+      hand:  "#olHands",      // hand row
+      hud:   ".mobileHud",    // mobile bottom HUD wrapper
+      seats: ".seat"          // seats
+    };
+
+    let overlay = document.getElementById("pwDebugOverlay");
+    if (!overlay){
+      overlay = document.createElement("div");
+      overlay.id = "pwDebugOverlay";
+      document.body.appendChild(overlay);
+    }
+
+    function clear(){ overlay.innerHTML = ""; }
+
+    function addBox(rect, label, cls){
+      const d = document.createElement("div");
+      d.className = cls || "pwDbgBox";
+      d.style.left = rect.left + "px";
+      d.style.top = rect.top + "px";
+      d.style.width = rect.width + "px";
+      d.style.height = rect.height + "px";
+
+      const l = document.createElement("div");
+      l.className = "pwDbgLabel";
+      l.textContent = label;
+      d.appendChild(l);
+      overlay.appendChild(d);
+    }
+
+    function rectOf(sel){
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      return el.getBoundingClientRect();
+    }
+
+    function draw(){
+      clear();
+
+      const rTable = rectOf(SEL.table);
+      if (rTable) addBox(rTable, "TABLE (#olPile)", "pwDbgBox");
+
+      const rHand = rectOf(SEL.hand);
+      if (rHand) addBox(rHand, "HAND (#olHands)", "pwDbgZone");
+
+      const rHud = rectOf(SEL.hud);
+      if (rHud) addBox(rHud, "HUD (.mobileHud)", "pwDbgZone");
+
+      const seats = Array.from(document.querySelectorAll(SEL.seats));
+      seats.forEach((s, idx) => {
+        const r = s.getBoundingClientRect();
+        const name = (s.querySelector(".seatName")?.textContent || "").trim();
+        addBox(r, `SEAT ${idx+1}${name ? " – " + name : ""}`, "pwDbgBox");
+      });
+
+      // If we can't find a HUD element, still show a conservative bottom reserved band.
+      if (!rHud){
+        const bottomReservedPx = 140; // conservative dev band
+        addBox({ left:0, top: window.innerHeight - bottomReservedPx, width: window.innerWidth, height: bottomReservedPx }, "BOTTOM RESERVED (fallback)", "pwDbgZone");
+      }
+    }
+
+    window.addEventListener("resize", () => draw());
+    window.addEventListener("orientationchange", () => setTimeout(draw, 250));
+
+    const t = setInterval(draw, 500);
+    window.__PW_STOP_DEBUG_OVERLAY = () => { try { clearInterval(t); } catch(e){} };
+    draw();
+  } catch(e) {
+    // no-op
+  }
+})();

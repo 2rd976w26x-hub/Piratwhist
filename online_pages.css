@@ -575,3 +575,36 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
     opacity:0; /* invisible marker */
   }
 }
+
+/* =========================================================
+   Dev debug overlay (enabled with ?debug=1 or localStorage PW_DEBUG_OVERLAY=1)
+   ========================================================= */
+#pwDebugOverlay{
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  pointer-events: none;
+}
+#pwDebugOverlay .pwDbgBox{
+  position:absolute;
+  border: 2px solid rgba(0,255,255,.75);
+  background: rgba(0,255,255,.08);
+  border-radius: 10px;
+}
+#pwDebugOverlay .pwDbgZone{
+  position:absolute;
+  border: 2px dashed rgba(0,255,0,.75);
+  background: rgba(0,255,0,.08);
+  border-radius: 10px;
+}
+#pwDebugOverlay .pwDbgLabel{
+  position:absolute;
+  left:6px;
+  top:6px;
+  font: 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: rgba(255,255,255,.92);
+  background: rgba(0,0,0,.45);
+  padding: 3px 6px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
