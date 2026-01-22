@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.85)
+// Piratwhist Online Multiplayer (v0.2.87)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -59,7 +59,7 @@ const APP_VERSION = "0.2.85";
     });
   }catch(e){ /* ignore */ }
 })();
-// v0.2.40:
+// v0.2.87:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -148,7 +148,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.23: dynamic round-table board (2–8 players) ---
+// --- v0.2.87: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 
 function ensurePlayBoard(n){
@@ -203,7 +203,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v0.2.85 Dev + layout: SceneShift for mobile to utilize top space and
+    // v0.2.87 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n <= 4) ? -5.0 : -4.0; // mobile scene shift (4p needs extra lift; 8p baseline)
@@ -231,7 +231,7 @@ function positionPlayBoard(n){
 
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      // v0.2.85 Mobile: push the whole "scene" up to utilize top space and
+      // v0.2.87 Mobile: push the whole "scene" up to utilize top space and
       // create more vertical room for the hand row (no scroll).
       top:      { x: 50, y: 10, anchor: "center", isTop: true },
       topLeft:  { x: 32, y: 14, anchor: "left"   },
@@ -561,6 +561,12 @@ async function runDealAnimation(seq){
   // dealt card to fly into its *final* slot in the hand area (not out of view).
   // We create invisible hand slots up-front so we can target exact positions.
   const cardsPer = (state?.cardsPer || 0);
+      // Reset opponent-cards reveal container each render
+      const __oppWrap = document.getElementById("olOppCardsWrap");
+      const __oppCards = document.getElementById("olOppCards");
+      if (__oppWrap) __oppWrap.classList.add("hidden");
+      if (__oppCards) __oppCards.innerHTML = "";
+
   const me = (typeof mySeat === "number") ? mySeat : null;
   // Hand slots are the *buttons* (final layout boxes). We animate to each slot
   // so the flying card lands exactly where the real card will appear.
@@ -1709,36 +1715,79 @@ function render(){
       cards.className = "cards";
 
       const cardsPer = (state?.cardsPer || 0);
+      // Reset opponent-cards reveal container each render
+      const __oppWrap = document.getElementById("olOppCardsWrap");
+      const __oppCards = document.getElementById("olOppCards");
+      if (__oppWrap) __oppWrap.classList.add("hidden");
+      if (__oppCards) __oppCards.innerHTML = "";
+
 
       // Special bidding rule (cardsPer==1): show opponents' single cards face-up,
       // but hide your own card (show back) before bidding. Symmetric for all players.
       if (document.body.classList.contains("page-bidding") && (cardsPer === 1 || cardsPer == 1) && (state.phase === "dealing" || state.phase === "bidding")) {
-        cards.classList.add("bidReveal");
-        const nSeats = state.n || playerCount();
-        for (let i=0;i<nSeats;i++){
-          const slot = document.createElement("div");
-          slot.className = "bidCardSlot";
+        // Special bidding rule (cardsPer==1): show opponents' single cards face-up,
+        // but hide your own card (show back) before bidding. Symmetric for all players.
+        const oppWrap = document.getElementById("olOppCardsWrap");
+        const oppCards = document.getElementById("olOppCards");
+        if (oppCards){
+          oppCards.innerHTML = "";
+          if (oppWrap) oppWrap.classList.remove("hidden");
 
-          const nm = document.createElement("div");
-          nm.className = "bidName";
-          nm.textContent = (state.names && state.names[i]) ? state.names[i] : `Spiller ${i+1}`;
-          slot.appendChild(nm);
+          const nSeats = state.n || playerCount();
+          for (let i=0;i<nSeats;i++){
+            if (i === mySeat) continue; // never show your own card here
+            const slot = document.createElement("div");
+            slot.className = "bidCardSlot";
 
-          const cardObj = (state.hands && state.hands[i] && state.hands[i][0]) ? state.hands[i][0] : null;
+            const nm = document.createElement("div");
+            nm.className = "bidName";
+            nm.textContent = (state.names && state.names[i]) ? state.names[i] : `Spiller ${i+1}`;
+            slot.appendChild(nm);
 
-          let cardEl;
-          if (i === mySeat) {
-            cardEl = makeCardBackEl();
-          } else if (cardObj) {
-            cardEl = makeCardEl(cardObj);
-            cardEl.disabled = true;
-          } else {
-            cardEl = makeCardBackEl();
+            const cardObj = (state.hands && state.hands[i] && state.hands[i][0]) ? state.hands[i][0] : null;
+            let cardEl;
+            if (cardObj) {
+              cardEl = makeCardEl(cardObj);
+              cardEl.disabled = true;
+            } else {
+              // Fallback: show back if card is not available yet
+              cardEl = makeCardBackEl();
+            }
+            slot.appendChild(cardEl);
+            oppCards.appendChild(slot);
           }
-          slot.appendChild(cardEl);
+        } else {
+          // Fallback for older HTML: render everything into the hand area
+          cards.classList.add("bidReveal");
+          const nSeats = state.n || playerCount();
+          for (let i=0;i<nSeats;i++){
+            const slot = document.createElement("div");
+            slot.className = "bidCardSlot";
 
-          cards.appendChild(slot);
+            const nm = document.createElement("div");
+            nm.className = "bidName";
+            nm.textContent = (state.names && state.names[i]) ? state.names[i] : `Spiller ${i+1}`;
+            slot.appendChild(nm);
+
+            const cardObj = (state.hands && state.hands[i] && state.hands[i][0]) ? state.hands[i][0] : null;
+            let cardEl;
+            if (i === mySeat) {
+              cardEl = makeCardBackEl();
+            } else if (cardObj) {
+              cardEl = makeCardEl(cardObj);
+              cardEl.disabled = true;
+            } else {
+              cardEl = makeCardBackEl();
+            }
+            slot.appendChild(cardEl);
+            cards.appendChild(slot);
+          }
         }
+
+        // Always hide your own card in the hand area (show back only)
+        const mineBack = makeCardBackEl();
+        mineBack.disabled = true;
+        cards.appendChild(mineBack);
       } else {
         const mineSorted = sortHand(mine);
         for (const c of mineSorted){
@@ -1822,7 +1871,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.85 PC HUD sync + button wiring
+// v0.2.87 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -1863,7 +1912,7 @@ function goToRules(){
   window.location.href = `/rules.html?from=${from}`;
 }
 
-// v0.2.85 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.87 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.2.85 · Bud</title>
+  <title>Piratwhist v0.2.87 · Bud</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
   <link rel="stylesheet" href="/online_pages.css" />
@@ -13,7 +13,7 @@
     <header class="top">
       <div>
         <div class="title">Piratwhist</div>
-        <div class="sub">Online · Bud · v0.2.85</div>
+        <div class="sub">Online · Bud · v0.2.87</div>
       </div>
       <div class="pill">Rum: <span id="olRoomLabel">-</span></div>
       <div class="pill">Du er: <span id="olSeatLabel">-</span></div>
@@ -48,9 +48,40 @@
     <h2>Din hånd</h2>
     <div class="miniDeckRow"><div id="olDeck" class="deck miniDeck" aria-hidden="true" title="Kortbunke"></div></div>
     <div id="olHands" class="hands"></div>
+    <div id="olOppCardsWrap" class="oppWrap hidden">
+      <h3 class="oppTitle">Modstandernes kort</h3>
+      <div id="olOppCards" class="oppCards"></div>
+      <div class="sub oppHint">I 1-korts runder ser du modstandernes kort før bud – men ikke dit eget.</div>
+    </div>
+
     <div id="olWarn" class="warn hidden"></div>
   </section>
 </div>
+
+<!-- Scroll-down results: snapshot + round history -->
+<section class="card" id="olScrollResults" aria-label="Resultater og historik">
+  <h2>Oversigt (alle runder)</h2>
+  <div class="row gap">
+    <div class="pill">Runde: <span id="olResRound">-</span></div>
+    <div class="pill">Kort pr. spiller: <span id="olResCards">-</span></div>
+  </div>
+
+  <div class="hsep"></div>
+  <h3 style="margin:10px 0 6px;">Aktuel runde</h3>
+  <div class="tableWrap">
+    <table class="t" id="olScoreTable"></table>
+  </div>
+
+  <div class="hsep"></div>
+  <h3 style="margin:10px 0 6px;">Historik</h3>
+  <div class="tableWrap">
+    <table class="t" id="olHistoryTable"></table>
+  </div>
+
+  <div class="sub">Tip: Scroll ned for at se oversigten under budfasen.</div>
+</section>
+
+
 
     </main>
 
@@ -58,7 +89,7 @@
       <div class="brand">
         <div class="logo">🏴‍☠️</div>
         <div>
-          <div class="title">Piratwhist <span class="ver">v0.2.85</span></div>
+          <div class="title">Piratwhist <span class="ver">v0.2.87</span></div>
           <div class="sub">Online spil · spar er trumf · bekend kulør</div>
         </div>
       </div>
