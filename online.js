@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.90)
+// Piratwhist Online Multiplayer (v0.2.91)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -59,7 +59,7 @@ const APP_VERSION = "0.2.85";
     });
   }catch(e){ /* ignore */ }
 })();
-// v0.2.90:
+// v0.2.91:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -148,7 +148,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.90: dynamic round-table board (2–8 players) ---
+// --- v0.2.91: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 
 function ensurePlayBoard(n){
@@ -203,7 +203,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v0.2.90 Dev + layout: SceneShift for mobile to utilize top space and
+    // v0.2.91 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n <= 4) ? -5.0 : -4.0; // mobile scene shift (4p needs extra lift; 8p baseline)
@@ -231,7 +231,7 @@ function positionPlayBoard(n){
 
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      // v0.2.90 Mobile: push the whole "scene" up to utilize top space and
+      // v0.2.91 Mobile: push the whole "scene" up to utilize top space and
       // create more vertical room for the hand row (no scroll).
       top:      { x: 50, y: 10, anchor: "center", isTop: true },
       topLeft:  { x: 32, y: 14, anchor: "left"   },
@@ -1386,60 +1386,90 @@ function renderScores(){
   const taken = state?.tricksRound || Array.from({length:n}, ()=>0);
 
   const rNo = (state?.roundIndex ?? 0) + 1;
-  const cardsPer = (state?.cardsPer ?? "-");
+  const cardsPerNow = (state?.cardsPer ?? "-");
   if (el("olResRound")) el("olResRound").textContent = String(rNo);
-  if (el("olResCards")) el("olResCards").textContent = String(cardsPer);
+  if (el("olResCards")) el("olResCards").textContent = String(cardsPerNow);
 
-  // Score table (current round snapshot)
+  // Legacy current-round table is no longer used; hide if present
   const t = el("olScoreTable");
   if (t){
     t.innerHTML = "";
-    const thead = document.createElement("thead");
-    thead.innerHTML = `<tr><th>Spiller</th><th>Bud</th><th>Aktuelle stik</th><th>Total point</th></tr>`;
-    const tbody = document.createElement("tbody");
-    for (let i=0;i<n;i++){
-      const tr = document.createElement("tr");
-      const b = bids[i];
-      tr.innerHTML = `<td>${names[i] || ("Spiller " + (i+1))}</td>
-                      <td>${(b===null||b===undefined) ? "—" : b}</td>
-                      <td>${taken[i] ?? 0}</td>
-                      <td><b>${total[i] ?? 0}</b></td>`;
-      tbody.appendChild(tr);
-    }
-    t.appendChild(thead);
-    t.appendChild(tbody);
+    t.style.display = "none";
   }
 
-  // History table (per round) — compact per-player cells: "Bud / Stik (Point)"
+  // Unified table: TOTAL row at top, then rounds sorted newest -> oldest.
+  // Cell format: "Bud / Stik (Point)" (points show "—" if round not finished).
   const h = el("olHistoryTable");
-  if (h){
-    const hist = state?.history || [];
-    h.innerHTML = "";
+  if (!h) return;
 
-    const thead = document.createElement("thead");
-    const playerHeads = Array.from({length:n}, (_,i)=>`<th>${names[i] || ("Spiller " + (i+1))}</th>`).join("");
-    thead.innerHTML = `<tr><th>Runde</th>${playerHeads}<th>Antal stik</th></tr>`;
+  const histFinished = Array.isArray(state?.history) ? state.history : [];
 
-    const tbody = document.createElement("tbody");
-    for (const row of hist){
-      const tr = document.createElement("tr");
-      const roundNo = row.round ?? "";
-      const cards = row.cardsPer ?? "";
-      let cells = `<td><b>${roundNo}</b></td>`;
-      for (let i=0;i<n;i++){
-        const b = (row.bids && row.bids[i] !== undefined && row.bids[i] !== null) ? row.bids[i] : "—";
-        const t = (row.taken && row.taken[i] !== undefined && row.taken[i] !== null) ? row.taken[i] : "—";
-        const p = (row.points && row.points[i] !== undefined && row.points[i] !== null) ? row.points[i] : 0;
-        const pStr = (typeof p === "number" && p >= 0) ? `+${p}` : String(p);
-        cells += `<td class="rCell">${b} / ${t} (${pStr})</td>`;
-      }
-      cells += `<td>${cards}</td>`;
-      tr.innerHTML = cells;
-      tbody.appendChild(tr);
+  // Build a "current round snapshot" row (may be unfinished)
+  const currentRow = {
+    round: rNo,
+    cardsPer: cardsPerNow,
+    bids: Array.from({length:n}, (_,i)=> (bids[i]===null||bids[i]===undefined) ? "—" : bids[i]),
+    taken: Array.from({length:n}, (_,i)=> (taken[i]===null||taken[i]===undefined) ? 0 : taken[i]),
+    points: null,          // unfinished
+    unfinished: true
+  };
+
+  // Merge: avoid duplicating if server already included current round in history
+  const hasCurrentInHist = histFinished.some(r => Number(r.round) === Number(rNo));
+  const merged = hasCurrentInHist ? [...histFinished] : [currentRow, ...histFinished];
+
+  // Sort newest -> oldest by round number (ignore TOTAL row)
+  merged.sort((a,b)=> (Number(b.round)||0) - (Number(a.round)||0));
+
+  h.innerHTML = "";
+
+  const thead = document.createElement("thead");
+  const playerHeads = Array.from({length:n}, (_,i)=>`<th>${names[i] || ("Spiller " + (i+1))}</th>`).join("");
+  thead.innerHTML = `<tr><th>Runde</th>${playerHeads}<th>Antal stik</th></tr>`;
+
+  const tbody = document.createElement("tbody");
+
+  // TOTAL row
+  {
+    const tr = document.createElement("tr");
+    let cells = `<td><b>Total</b></td>`;
+    for (let i=0;i<n;i++){
+      const p = (total[i] ?? 0);
+      const pStr = (typeof p === "number" && p >= 0) ? `+${p}` : String(p);
+      cells += `<td class="rCell">— / — (${pStr})</td>`;
     }
-    h.appendChild(thead);
-    h.appendChild(tbody);
+    cells += `<td> </td>`;
+    tr.innerHTML = cells;
+    tbody.appendChild(tr);
   }
+
+  // Round rows
+  for (const row of merged){
+    const tr = document.createElement("tr");
+    const roundNo = row.round ?? "";
+    const cards = row.cardsPer ?? row.cardsPerNow ?? "";
+    let cells = `<td><b>${roundNo}</b></td>`;
+
+    for (let i=0;i<n;i++){
+      const b = (row.bids && row.bids[i] !== undefined && row.bids[i] !== null) ? row.bids[i] : "—";
+      const tk = (row.taken && row.taken[i] !== undefined && row.taken[i] !== null) ? row.taken[i] : "—";
+
+      let pVal = null;
+      if (row.points && row.points[i] !== undefined && row.points[i] !== null) pVal = row.points[i];
+
+      const pStr = (pVal===null || pVal===undefined) ? "—" :
+        ((typeof pVal === "number" && pVal >= 0) ? `+${pVal}` : String(pVal));
+
+      cells += `<td class="rCell">${b} / ${tk} (${pStr})</td>`;
+    }
+
+    cells += `<td>${cards}</td>`;
+    tr.innerHTML = cells;
+    tbody.appendChild(tr);
+  }
+
+  h.appendChild(thead);
+  h.appendChild(tbody);
 }
 
 function maybeRunAnimations(){
@@ -1955,7 +1985,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.90 PC HUD sync + button wiring
+// v0.2.91 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -1996,7 +2026,7 @@ function goToRules(){
   window.location.href = `/rules.html?from=${from}`;
 }
 
-// v0.2.90 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.91 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
