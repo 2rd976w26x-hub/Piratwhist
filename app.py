@@ -324,6 +324,7 @@ def _online_public_state(room):
         "n": st["n"],
         "names": st["names"],
         "roundIndex": st["roundIndex"],
+        "cardsPer": st.get("cardsPer"),
         "leader": st["leader"],
         "turn": st["turn"],
         "leadSuit": st["leadSuit"],
