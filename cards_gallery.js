@@ -1,4 +1,4 @@
-// Piratwhist Card Gallery – v0.2.98
+// Piratwhist Card Gallery – v0.2.99
 // Shows all 52 cards using the same renderer as the game (no server needed).
 
 (function(){
@@ -56,27 +56,25 @@
     const isAce  = (rank === "A");
 
     if (isFace){
-      const frame = document.createElementNS(NS, "rect");
-      frame.setAttribute("x","18"); frame.setAttribute("y","24");
-      frame.setAttribute("width","64"); frame.setAttribute("height","92");
-      frame.setAttribute("rx","8");
-      frame.setAttribute("class","face-bg");
-      svg.appendChild(frame);
+    // Face cards use the shared CardKit images (K, Q, J).
+    const img = document.createElementNS(NS, "image");
+    const href = (rank === "K") ? "assets/face_K.png"
+               : (rank === "Q") ? "assets/face_D.png"
+               : "assets/face_J.png";
+    img.setAttribute("href", href);
+    img.setAttribute("x", "18");
+    img.setAttribute("y", "24");
+    img.setAttribute("width", "64");
+    img.setAttribute("height", "92");
+    img.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    svg.appendChild(img);
 
-      const big = document.createElementNS(NS, "text");
-      big.setAttribute("x","50"); big.setAttribute("y","72");
-      big.setAttribute("text-anchor","middle");
-      big.setAttribute("dominant-baseline","middle");
-      big.setAttribute("font-size","44");
-      big.setAttribute("class","face-rank");
-      big.textContent = rank;
-      svg.appendChild(big);
+    // Small watermark suit
+    pip(50, 116, 24, 0);
+    return svg;
+  }
 
-      pip(50, 98, 28, 0);
-      return svg;
-    }
-
-    if (isAce){
+  if (isAce){
       pip(50, 70, 60, 0);
       return svg;
     }

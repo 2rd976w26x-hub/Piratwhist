@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.98)
+// Piratwhist Online Multiplayer (v0.2.99)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -60,7 +60,7 @@ const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") ===
     });
   }catch(e){ /* ignore */ }
 })();
-// v0.2.98:
+// v0.2.99:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -149,7 +149,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.98: dynamic round-table board (2–8 players) ---
+// --- v0.2.99: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 
 function ensurePlayBoard(n){
@@ -204,7 +204,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v0.2.98 Dev + layout: SceneShift for mobile to utilize top space and
+    // v0.2.99 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -232,7 +232,7 @@ function positionPlayBoard(n){
 
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      // v0.2.98 Mobile: push the whole "scene" up to utilize top space and
+      // v0.2.99 Mobile: push the whole "scene" up to utilize top space and
       // create more vertical room for the hand row (no scroll).
       top:      { x: 50, y: 10, anchor: "center", isTop: true },
       topLeft:  { x: 32, y: 14, anchor: "left"   },
@@ -974,57 +974,21 @@ function buildCardSVG(card){
   const isAce  = (rank === "A");
 
   if (isFace){
-    // Vector "portrait" in a classic card style (no copyrighted art).
-    const frame = document.createElementNS(NS, "rect");
-    frame.setAttribute("x","18"); frame.setAttribute("y","28");
-    frame.setAttribute("width","64"); frame.setAttribute("height","84");
-    frame.setAttribute("rx","10");
-    frame.setAttribute("class","face-bg");
-    svg.appendChild(frame);
+    // Face cards use the shared CardKit images (K, Q, J).
+    const img = document.createElementNS(NS, "image");
+    const href = (rank === "K") ? "assets/face_K.png"
+               : (rank === "Q") ? "assets/face_D.png"
+               : "assets/face_J.png";
+    img.setAttribute("href", href);
+    img.setAttribute("x", "18");
+    img.setAttribute("y", "24");
+    img.setAttribute("width", "64");
+    img.setAttribute("height", "92");
+    img.setAttribute("preserveAspectRatio", "xMidYMid meet");
+    svg.appendChild(img);
 
-    // Head + body
-    const head = document.createElementNS(NS, "circle");
-    head.setAttribute("cx","50"); head.setAttribute("cy","60");
-    head.setAttribute("r","10");
-    head.setAttribute("class","face-fill");
-    svg.appendChild(head);
-
-    const body = document.createElementNS(NS, "path");
-    body.setAttribute("d","M34 108 Q50 86 66 108 L66 112 Q50 124 34 112 Z");
-    body.setAttribute("class","face-fill");
-    svg.appendChild(body);
-
-    // Crown/tiara/helmet hint
-    const hat = document.createElementNS(NS, "path");
-    if (rank === "K"){
-      hat.setAttribute("d","M34 56 L38 46 L44 58 L50 44 L56 58 L62 46 L66 56 L66 62 L34 62 Z");
-    } else if (rank === "Q"){
-      hat.setAttribute("d","M34 58 Q50 40 66 58 L62 50 Q50 46 38 50 Z");
-    } else {
-      hat.setAttribute("d","M34 56 Q50 48 66 56 L66 66 Q50 70 34 66 Z");
-    }
-    hat.setAttribute("class","face-line");
-    svg.appendChild(hat);
-
-    // Big center suit
-    pip(50, 84, 38, 0);
-
-    // Rank banner
-    const banner = document.createElementNS(NS, "rect");
-    banner.setAttribute("x","30"); banner.setAttribute("y","94");
-    banner.setAttribute("width","40"); banner.setAttribute("height","18");
-    banner.setAttribute("rx","6");
-    banner.setAttribute("class","face-banner");
-    svg.appendChild(banner);
-
-    const rt = document.createElementNS(NS, "text");
-    rt.setAttribute("x","50"); rt.setAttribute("y","103");
-    rt.setAttribute("text-anchor","middle");
-    rt.setAttribute("dominant-baseline","middle");
-    rt.setAttribute("class","face-rank");
-    rt.textContent = rank;
-    svg.appendChild(rt);
-
+    // Small watermark suit
+    pip(50, 116, 24, 0);
     return svg;
   }
 
@@ -2058,7 +2022,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.98 PC HUD sync + button wiring
+// v0.2.99 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -2099,7 +2063,7 @@ function goToRules(){
   window.location.href = `/rules.html?from=${from}`;
 }
 
-// v0.2.98 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.99 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
