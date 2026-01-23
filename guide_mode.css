@@ -1,4 +1,4 @@
-/* Piratwhist Guide Mode (v0.2.95)
+/* Piratwhist Guide Mode (v0.2.97)
    Activated with ?guide=1. Provides consistent visuals for screenshots.
 */
 
@@ -26,3 +26,17 @@ body.guide-mode .guideBadge{
 /* Make opp cards block always visible in guide mode if present */
 body.guide-mode .oppWrap.hidden{ display:block !important; }
 
+
+
+body.guide-clean{ overflow:hidden; }
+
+/* Clean embeds (for rules page iframes): add &clean=1 */
+body.guide-clean .guideBadge{ display:none !important; }
+body.guide-clean header.top{ display:none !important; }
+body.guide-clean .topbar{ display:none !important; }
+body.guide-clean .footer{ display:none !important; }
+body.guide-clean .nav{ display:none !important; }
+body.guide-clean .actions{ display:none !important; }
+/* Remove extra padding when headers/footers are hidden */
+body.guide-clean .app{ padding: 0 !important; margin: 0 !important; }
+body.guide-clean .main{ padding-top: 0 !important; }

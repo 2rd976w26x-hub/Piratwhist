@@ -407,3 +407,33 @@ table.t th{ font-weight:800; color:var(--text); background: rgba(255,255,255,.04
   background-repeat: no-repeat;
   opacity: .95;
 }
+
+
+
+/* === Rules inline illustrations (v0.2.97) === */
+body.page-rules .rule-figure{
+  margin: 14px 0 22px;
+}
+body.page-rules .rule-illustration{
+  width: 100%;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 16px;
+  background: rgba(0,0,0,.35);
+  overflow: hidden;
+  aspect-ratio: 4 / 3; /* compact default (mobile) */
+  max-height: 320px;
+}
+body.page-rules .figcap{
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: .85;
+}
+@media (min-width: 900px){
+  body.page-rules .rule-illustration{
+    aspect-ratio: 16 / 9; /* larger on desktop */
+    max-height: 560px;
+  }
+  body.page-rules .figcap{
+    font-size: 14px;
+  }
+}

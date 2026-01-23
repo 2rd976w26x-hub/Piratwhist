@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist – Regler v0.2.95</title>
+  <title>Piratwhist – Regler v0.2.97</title>
   <link rel="stylesheet" href="piratwhist.css" />
 </head>
-<body>
+<body class="page-rules">
   <header class="topbar">
     <div class="title">
-      Piratwhist – Regler <span class="badge">v0.2.95</span>
+      Piratwhist – Regler <span class="badge">v0.2.97</span>
     </div>
     <div class="actions">
       <button id="rulesBack" class="ghost linkbtn" type="button">← Tilbage</button>
@@ -47,11 +47,21 @@
         <li>Vinderen af et stik lægger ud i næste stik.</li>
       </ul>
 
+      <div class="rule-figure">
+        <iframe class="rule-illustration" src="online_play.html?guide=1&scene=clockwise&clean=1" loading="lazy" title="Illustration: Rækkefølge med uret (clockwise)"></iframe>
+        <div class="figcap">Illustration: Rækkefølge med uret (clockwise)</div>
+      </div>
+
       <h2>Budfase</h2>
       <p>
         Før en runde spilles, afgiver hver spiller et bud på, hvor mange stik de forventer at vinde i runden.
         Bud kan være fra <strong>0</strong> til <strong>antal kort på hånden</strong>.
       </p>
+
+      <div class="rule-figure">
+        <iframe class="rule-illustration" src="online_bidding.html?guide=1&scene=normal_bidding&clean=1" loading="lazy" title="Illustration: Budfase (normal runde)"></iframe>
+        <div class="figcap">Illustration: Budfase (normal runde)</div>
+      </div>
 
       <h2>Særregel: Runde med 1 kort pr. spiller</h2>
       <p>
@@ -63,12 +73,22 @@
         <li>Reglen gælder for <strong>alle spillere</strong> (symmetrisk).</li>
       </ul>
 
+      <div class="rule-figure">
+        <iframe class="rule-illustration" src="online_bidding.html?guide=1&scene=onecard&clean=1" loading="lazy" title="Illustration: 1-korts-runde (du ser ikke dit eget kort før bud)"></iframe>
+        <div class="figcap">Illustration: 1-korts-runde (du ser ikke dit eget kort før bud)</div>
+      </div>
+
       <h2>Spil af stik</h2>
       <ul>
         <li>Spillerne spiller ét kort ad gangen i tur-rækkefølge.</li>
         <li>Man skal bekende kulør, hvis muligt.</li>
         <li>Stikket vindes af højeste trumf (hvis trumf er spillet), ellers højeste kort i udspillet kulør.</li>
       </ul>
+
+      <div class="rule-figure">
+        <iframe class="rule-illustration" src="online_play.html?guide=1&scene=trumpwin&clean=1" loading="lazy" title="Illustration: Trumf (♠) vinder stikket"></iframe>
+        <div class="figcap">Illustration: Trumf (♠) vinder stikket</div>
+      </div>
 
       <h2>Point</h2>
       <ul>
@@ -87,6 +107,12 @@
         <li>Format pr. runde pr. spiller: <code>Bud / Stik (Point)</code>.</li>
       </ul>
 
+      <div class="rule-figure">
+        <iframe class="rule-illustration" src="online_play.html?guide=1&scene=scoretable&clean=1" loading="lazy" title="Illustration: Pointoversigt (Total øverst, seneste runde øverst)"></iframe>
+        <div class="figcap">Illustration: Pointoversigt (Total øverst, seneste runde øverst)</div>
+      </div>
+
+
       <h2>Fysisk spil – indtastning (KUN fysisk spil)</h2>
       <p>
         I fysisk spil bruger du appen som scoretavle. Her indtastes <strong>bud</strong> og <strong>stik</strong>
@@ -102,7 +128,7 @@
   </main>
 
   <footer class="footer">
-    Piratwhist v0.2.95
+    Piratwhist v0.2.97
   </footer>
 
   <script>
