@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Piratwhist – Kortoversigt (v0.2.98)</title>
+  <link rel="stylesheet" href="piratwhist.css"/>
+  <link rel="stylesheet" href="online.css"/>
+  <style>
+    body{ margin:0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+    .cgWrap{ max-width: 1200px; margin: 0 auto; padding: 18px 14px 40px; }
+    .cgTop{ display:flex; align-items: baseline; justify-content: space-between; gap:12px; flex-wrap:wrap; }
+    h1{ margin:0; font-size: 22px; }
+    .cgSub{ opacity:.85; font-size: 13px; }
+    .cgSection{ margin-top: 16px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); }
+    .cgRow{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+    .cgRow .note{ opacity:.9; font-size: 13px; }
+    .cgGrid{ margin-top: 14px; display:grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 12px; }
+    .cgCell{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .cgLabel{ font-size: 12px; opacity: .9; }
+    .playingcard{ width: 64px; height: 90px; }
+    @media (min-width: 900px){
+      h1{ font-size: 26px; }
+      .playingcard{ width: 72px; height: 102px; }
+      .cgGrid{ grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="cgWrap">
+    <div class="cgTop">
+      <h1>Kortoversigt</h1>
+      <div class="cgSub">Piratwhist v0.2.98</div>
+    </div>
+
+    <div class="cgSection">
+      <div class="cgRow">
+        <div id="cgBack"></div>
+        <div class="note">
+          <div><strong>Kortbagside (FAST &amp; LÅST):</strong> 2 personer + 4 sommerfugle</div>
+          <div>Forsiderne er de samme som i spillet (SVG/pips).</div>
+        </div>
+      </div>
+
+      <div class="cgGrid" id="cgGrid" aria-label="Alle 52 kort"></div>
+    </div>
+
+    <div class="cgSub" style="margin-top:10px; opacity:.7;">
+      Tip: Denne side har ingen links i UI. Gå direkte til <code>/cards_gallery.html</code>.
+    </div>
+  </div>
+
+  <script src="cards_gallery.js"></script>
+</body>
+</html>
