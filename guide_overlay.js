@@ -1,4 +1,4 @@
-// Piratwhist Guide Overlay (v0.2.95)
+// Piratwhist Guide Overlay (v0.2.96)
 // Lightweight SVG overlay for arrows + labels. Used in guide mode only.
 (function(){
   function ensureLayer(){
@@ -133,35 +133,86 @@
     }
   }
 
+  function addCallout(x, y, text){
+    const layer = ensureLayer();
+    const svg = layer.querySelector('#pwGuideSvg');
+    if (!svg) return;
+
+    // Background box sized based on text length (simple heuristic).
+    const lines = String(text || '').split('\n');
+    const maxLen = Math.max(1, ...lines.map(l=>l.length));
+    const w = Math.min(420, Math.max(220, maxLen * 8 + 28));
+    const h = Math.max(44, lines.length * 20 + 18);
+
+    const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.classList.add('pwGuideItem');
+    rect.setAttribute('x', String(x));
+    rect.setAttribute('y', String(y));
+    rect.setAttribute('width', String(w));
+    rect.setAttribute('height', String(h));
+    rect.setAttribute('rx','14');
+    rect.setAttribute('ry','14');
+    rect.setAttribute('fill','rgba(255,255,255,0.92)');
+    rect.setAttribute('stroke','rgba(0,0,0,0.12)');
+    rect.setAttribute('stroke-width','1');
+    svg.appendChild(rect);
+
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.classList.add('pwGuideItem');
+    t.setAttribute('x', String(x + 14));
+    t.setAttribute('y', String(y + 22));
+    t.setAttribute('font-size','15');
+    t.setAttribute('font-weight','700');
+    t.setAttribute('fill','rgba(0,0,0,0.92)');
+    lines.forEach((line, i)=>{
+      const sp = document.createElementNS('http://www.w3.org/2000/svg','tspan');
+      sp.setAttribute('x', String(x + 14));
+      sp.setAttribute('dy', i===0 ? '0' : '20');
+      sp.textContent = line;
+      t.appendChild(sp);
+    });
+    svg.appendChild(t);
+  }
+
   // Scene-specific overlays
   window.PW_GUIDE_OVERLAYS = {
     onecard(){
       clear();
-      addBox('#olHands', 'Dit kort (skjult)');
-      addBox('#olOppCards', 'Modstandernes kort');
-      addArrow('#olOppCards', '#olBidSelect', 'Afgiv bud');
+      addCallout(14, 14, '1-korts runde (bud)\nDu ser IKKE dit eget kort\nDu ser ALLE modstanderes kort');
+      addBox('#olHands', 'Dit kort er skjult');
+      addBox('#olOppCards', 'Modstandernes kort (synlige)');
+      addArrow('#olOppCards', '#olBidSelect', 'Vælg bud');
+      addArrow('#olBidSelect', '#olBidSubmit', 'Afgiv bud');
     },
-    normal(){
+    normal_bidding(){
       clear();
-      addBox('#olHands', 'Din hånd');
+      addCallout(14, 14, 'Normal runde (bud)\nDu ser kun dine egne kort');
+      addBox('#olHands', 'Din hånd (synlig)');
       addArrow('#olHands', '#olBidSelect', 'Vælg bud');
+      addArrow('#olBidSelect', '#olBidSubmit', 'Afgiv bud');
     },
     trumpwin(){
       clear();
-      addBox('#olPile', 'Stik på bordet');
-      addArrow('#olPile', '.seat[data-seat="2"]', 'Vinder (trumf)');
+      addCallout(14, 14, 'Stik og trumf\nSpar (♠) er altid trumf\nMan skal bekende kulør hvis muligt');
+      addBox('#olPile', 'Kort på bordet (stik)');
+      addArrow('#olPile', '.seat[data-seat="2"]', 'Vinder (trumf ♠)');
     },
     clockwise(){
       clear();
       addBox('#olPile', 'Bord');
-      // Just a cue – actual curved arrow is overkill here.
+      addCallout(14, 14, 'Tur-rækkefølge\nAltid med uret (clockwise)');
+      // Cue arrows (simple, deterministic)
       addArrow('.seat[data-seat="0"]', '.seat[data-seat="1"]', 'Med uret');
       addArrow('.seat[data-seat="1"]', '.seat[data-seat="2"]', '');
       addArrow('.seat[data-seat="2"]', '.seat[data-seat="3"]', '');
     },
     scoretable(){
       clear();
-      addBox('#olHistoryTable', 'Pointoversigt');
+      addCallout(14, 14, 'Pointoversigt\nTOTAL øverst (kun point)\nSeneste runde øverst\nFormat: Bud / Stik (Point)');
+      addBox('#olHistoryTable', 'Samlet oversigt');
+      // Highlight TOTAL row + newest round row (if present)
+      addBox('#olHistoryTable tbody tr:nth-child(1)', 'TOTAL');
+      addBox('#olHistoryTable tbody tr:nth-child(2)', 'Seneste runde');
     }
   };
 })();
