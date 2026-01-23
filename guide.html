@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Piratwhist v0.2.95 · Guide scenes</title>
+  <link rel="stylesheet" href="/piratwhist.css" />
+  <link rel="stylesheet" href="/guide_mode.css" />
+  <style>
+    .grid{display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:12px;}
+    .k{padding:12px; border:1px solid rgba(255,255,255,0.12); border-radius:14px; background:rgba(255,255,255,0.04);}
+    .k a{display:inline-block; margin-top:8px;}
+    code{font-size:12px;}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="title">Piratwhist · Guide scenes <span class="badge">v0.2.95</span></div>
+    <div class="actions">
+      <a class="linkbtn" href="/piratwhist.html">Start</a>
+      <a class="linkbtn" href="/rules.html">Regler</a>
+    </div>
+  </header>
+  <main class="wrap">
+    <section class="card">
+      <h2>Sådan bruges Guide mode</h2>
+      <p>Åbn en scene med <code>?guide=1&scene=...</code>. Siden viser en fast demo-state og et overlay med pile/labels, klar til screenshot.</p>
+      <div class="grid">
+        <div class="k"><strong>1-korts runde (bud)</strong><div class="sub">Eget kort skjult, modstandere synlige.</div><a class="linkbtn" href="/online_bidding.html?guide=1&scene=onecard">Åbn</a></div>
+        <div class="k"><strong>Normal runde (bud)</strong><div class="sub">Du ser din hånd, modstandere skjulte.</div><a class="linkbtn" href="/online_bidding.html?guide=1&scene=normal_bidding">Åbn</a></div>
+        <div class="k"><strong>Trumf vinder stik</strong><div class="sub">♠ trumf slår udspillet kulør.</div><a class="linkbtn" href="/online_play.html?guide=1&scene=trumpwin">Åbn</a></div>
+        <div class="k"><strong>Rækkefølge med uret</strong><div class="sub">Clockwise tur-retning.</div><a class="linkbtn" href="/online_play.html?guide=1&scene=clockwise">Åbn</a></div>
+        <div class="k"><strong>Pointoversigt</strong><div class="sub">TOTAL øverst, seneste runde øverst.</div><a class="linkbtn" href="/online_play.html?guide=1&scene=scoretable">Åbn</a></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

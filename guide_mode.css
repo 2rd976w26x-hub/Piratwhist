@@ -1,0 +1,28 @@
+/* Piratwhist Guide Mode (v0.2.95)
+   Activated with ?guide=1. Provides consistent visuals for screenshots.
+*/
+
+body.guide-mode .footer,
+body.guide-mode .nav,
+body.guide-mode a.linkbtn,
+body.guide-mode button,
+body.guide-mode select,
+body.guide-mode input{
+  pointer-events: none;
+}
+
+body.guide-mode .guideBadge{
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 999999;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+/* Make opp cards block always visible in guide mode if present */
+body.guide-mode .oppWrap.hidden{ display:block !important; }
+

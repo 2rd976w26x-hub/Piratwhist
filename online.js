@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.94)
+// Piratwhist Online Multiplayer (v0.2.95)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -24,7 +24,8 @@ function sortHand(cards){
     return ra - rb;
   });
 }
-const APP_VERSION = "0.2.94";
+const APP_VERSION = "0.2.95";
+const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") === "1");
 
 // --- Navigation robustness (mobile): returning from rules page ---
 // On mobile browsers, navigating away to rules.html and coming back can
@@ -59,7 +60,7 @@ const APP_VERSION = "0.2.94";
     });
   }catch(e){ /* ignore */ }
 })();
-// v0.2.94:
+// v0.2.95:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -148,7 +149,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.94: dynamic round-table board (2–8 players) ---
+// --- v0.2.95: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 
 function ensurePlayBoard(n){
@@ -203,7 +204,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v0.2.94 Dev + layout: SceneShift for mobile to utilize top space and
+    // v0.2.95 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -231,7 +232,7 @@ function positionPlayBoard(n){
 
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      // v0.2.94 Mobile: push the whole "scene" up to utilize top space and
+      // v0.2.95 Mobile: push the whole "scene" up to utilize top space and
       // create more vertical room for the hand row (no scroll).
       top:      { x: 50, y: 10, anchor: "center", isTop: true },
       topLeft:  { x: 32, y: 14, anchor: "left"   },
@@ -1075,7 +1076,10 @@ function bootFromUrl(){
   // socket connect. Without a guard we can join twice and get a new seat.
   if (!roomCode && !joinInProgress) joinRoom(code);
 }
-const socket = io({ transports: ["websocket", "polling"] });
+const socket = GUIDE_MODE ? {
+  connected:false,
+  on(){}, off(){}, emit(){}, connect(){}, disconnect(){},
+} : io({ transports: ["websocket", "polling"] });
 
 
 function emitWhenConnected(fn){
@@ -1163,7 +1167,7 @@ socket.on("error", (data) => {
   showRoomWarn(msg);
 });
 
-socket.on("online_state", (payload) => {
+function handleOnlineState(payload){
   joinInProgress = false;
   pendingJoinRoom = null;
   pendingCreateRoom = false;
@@ -1209,7 +1213,36 @@ try{
     }, {passive:true});
   });
 }catch(e){ /* ignore */ }
-});
+}
+
+if (!GUIDE_MODE){
+  socket.on("online_state", handleOnlineState);
+}
+if (GUIDE_MODE){
+  // Guide mode renders deterministic demo scenes without server/socket.
+  window.addEventListener('DOMContentLoaded', ()=>{
+    try{
+      const qs = new URLSearchParams(window.location.search);
+      const scene = qs.get('scene') || 'onecard';
+      try{ document.body.classList.add('guide-mode'); }catch(e){}
+      try{
+        if (!document.querySelector('.guideBadge')){
+          const b = document.createElement('div');
+          b.className = 'guideBadge';
+          b.textContent = 'GUIDE MODE · ' + scene;
+          document.body.appendChild(b);
+        }
+      }catch(e){}
+      const scenes = window.PW_GUIDE_SCENES || {};
+      const st = scenes[scene];
+      if (!st){ console.warn('Guide scene not found:', scene); return; }
+      handleOnlineState({ room: 'GUIDE', seat: 0, state: st });
+      if (window.PW_GUIDE_OVERLAYS && typeof window.PW_GUIDE_OVERLAYS[scene] === 'function'){
+        window.PW_GUIDE_OVERLAYS[scene]();
+      }
+    }catch(e){ console.warn('Guide mode init failed', e); }
+  });
+}
 
 socket.on("online_left", () => {
   roomCode = null;
@@ -2023,7 +2056,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.94 PC HUD sync + button wiring
+// v0.2.95 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -2064,7 +2097,7 @@ function goToRules(){
   window.location.href = `/rules.html?from=${from}`;
 }
 
-// v0.2.94 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.95 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");

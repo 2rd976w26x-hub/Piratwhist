@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist – Regler v0.2.94</title>
+  <title>Piratwhist – Regler v0.2.95</title>
   <link rel="stylesheet" href="piratwhist.css" />
 </head>
 <body>
   <header class="topbar">
     <div class="title">
-      Piratwhist – Regler <span class="badge">v0.2.94</span>
+      Piratwhist – Regler <span class="badge">v0.2.95</span>
     </div>
     <div class="actions">
       <button id="rulesBack" class="ghost linkbtn" type="button">← Tilbage</button>
@@ -18,61 +18,91 @@
 
   <main class="wrap">
     <section class="card">
-      <h2>Grundidé</h2>
+      <h2>Regler (gælder for både fysisk og online spil)</h2>
       <p>
-        Piratwhist er et stikspil for <strong>2–8 spillere</strong>.
-        I hver runde afgiver hver spiller et <strong>bud</strong> på, hvor mange stik de forventer at tage.
-        Når runden er spillet færdig, indtastes hvor mange stik hver spiller <strong>faktisk</strong> tog,
-        og der beregnes point.
+        Piratwhist er et whist-lignende stikspil for <strong>2–8 spillere</strong> med bud.
+        Reglerne er de samme i <strong>fysisk spil</strong> og <strong>online spil</strong> — forskellen er kun,
+        hvordan bud, stik og point registreres.
       </p>
 
-      <h2>Rum (multiplayer)</h2>
+      <h2>Grundregler</h2>
       <ul>
-        <li>Opret et rum og del koden med de andre.</li>
-        <li>Alle i rummet ser samme opsætning, bud, stik og point i real-time.</li>
-        <li>Hvis en runde ikke er udfyldt for alle spillere, tæller den ikke med i point endnu.</li>
+        <li><strong>Spar (♠) er altid trumf</strong>.</li>
+        <li>Man skal <strong>bekende kulør</strong>, hvis man kan.</li>
+        <li>Hvis man ikke kan bekende kulør, må man spille et hvilket som helst kort.</li>
+        <li>Højeste kort vinder stikket i den udspillede kulør, medmindre der spilles trumf.</li>
       </ul>
 
-      <h2>Opsætning</h2>
+      <h2>Runder og antal kort (52-korts begrænsning)</h2>
       <ul>
-        <li>Vælg antal spillere (2–8) og indtast navne.</li>
-        <li>Vælg antal runder (4–14). Appen viser rundens maksimum for stik.</li>
-        <li><strong>0</strong> er altid et gyldigt bud.</li>
+        <li>Der bruges ét standard spil (52 kort).</li>
+        <li>Antal kort pr. spiller i en runde må aldrig overstige <code>floor(52 / antal spillere)</code>.</li>
+        <li>Der er altid mindst 1 kort pr. spiller.</li>
       </ul>
 
-      <h2>Maks-stik pr. runde (14 runder)</h2>
-<p class="sub">7, 6, 5, 4, 3, 2, 1, 1, 2, 3, 4, 5, 6, 7</p>
+      <h2>Tur-rækkefølge (FAST)</h2>
+      <ul>
+        <li><strong>Kortomgangen går altid med uret (clockwise)</strong> set oppefra — på både mobil og PC.</li>
+        <li>I første stik i en runde lægger en ny spiller ud (roterer fra runde til runde).</li>
+        <li>Vinderen af et stik lægger ud i næste stik.</li>
+      </ul>
 
-<h2>Runde-forløb</h2>
-      <ol>
-        <li>Alle spillere indtaster deres <strong>bud</strong> (0..max).</li>
-        <li>Runden spilles med fysiske kort.</li>
-        <li>Alle spillere indtaster deres <strong>stik</strong> (0..max).</li>
-      </ol>
-
-      <h2>Hvornår tæller en runde?</h2>
+      <h2>Budfase</h2>
       <p>
-        En runde tæller først med i point, når <strong>alle spillere</strong> har indtastet både bud og stik.
-        Hvis et felt er tomt for nogen spiller, regnes runden som <em>ikke færdig</em> og giver 0 point til alle
-        indtil den er udfyldt.
+        Før en runde spilles, afgiver hver spiller et bud på, hvor mange stik de forventer at vinde i runden.
+        Bud kan være fra <strong>0</strong> til <strong>antal kort på hånden</strong>.
       </p>
+
+      <h2>Særregel: Runde med 1 kort pr. spiller</h2>
+      <p>
+        Når der kun deles <strong>1 kort pr. spiller</strong>, gælder en særlig informationsregel <em>før bud</em>:
+      </p>
+      <ul>
+        <li>Du kan <strong>ikke se dit eget kort</strong> før bud (dit kort er skjult/bagside).</li>
+        <li>Du kan <strong>se alle modstanderes kort</strong> før bud (forsider vises).</li>
+        <li>Reglen gælder for <strong>alle spillere</strong> (symmetrisk).</li>
+      </ul>
+
+      <h2>Spil af stik</h2>
+      <ul>
+        <li>Spillerne spiller ét kort ad gangen i tur-rækkefølge.</li>
+        <li>Man skal bekende kulør, hvis muligt.</li>
+        <li>Stikket vindes af højeste trumf (hvis trumf er spillet), ellers højeste kort i udspillet kulør.</li>
+      </ul>
 
       <h2>Point</h2>
       <ul>
         <li>Hvis du rammer dit bud præcist: <strong>10 point + dit bud</strong>.</li>
-        <li>Hvis du ikke rammer dit bud: <strong>-1 point</strong> for hvert stik du er fra det aktuelle bud
-          (<code>-abs(stik - bud)</code>).</li>
+        <li>Hvis du ikke rammer dit bud: <strong>-abs(stik - bud)</strong> point (negativt for hver stik du er fra).</li>
+        <li>Totalscoren er summen af alle runder.</li>
       </ul>
 
-      <h2>Vinder</h2>
+      <h2>Resultatoversigt</h2>
       <p>
-        Efter sidste runde vinder den spiller med <strong>flest samlede point</strong>.
+        Pointoversigten viser én samlet tabel:
+      </p>
+      <ul>
+        <li><strong>Total</strong> ligger øverst og viser <em>kun point</em>.</li>
+        <li>Dernæst vises runder med <strong>seneste runde øverst</strong>.</li>
+        <li>Format pr. runde pr. spiller: <code>Bud / Stik (Point)</code>.</li>
+      </ul>
+
+      <h2>Fysisk spil – indtastning (KUN fysisk spil)</h2>
+      <p>
+        I fysisk spil bruger du appen som scoretavle. Her indtastes <strong>bud</strong> og <strong>stik</strong>
+        manuelt, og appen beregner point og totaler.
+        <strong>Disse indtastninger er ikke relevante i online spil</strong>.
+      </p>
+
+      <h2>Online spil – automatisk</h2>
+      <p>
+        I online spil håndterer spillet automatisk kort, bud, stik og point. Du skal kun afgive bud og spille kort.
       </p>
     </section>
   </main>
 
   <footer class="footer">
-    Piratwhist v0.2.94
+    Piratwhist v0.2.95
   </footer>
 
   <script>
