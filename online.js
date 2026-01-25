@@ -99,25 +99,100 @@ const PW_DEBUG = (() => {
   function ensureUI(){
     if (!enabled) return;
     if (document.getElementById("pwDbgCopy")) return;
-    const btn = document.createElement("button");
-    btn.id = "pwDbgCopy";
-    btn.type = "button";
-    btn.textContent = "Kopiér fejl-log";
-    btn.style.position = "fixed";
-    btn.style.right = "12px";
-    btn.style.bottom = "12px";
-    btn.style.zIndex = "999999";
-    btn.style.padding = "10px 12px";
-    btn.style.borderRadius = "12px";
-    btn.style.border = "1px solid rgba(255,255,255,0.25)";
-    btn.style.background = "rgba(0,0,0,0.65)";
-    btn.style.color = "white";
-    btn.style.font = "13px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
-    btn.style.backdropFilter = "blur(6px)";
-    btn.style.webkitBackdropFilter = "blur(6px)";
-    btn.style.display = "none"; // shown only on freeze detector
-    btn.addEventListener("click", ()=>copyDump());
-    document.body.appendChild(btn);
+    const makeBtn = (id, label) => {
+      const btn = document.createElement("button");
+      btn.id = id;
+      btn.type = "button";
+      btn.textContent = label;
+      btn.style.position = "fixed";
+      btn.style.right = "12px";
+      btn.style.zIndex = "999999";
+      btn.style.padding = "10px 12px";
+      btn.style.borderRadius = "12px";
+      btn.style.border = "1px solid rgba(255,255,255,0.25)";
+      btn.style.background = "rgba(0,0,0,0.65)";
+      btn.style.color = "white";
+      btn.style.font = "13px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+      btn.style.backdropFilter = "blur(6px)";
+      btn.style.webkitBackdropFilter = "blur(6px)";
+      return btn;
+    };
+
+    const showBtn = makeBtn("pwDbgShow", "Vis fejl-log");
+    showBtn.style.bottom = "58px";
+    showBtn.addEventListener("click", ()=>showPanel(true));
+    document.body.appendChild(showBtn);
+
+    const copyBtn = makeBtn("pwDbgCopy", "Kopiér fejl-log");
+    copyBtn.style.bottom = "12px";
+    copyBtn.style.display = "none"; // shown only on freeze detector
+    copyBtn.addEventListener("click", ()=>copyDump());
+    document.body.appendChild(copyBtn);
+
+    const panel = document.createElement("div");
+    panel.id = "pwDbgPanel";
+    panel.style.position = "fixed";
+    panel.style.right = "12px";
+    panel.style.bottom = "110px";
+    panel.style.width = "min(520px, 92vw)";
+    panel.style.maxHeight = "60vh";
+    panel.style.padding = "10px";
+    panel.style.borderRadius = "12px";
+    panel.style.border = "1px solid rgba(255,255,255,0.18)";
+    panel.style.background = "rgba(6,8,16,0.92)";
+    panel.style.color = "white";
+    panel.style.font = "12px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    panel.style.zIndex = "999998";
+    panel.style.display = "none";
+
+    const panelHeader = document.createElement("div");
+    panelHeader.style.display = "flex";
+    panelHeader.style.alignItems = "center";
+    panelHeader.style.justifyContent = "space-between";
+    panelHeader.style.marginBottom = "8px";
+    panelHeader.innerHTML = "<strong>Fejl-log (debug)</strong>";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.textContent = "Luk";
+    closeBtn.style.border = "1px solid rgba(255,255,255,0.25)";
+    closeBtn.style.background = "rgba(255,255,255,0.08)";
+    closeBtn.style.color = "white";
+    closeBtn.style.padding = "4px 8px";
+    closeBtn.style.borderRadius = "8px";
+    closeBtn.style.cursor = "pointer";
+    closeBtn.addEventListener("click", ()=>showPanel(false));
+    panelHeader.appendChild(closeBtn);
+
+    const textarea = document.createElement("textarea");
+    textarea.id = "pwDbgText";
+    textarea.readOnly = true;
+    textarea.style.width = "100%";
+    textarea.style.height = "42vh";
+    textarea.style.background = "rgba(0,0,0,0.35)";
+    textarea.style.border = "1px solid rgba(255,255,255,0.18)";
+    textarea.style.borderRadius = "8px";
+    textarea.style.color = "white";
+    textarea.style.padding = "8px";
+    textarea.style.font = "12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+
+    panel.appendChild(panelHeader);
+    panel.appendChild(textarea);
+    document.body.appendChild(panel);
+  }
+  function showPanel(show){
+    if (!enabled) return;
+    ensureUI();
+    const panel = document.getElementById("pwDbgPanel");
+    const textarea = document.getElementById("pwDbgText");
+    if (!panel || !textarea) return;
+    if (show){
+      const dump = JSON.stringify({ meta: snapshot(), buf }, null, 2);
+      textarea.value = dump;
+      panel.style.display = "block";
+    } else {
+      panel.style.display = "none";
+    }
   }
   function showCopyButton(show){
     if (!enabled) return;
@@ -132,7 +207,7 @@ const PW_DEBUG = (() => {
   function getTimes(){ return { lastStateAt, lastPlaySentAt, lastPlayAttemptAt, lastAdvanceAt }; }
   function setTurnKey(k){ lastTurnKey = k; }
   function getTurnKey(){ return lastTurnKey; }
-  return { enabled, push, copyDump, toast, showCopyButton, setLastState, markPlayAttempt, markPlaySent, markAdvance, getTimes, setTurnKey, getTurnKey, ensureUI };
+  return { enabled, push, copyDump, toast, showCopyButton, setLastState, markPlayAttempt, markPlaySent, markAdvance, getTimes, setTurnKey, getTurnKey, ensureUI, showPanel };
 })();
 
 
