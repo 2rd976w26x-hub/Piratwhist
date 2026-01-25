@@ -33,7 +33,7 @@ a{color:inherit}
 .pwMain{max-width:var(--maxw);margin:18px auto;padding:0 18px}
 .pwMain h1{margin:18px 0 6px;font-size:28px}
 .pwSubtitle{margin:0 0 18px;color:var(--muted);line-height:1.35}
-.pwGrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.pwGrid{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:18px}
 .pwCard{
   background:var(--panel);border:1px solid var(--border);border-radius:var(--r);
   box-shadow:var(--shadow);padding:18px;min-height:180px;
