@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.99)
+// Piratwhist Online Multiplayer (v0.2.100)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -24,8 +24,117 @@ function sortHand(cards){
     return ra - rb;
   });
 }
-const APP_VERSION = "0.2.97";
+const APP_VERSION = "0.2.100";
 const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") === "1");
+const DEBUG_MODE = (new URLSearchParams(window.location.search).get("debug") === "1");
+
+// --- Debug logger (play input freeze tracing) ---
+// Enable with: online_play.html?code=XXXX&debug=1
+const PW_DEBUG = (() => {
+  const enabled = (!GUIDE_MODE) && DEBUG_MODE && /online_play\.html$/.test(window.location.pathname);
+  const buf = [];
+  const max = 260;
+  const t0 = Date.now();
+  let lastStateAt = 0;
+  let lastPlaySentAt = 0;
+  let lastPlayAttemptAt = 0;
+  let lastAdvanceAt = 0;
+  let lastTurnKey = "";
+  function now(){ return Date.now(); }
+  function push(type, data){
+    if (!enabled) return;
+    const rec = { t: now()-t0, type, data };
+    buf.push(rec);
+    if (buf.length > max) buf.splice(0, buf.length-max);
+  }
+  function snapshot(){
+    return {
+      version: APP_VERSION,
+      url: window.location.pathname + window.location.search,
+      room: roomCode || null,
+      mySeat: (typeof mySeat === "number") ? mySeat : null,
+      phase: state?.phase || null,
+      turn: (typeof state?.turn === "number") ? state.turn : null,
+      leadSuit: state?.leadSuit || null,
+      cardsPer: state?.cardsPer || null,
+      anim: { dealInProgress: !!PW_ANIM?.dealInProgress, sweepInProgress: !!PW_ANIM?.sweepInProgress, flyInProgress: !!PW_ANIM?.flyInProgress },
+    };
+  }
+  async function copyDump(){
+    const dump = JSON.stringify({ meta: snapshot(), buf }, null, 2);
+    try{
+      await navigator.clipboard.writeText(dump);
+      toast("Fejl-log kopieret ✅");
+    }catch(e){
+      // fallback: show in prompt
+      try{
+        window.prompt("Kopiér fejl-log:", dump);
+      }catch(_){}
+    }
+  }
+  function toast(msg){
+    if (!enabled) return;
+    let el = document.getElementById("pwDbgToast");
+    if (!el){
+      el = document.createElement("div");
+      el.id = "pwDbgToast";
+      el.style.position = "fixed";
+      el.style.left = "12px";
+      el.style.bottom = "12px";
+      el.style.zIndex = "999999";
+      el.style.maxWidth = "80vw";
+      el.style.padding = "8px 10px";
+      el.style.borderRadius = "10px";
+      el.style.background = "rgba(0,0,0,0.75)";
+      el.style.color = "#fff";
+      el.style.font = "12px/1.3 system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+      el.style.pointerEvents = "none";
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.display = "block";
+    clearTimeout(el.__t);
+    el.__t = setTimeout(()=>{ el.style.display = "none"; }, 2400);
+  }
+  function ensureUI(){
+    if (!enabled) return;
+    if (document.getElementById("pwDbgCopy")) return;
+    const btn = document.createElement("button");
+    btn.id = "pwDbgCopy";
+    btn.type = "button";
+    btn.textContent = "Kopiér fejl-log";
+    btn.style.position = "fixed";
+    btn.style.right = "12px";
+    btn.style.bottom = "12px";
+    btn.style.zIndex = "999999";
+    btn.style.padding = "10px 12px";
+    btn.style.borderRadius = "12px";
+    btn.style.border = "1px solid rgba(255,255,255,0.25)";
+    btn.style.background = "rgba(0,0,0,0.65)";
+    btn.style.color = "white";
+    btn.style.font = "13px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+    btn.style.backdropFilter = "blur(6px)";
+    btn.style.webkitBackdropFilter = "blur(6px)";
+    btn.style.display = "none"; // shown only on freeze detector
+    btn.addEventListener("click", ()=>copyDump());
+    document.body.appendChild(btn);
+  }
+  function showCopyButton(show){
+    if (!enabled) return;
+    ensureUI();
+    const btn = document.getElementById("pwDbgCopy");
+    if (btn) btn.style.display = show ? "block" : "none";
+  }
+  function setLastState(){ lastStateAt = now(); }
+  function markPlayAttempt(){ lastPlayAttemptAt = now(); }
+  function markPlaySent(){ lastPlaySentAt = now(); }
+  function markAdvance(){ lastAdvanceAt = now(); }
+  function getTimes(){ return { lastStateAt, lastPlaySentAt, lastPlayAttemptAt, lastAdvanceAt }; }
+  function setTurnKey(k){ lastTurnKey = k; }
+  function getTurnKey(){ return lastTurnKey; }
+  return { enabled, push, copyDump, toast, showCopyButton, setLastState, markPlayAttempt, markPlaySent, markAdvance, getTimes, setTurnKey, getTurnKey, ensureUI };
+})();
+
 
 // --- Navigation robustness (mobile): returning from rules page ---
 // On mobile browsers, navigating away to rules.html and coming back can
@@ -60,7 +169,7 @@ const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") ===
     });
   }catch(e){ /* ignore */ }
 })();
-// v0.2.99:
+// v0.2.100:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -149,7 +258,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.99: dynamic round-table board (2–8 players) ---
+// --- v0.2.100: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 
 function ensurePlayBoard(n){
@@ -204,7 +313,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v0.2.99 Dev + layout: SceneShift for mobile to utilize top space and
+    // v0.2.100 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -232,7 +341,7 @@ function positionPlayBoard(n){
 
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      // v0.2.99 Mobile: push the whole "scene" up to utilize top space and
+      // v0.2.100 Mobile: push the whole "scene" up to utilize top space and
       // create more vertical room for the hand row (no scroll).
       top:      { x: 50, y: 10, anchor: "center", isTop: true },
       topLeft:  { x: 32, y: 14, anchor: "left"   },
@@ -1140,6 +1249,7 @@ function handleOnlineState(payload){
   if (payload.seat !== null && payload.seat !== undefined) mySeat = payload.seat;
   prevState = state;
   state = payload.state;
+  try{ if (PW_DEBUG?.enabled){ PW_DEBUG.setLastState(); PW_DEBUG.push('state', {phase: state?.phase, turn: state?.turn, leadSuit: state?.leadSuit, n: state?.n, cardsPer: state?.cardsPer}); } }catch(e){}
 
   // Expose the current phase to CSS (for responsive layout + hiding side panels during play)
   try{
@@ -1345,19 +1455,23 @@ function submitBid(){
 }
 function playCard(cardKey){ if (roomCode) socket.emit("online_play_card", { room: roomCode, card: cardKey }); }
 
-function isPlayable(card){
-  if (!state) return false;
-  if (PW_ANIM?.dealInProgress) return false;
-  if (state.phase !== "playing") return false;
-  if (mySeat === null || mySeat === undefined) return false;
-  if (state.turn !== mySeat) return false;
-  if (!state.leadSuit) return true;
-
+function getPlayableReason(card){
+  if (!state) return 'NO_STATE';
+  if (PW_ANIM?.dealInProgress) return 'DEAL_ANIM';
+  if (state.phase !== 'playing') return 'NOT_PLAYING';
+  if (mySeat === null || mySeat === undefined) return 'NO_SEAT';
+  if (state.turn !== mySeat) return 'NOT_MY_TURN';
   const hand = state.hands ? state.hands[mySeat] : null;
-  if (!hand) return false;
+  if (!hand) return 'NO_HAND';
+  if (!state.leadSuit) return 'OK';
   const hasLead = hand.some(c => c.suit === state.leadSuit);
-  if (!hasLead) return true;
-  return card.suit === state.leadSuit;
+  if (!hasLead) return 'OK';
+  return (card.suit === state.leadSuit) ? 'OK' : 'MUST_FOLLOW';
+}
+
+function isPlayable(card){
+  const r = getPlayableReason(card);
+  return r === 'OK';
 }
 
 function renderBidUI(cardsPer){
@@ -1944,9 +2058,26 @@ function render(){
         for (const c of mineSorted){
           const b = makeCardEl(c);
           b.disabled = !isPlayable(c);
-          b.addEventListener("click", () => {
+          // Debug: trace touch/pointer events on hand cards (mobile freeze cases)
+        try{
+          if (PW_DEBUG?.enabled){
+            ["pointerdown","pointerup","pointercancel","touchstart","touchend","touchcancel"].forEach(evt=>{
+              b.addEventListener(evt, (ev)=>{
+                PW_DEBUG.push(evt, {card: `${c.rank}${c.suit}`, type: ev.type, touches: ev.touches?.length || 0});
+              }, {passive:true});
+            });
+          }
+        }catch(e){}
+        b.addEventListener("click", () => {
+          try{ if (PW_DEBUG?.enabled){ PW_DEBUG.markPlayAttempt(); const reason=getPlayableReason(c); PW_DEBUG.push("click", {card:`${c.rank}${c.suit}`, reason, turn: state?.turn, mySeat}); } }catch(e){}
+          const reason = getPlayableReason(c);
+          if (reason !== "OK"){
+            try{ if (PW_DEBUG?.enabled){ PW_DEBUG.toast("Kan ikke spille: "+reason); } }catch(e){}
+            return;
+          }
           // Save a precise start position for the fly-in animation (only for your own plays)
           if (ENABLE_FLY) window.__pwLastPlayed = { seat: mySeat, key: `${c.rank}${c.suit}`, rect: b.getBoundingClientRect() };
+          try{ if (PW_DEBUG?.enabled){ PW_DEBUG.markPlaySent(); PW_DEBUG.push("send_play", {card:`${c.rank}${c.suit}`}); } }catch(e){}
           playCard(`${c.rank}${c.suit}`);
         });
         cards.appendChild(b);
@@ -2000,6 +2131,49 @@ el("olPlayerCount")?.addEventListener("change", () => {
   render();
 });
 
+
+// --- Debug freeze detector (play input) ---
+// Shows "Kopiér fejl-log" if it looks like your turn but no play is being sent/advanced.
+(function setupPlayFreezeDetector(){
+  try{
+    if (!(PW_DEBUG?.enabled)) return;
+    PW_DEBUG.ensureUI();
+    let lastShown = 0;
+    setInterval(()=>{
+      try{
+        if (!state || state.phase !== "playing") { PW_DEBUG.showCopyButton(false); return; }
+        if (typeof mySeat !== "number") { PW_DEBUG.showCopyButton(false); return; }
+        if (state.turn !== mySeat) { PW_DEBUG.showCopyButton(false); return; }
+        const hand = state.hands ? state.hands[mySeat] : null;
+        if (!Array.isArray(hand) || hand.length === 0) { PW_DEBUG.showCopyButton(false); return; }
+        if (PW_ANIM?.dealInProgress || PW_ANIM?.sweepInProgress || PW_ANIM?.flyInProgress) { PW_DEBUG.showCopyButton(false); return; }
+        // At least one playable card exists
+        const anyPlayable = hand.some(c => getPlayableReason(c) === "OK");
+        if (!anyPlayable) { PW_DEBUG.showCopyButton(false); return; }
+
+        const t = Date.now();
+        const times = PW_DEBUG.getTimes();
+        // If no play was sent and no state arrived for a while, likely stuck input layer.
+        const sinceState = t - (times.lastStateAt || 0);
+        const sinceSent = t - (times.lastPlaySentAt || 0);
+        const sinceAttempt = t - (times.lastPlayAttemptAt || 0);
+
+        const stuck = (sinceState > 8000) || ((times.lastPlayAttemptAt && sinceAttempt > 8000 && sinceSent > 8000));
+        if (stuck){
+          PW_DEBUG.showCopyButton(true);
+          if (t - lastShown > 6000){
+            lastShown = t;
+            PW_DEBUG.toast("Hvis spillet er låst: tryk 'Kopiér fejl-log'");
+            PW_DEBUG.push("freeze_hint", {sinceState, sinceSent, sinceAttempt});
+          }
+        } else {
+          PW_DEBUG.showCopyButton(false);
+        }
+      }catch(e){ /* ignore */ }
+    }, 1200);
+  }catch(e){ /* ignore */ }
+})();
+
 render();
 
 el("olBotCount")?.addEventListener("change", () => {
@@ -2022,7 +2196,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.99 PC HUD sync + button wiring
+// v0.2.100 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -2063,7 +2237,7 @@ function goToRules(){
   window.location.href = `/rules.html?from=${from}`;
 }
 
-// v0.2.99 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.100 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
