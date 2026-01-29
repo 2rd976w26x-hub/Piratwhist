@@ -970,12 +970,19 @@ def online_update_lobby(data):
         bots = n_players - 1
 
     # Rebuild state arrays to match new n.
-    incoming_name = (data.get("name") or "").strip()
+    def _normalize_name(value, fallback):
+        if isinstance(value, (list, tuple)):
+            value = value[0] if value else ""
+        if value is None:
+            value = ""
+        name = str(value).strip()
+        return name or fallback
+
+    incoming_name = _normalize_name(data.get("name"), "")
     if incoming_name:
         host_name = incoming_name
     else:
-        host_name = (st.get("names") or ["Spiller 1"])[0]
-        host_name = (host_name or "").strip() or "Spiller 1"
+        host_name = _normalize_name((st.get("names") or ["Spiller 1"])[0], "Spiller 1")
 
     names = [None for _ in range(n_players)]
     names[0] = host_name
