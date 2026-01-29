@@ -24,7 +24,7 @@ function sortHand(cards){
     return ra - rb;
   });
 }
-const APP_VERSION = "0.2.102";
+const APP_VERSION = "0.2.103";
 const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") === "1");
 const DEBUG_MODE = (new URLSearchParams(window.location.search).get("debug") === "1");
 
@@ -33,7 +33,8 @@ const DEBUG_MODE = (new URLSearchParams(window.location.search).get("debug") ===
 const PW_DEBUG = (() => {
   const enabled = (!GUIDE_MODE) && DEBUG_MODE && /online_play\.html$/.test(window.location.pathname);
   const buf = [];
-  const max = 260;
+  const max = 500;
+  const storageKey = "PW_DEBUG_LOG";
   const t0 = Date.now();
   let lastStateAt = 0;
   let lastPlaySentAt = 0;
@@ -41,11 +42,19 @@ const PW_DEBUG = (() => {
   let lastAdvanceAt = 0;
   let lastTurnKey = "";
   function now(){ return Date.now(); }
+  function persist(){
+    if (!enabled) return;
+    try{
+      const dump = JSON.stringify({ meta: snapshot(), buf });
+      localStorage.setItem(storageKey, dump);
+    }catch(e){}
+  }
   function push(type, data){
     if (!enabled) return;
     const rec = { t: now()-t0, type, data };
     buf.push(rec);
     if (buf.length > max) buf.splice(0, buf.length-max);
+    persist();
   }
   function snapshot(){
     return {
@@ -119,9 +128,17 @@ const PW_DEBUG = (() => {
     };
 
     const showBtn = makeBtn("pwDbgShow", "Vis fejl-log");
-    showBtn.style.bottom = "58px";
+    showBtn.style.bottom = "104px";
     showBtn.addEventListener("click", ()=>showPanel(true));
     document.body.appendChild(showBtn);
+
+    const pageBtn = makeBtn("pwDbgPage", "Åbn log-side");
+    pageBtn.style.bottom = "58px";
+    pageBtn.addEventListener("click", ()=>{
+      const url = `/online_debug.html?room=${encodeURIComponent(roomCode || "")}`;
+      window.open(url, "_blank", "noopener");
+    });
+    document.body.appendChild(pageBtn);
 
     const copyBtn = makeBtn("pwDbgCopy", "Kopiér fejl-log");
     copyBtn.style.bottom = "12px";
@@ -207,6 +224,9 @@ const PW_DEBUG = (() => {
   function getTimes(){ return { lastStateAt, lastPlaySentAt, lastPlayAttemptAt, lastAdvanceAt }; }
   function setTurnKey(k){ lastTurnKey = k; }
   function getTurnKey(){ return lastTurnKey; }
+  if (enabled){
+    try{ persist(); }catch(e){}
+  }
   return { enabled, push, copyDump, toast, showCopyButton, setLastState, markPlayAttempt, markPlaySent, markAdvance, getTimes, setTurnKey, getTurnKey, ensureUI, showPanel };
 })();
 

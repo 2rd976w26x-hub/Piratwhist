@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Piratwhist v0.2.103 · Debug-log</title>
+  <link rel="stylesheet" href="/piratwhist.css" />
+  <link rel="stylesheet" href="/online.css" />
+  <link rel="stylesheet" href="/online_pages.css" />
+</head>
+<body class="page-debug">
+  <div class="app">
+    <main class="main">
+      <section class="card">
+        <h1>Debug-log</h1>
+        <p class="small" id="dbgStatus">Indlæser log…</p>
+        <div class="row gap" style="margin-bottom: 8px;">
+          <span class="pill">Events: <b id="dbgCount">0</b></span>
+          <span class="pill">Sidst opdateret: <b id="dbgUpdated">-</b></span>
+        </div>
+        <textarea id="dbgOutput" readonly style="width:100%; min-height: 60vh; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; color: white; padding: 10px; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;"></textarea>
+        <p class="small" style="margin-top: 8px;">Loggen opdateres automatisk og viser de seneste 500 events.</p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="brand">
+        <div class="logo">🏴‍☠️</div>
+        <div>
+          <div class="title">Piratwhist <span class="ver">v0.2.103</span></div>
+          <div class="sub">Debug-side · online spil</div>
+        </div>
+      </div>
+      <div class="nav">
+        <a class="linkbtn" href="/online.html">Online</a>
+        <a class="linkbtn ghost" href="/rules.html">Regler</a>
+      </div>
+    </footer>
+  </div>
+  <script src="/online_debug.js"></script>
+</body>
+</html>
