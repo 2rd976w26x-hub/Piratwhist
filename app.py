@@ -970,8 +970,12 @@ def online_update_lobby(data):
         bots = n_players - 1
 
     # Rebuild state arrays to match new n.
-    host_name = (data.get("name") or st.get("names") or ["Spiller 1"])[0] if st.get("names") else (data.get("name") or "Spiller 1")
-    host_name = (host_name or "").strip() or "Spiller 1"
+    incoming_name = (data.get("name") or "").strip()
+    if incoming_name:
+        host_name = incoming_name
+    else:
+        host_name = (st.get("names") or ["Spiller 1"])[0]
+        host_name = (host_name or "").strip() or "Spiller 1"
 
     names = [None for _ in range(n_players)]
     names[0] = host_name
