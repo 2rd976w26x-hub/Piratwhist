@@ -921,6 +921,9 @@ def online_start_game(data):
     if total_joined < 2 or human_joined < 1:
         emit("error", {"message": "Der skal være mindst 1 menneske og mindst 2 spillere i alt (inkl. computere)."})
         return
+    if total_joined < st["n"]:
+        emit("error", {"message": "Alle pladser skal være besat, eller fyld op med computere, før spillet kan starte."})
+        return
 
     # Start round 1 with a short 'dealing' phase so clients can animate
     # the deal visibly before bots can advance the game.
