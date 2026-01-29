@@ -169,8 +169,7 @@ socket.on("online_state", (payload) => {
   showRoomWarn("");
   showWarn("");
   syncPlayerCount();
-  syncPlayerCount();
-  syncBotCount();
+  updateAutoBotCountDisplay();
   maybeRunAnimations();
   render();
 });
@@ -191,35 +190,31 @@ socket.on("online_left", () => {
 function myName(){ return (el("olMyName")?.value || "").trim() || "Spiller"; }
 function playerCount(){ return parseInt(el("olPlayerCount")?.value || "4", 10); }
 
-function populateBotOptions(){
-  const players = playerCount();
-  const sel = el("olBotCount");
-  if (!sel) return;
-  const prev = sel.value || "0";
-  sel.innerHTML = "";
-  const maxBots = Math.max(0, players - 1);
-  for (let i=0;i<=maxBots;i++){
-    const opt = document.createElement("option");
-    opt.value = String(i);
-    opt.textContent = String(i);
-    sel.appendChild(opt);
+function getHumanCount(){
+  if (state && Array.isArray(state.names)){
+    const botSeats = new Set(state.botSeats || []);
+    return state.names.reduce((count, name, idx) => {
+      if (!name) return count;
+      if (botSeats.has(idx)) return count;
+      return count + 1;
+    }, 0);
   }
-  if (parseInt(prev,10) <= maxBots) sel.value = prev;
-  else sel.value = String(maxBots);
+  return 1;
+}
+function autoBotCount(){
+  const humans = getHumanCount();
+  return Math.max(0, playerCount() - humans);
+}
+function updateAutoBotCountDisplay(){
+  const botEl = el("olBotCount");
+  if (!botEl) return;
+  const value = autoBotCount();
+  if ("value" in botEl) botEl.value = String(value);
+  else botEl.textContent = String(value);
+  if ("readOnly" in botEl) botEl.readOnly = true;
 }
 function botCount(){
-  return parseInt(el("olBotCount")?.value || "0", 10);
-}
-function syncBotCount(){
-  const sel = el("olBotCount");
-  if (!sel) return;
-  if (roomCode && state && Array.isArray(state.botSeats)){
-    sel.value = String(state.botSeats.length);
-    sel.disabled = true;
-  } else {
-    sel.disabled = false;
-    populateBotOptions();
-  }
+  return 0;
 }
 
 
@@ -233,10 +228,11 @@ function syncPlayerCount(){
   } else {
     sel.disabled = false;
   }
+  updateAutoBotCountDisplay();
 }
 
 
-function createRoom(){ socket.emit("online_create_room", { name: myName(), players: playerCount(), bots: botCount() }); }
+function createRoom(){ socket.emit("online_create_room", { name: myName(), players: playerCount(), bots: 0 }); }
 function joinRoom(){ socket.emit("online_join_room", { room: normalizeCode(el("olRoomCode")?.value), name: myName() }); }
 function leaveRoom(){ if (roomCode) socket.emit("online_leave_room", { room: roomCode }); }
 function startOnline(){ if (roomCode) socket.emit("online_start_game", { room: roomCode }); }
@@ -552,11 +548,10 @@ el("olLeaveRoom")?.addEventListener("click", leaveRoom);
 el("olStartOnline")?.addEventListener("click", startOnline);
 el("olNextRound")?.addEventListener("click", onNext);
 el("olBidSubmit")?.addEventListener("click", submitBid);
-el("olPlayerCount")?.addEventListener("change", () => { populateBotOptions(); render(); });
+el("olPlayerCount")?.addEventListener("change", () => { updateAutoBotCountDisplay(); render(); });
 
 render();
-
-el("olBotCount")?.addEventListener("change", () => render());
+updateAutoBotCountDisplay();
 
 
 function setOnlinePage(which){
@@ -609,7 +604,7 @@ document.addEventListener("DOMContentLoaded", () => {
       mySeat = null;
       updateOnlinePageFromState();
       syncPlayerCount();
-      syncBotCount();
+      updateAutoBotCountDisplay();
     });
   }
   updateOnlinePageFromState();
@@ -617,8 +612,7 @@ document.addEventListener("DOMContentLoaded", () => {
   el("olApplyConfig")?.addEventListener("click", () => {
     if (!roomCode) return;
     const pc = parseInt(el("olPlayerCount")?.value || "4", 10);
-    const bc = parseInt(el("olBotCount")?.value || "0", 10);
-    socket.emit("online_set_config", { code: roomCode, player_count: pc, bot_count: bc });
+    socket.emit("online_set_config", { code: roomCode, player_count: pc, bot_count: 0 });
   });
 
 });

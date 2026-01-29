@@ -1362,10 +1362,11 @@ function handleOnlineState(payload){
   showRoomWarn("");
   showWarn("");
   syncPlayerCount();
-  syncBotCount();
+  updateAutoBotCountDisplay();
   maybeRunAnimations();
 
 render();
+updateAutoBotCountDisplay();
 
 // Ensure the "Regler" link returns to the current page after reading rules.
 // We do this by adding ?from=<current path> to any rules links on the page.
@@ -1435,38 +1436,31 @@ function myName(){
 }
 function playerCount(){ return parseInt(el("olPlayerCount")?.value || "4", 10); }
 
-function populateBotOptions(){
-  const players = playerCount();
-  const sel = el("olBotCount");
-  if (!sel) return;
-  const prev = sel.value || "0";
-  sel.innerHTML = "";
-  const maxBots = Math.max(0, players - 1);
-  for (let i=0;i<=maxBots;i++){
-    const opt = document.createElement("option");
-    opt.value = String(i);
-    opt.textContent = String(i);
-    sel.appendChild(opt);
+function getHumanCount(){
+  if (state && Array.isArray(state.names)){
+    const botSeats = new Set(state.botSeats || []);
+    return state.names.reduce((count, name, idx) => {
+      if (!name) return count;
+      if (botSeats.has(idx)) return count;
+      return count + 1;
+    }, 0);
   }
-  if (parseInt(prev,10) <= maxBots) sel.value = prev;
-  else sel.value = String(maxBots);
+  return 1;
+}
+function autoBotCount(){
+  const humans = getHumanCount();
+  return Math.max(0, playerCount() - humans);
+}
+function updateAutoBotCountDisplay(){
+  const botEl = el("olBotCount");
+  if (!botEl) return;
+  const value = autoBotCount();
+  if ("value" in botEl) botEl.value = String(value);
+  else botEl.textContent = String(value);
+  if ("readOnly" in botEl) botEl.readOnly = true;
 }
 function botCount(){
-  return parseInt(el("olBotCount")?.value || "0", 10);
-}
-function syncBotCount(){
-  const sel = el("olBotCount");
-  if (!sel) return;
-  const isHost = (mySeat === 0);
-  const inLobby = (state && state.phase === "lobby");
-  if (roomCode && state && Array.isArray(state.botSeats)){
-    sel.value = String(state.botSeats.length);
-    // Host may change bot count while alone in lobby
-    sel.disabled = !(isHost && inLobby);
-  } else {
-    sel.disabled = false;
-  }
-  populateBotOptions();
+  return 0;
 }
 
 
@@ -1483,6 +1477,7 @@ function syncPlayerCount(){
   } else {
     sel.disabled = false;
   }
+  updateAutoBotCountDisplay();
 }
 
 function updateLobbyConfig(){
@@ -1492,7 +1487,7 @@ function updateLobbyConfig(){
   socket.emit("online_update_lobby", {
     room: roomCode,
     players: playerCount(),
-    bots: botCount(),
+    bots: 0,
     name: myName(),
   });
 }
@@ -1508,7 +1503,7 @@ function createRoom(){
       clientId: getClientId(),
       name: myName(),
       players: playerCount(),
-      bots: botCount()
+      bots: 0
     });
     pendingCreateRoom = false;
   });
@@ -2221,7 +2216,7 @@ el("olStartOnline")?.addEventListener("click", startOnline);
 el("olNextRound")?.addEventListener("click", onNext);
 el("olBidSubmit")?.addEventListener("click", submitBid);
 el("olPlayerCount")?.addEventListener("change", () => {
-  populateBotOptions();
+  updateAutoBotCountDisplay();
   updateLobbyConfig();
   render();
 });
@@ -2270,11 +2265,6 @@ el("olPlayerCount")?.addEventListener("change", () => {
 })();
 
 render();
-
-el("olBotCount")?.addEventListener("change", () => {
-  updateLobbyConfig();
-  render();
-});
 
 // Update host name in lobby (and keep server state in sync)
 el("olMyName")?.addEventListener("blur", () => {
