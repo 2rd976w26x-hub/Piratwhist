@@ -917,13 +917,35 @@ def online_start_game(data):
         return
 
     human_joined = len(room["members"])
-    total_joined = sum(1 for n in st["names"] if n)
-    if total_joined < 2 or human_joined < 1:
+    if human_joined < 1:
         emit("error", {"message": "Der skal være mindst 1 menneske og mindst 2 spillere i alt (inkl. computere)."})
         return
-    if total_joined < st["n"]:
-        emit("error", {"message": "Alle pladser skal være besat, eller fyld op med computere, før spillet kan starte."})
+
+    # Auto-fill bots to match total players minus physical (human) players.
+    n_players = int(st.get("n") or 0)
+    if n_players < 2:
+        emit("error", {"message": "Der skal være mindst 2 spillere i alt."})
         return
+
+    human_seats = set(room.get("members", {}).values())
+    bot_seats = set(range(n_players)) - human_seats
+    names = list(st.get("names") or [])
+    if len(names) < n_players:
+        names.extend([None for _ in range(n_players - len(names))])
+    elif len(names) > n_players:
+        names = names[:n_players]
+
+    bot_index = 1
+    for seat in range(n_players):
+        if seat in bot_seats:
+            names[seat] = f"Computer {bot_index}"
+            bot_index += 1
+        else:
+            if not names[seat]:
+                names[seat] = f"Spiller {seat+1}"
+
+    st["names"] = names
+    st["botSeats"] = bot_seats
 
     # Start round 1 with a short 'dealing' phase so clients can animate
     # the deal visibly before bots can advance the game.
