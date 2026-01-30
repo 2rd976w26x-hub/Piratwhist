@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="754" viewBox="0 0 840 754">
+<style>
+  .header { fill:#1f4e79; }
+  .header-text { fill:#ffffff; font: bold 14px sans-serif; }
+  .cell-text { fill:#111111; font: 12px sans-serif; }
+  .row-even { fill:#f2f2f2; }
+  .row-odd { fill:#ffffff; }
+  .border { stroke:#d0d0d0; stroke-width:1; }
+</style>
+<rect class="header" x="0" y="0" width="840" height="50" />
+<text class="header-text" x="10" y="31.0">Side</text>
+<text class="header-text" x="270" y="31.0">Tekst/beskrivelse</text>
+<text class="header-text" x="550" y="31.0">Hvorfor overflødig</text>
+<rect class="row-even" x="0" y="50" width="840" height="44" />
+<text class="cell-text" x="10" y="66">Start</text>
+<text class="cell-text" x="10" y="80">(piratwhist.html)</text>
+<text class="cell-text" x="270" y="66">Vælg hvad du vil spille…</text>
+<text class="cell-text" x="550" y="66">Gentager H1 + kort/knapper</text>
+<rect class="row-odd" x="0" y="94" width="840" height="44" />
+<text class="cell-text" x="10" y="110">Start</text>
+<text class="cell-text" x="10" y="124">(piratwhist.html)</text>
+<text class="cell-text" x="270" y="110">Til når I sidder sammen…</text>
+<text class="cell-text" x="550" y="110">Korttitel + CTA er nok</text>
+<rect class="row-even" x="0" y="138" width="840" height="44" />
+<text class="cell-text" x="10" y="154">Start</text>
+<text class="cell-text" x="10" y="168">(piratwhist.html)</text>
+<text class="cell-text" x="270" y="154">Opret eller join et</text>
+<text class="cell-text" x="270" y="168">online rum…</text>
+<text class="cell-text" x="550" y="154">Korttitel + CTA er nok</text>
+<rect class="row-odd" x="0" y="182" width="840" height="44" />
+<text class="cell-text" x="10" y="198">Start</text>
+<text class="cell-text" x="10" y="212">(piratwhist.html)</text>
+<text class="cell-text" x="270" y="198">Få overblik over</text>
+<text class="cell-text" x="270" y="212">reglerne…</text>
+<text class="cell-text" x="550" y="198">Sektion + knapper</text>
+<text class="cell-text" x="550" y="212">forklarer</text>
+<rect class="row-even" x="0" y="226" width="840" height="44" />
+<text class="cell-text" x="10" y="242">Online start</text>
+<text class="cell-text" x="10" y="256">(online.html)</text>
+<text class="cell-text" x="270" y="242">Opret et nyt rum eller</text>
+<text class="cell-text" x="270" y="256">join…</text>
+<text class="cell-text" x="550" y="242">Knapper viser handlingen</text>
+<rect class="row-odd" x="0" y="270" width="840" height="44" />
+<text class="cell-text" x="10" y="286">Pointtavle</text>
+<text class="cell-text" x="10" y="300">(score.html)</text>
+<text class="cell-text" x="270" y="286">Opret et rum eller join…</text>
+<text class="cell-text" x="550" y="286">To kort + CTA dækker</text>
+<rect class="row-even" x="0" y="314" width="840" height="44" />
+<text class="cell-text" x="10" y="330">Pointtavle</text>
+<text class="cell-text" x="10" y="344">(score.html)</text>
+<text class="cell-text" x="270" y="330">Lav et nyt rum…</text>
+<text class="cell-text" x="550" y="330">Opret rum + rumkode UI</text>
+<rect class="row-odd" x="0" y="358" width="840" height="44" />
+<text class="cell-text" x="10" y="374">Pointtavle</text>
+<text class="cell-text" x="10" y="388">(score.html)</text>
+<text class="cell-text" x="270" y="374">Indtast rumkode for at</text>
+<text class="cell-text" x="270" y="388">joine.</text>
+<text class="cell-text" x="550" y="374">Input+knap er tydeligt</text>
+<rect class="row-even" x="0" y="402" width="840" height="44" />
+<text class="cell-text" x="10" y="418">Online rum</text>
+<text class="cell-text" x="10" y="432">(online_room.html)</text>
+<text class="cell-text" x="270" y="418">Prototype: Hver runde</text>
+<text class="cell-text" x="270" y="432">spilles…</text>
+<text class="cell-text" x="550" y="418">Regeltekst hører til i</text>
+<text class="cell-text" x="550" y="432">regler</text>
+<rect class="row-odd" x="0" y="446" width="840" height="44" />
+<text class="cell-text" x="10" y="462">Online rum</text>
+<text class="cell-text" x="10" y="476">(online_room.html)</text>
+<text class="cell-text" x="270" y="462">Tip: Klik et kort…</text>
+<text class="cell-text" x="550" y="462">Regel/interaction er</text>
+<text class="cell-text" x="550" y="476">implicit</text>
+<rect class="row-even" x="0" y="490" width="840" height="44" />
+<text class="cell-text" x="10" y="506">Online rum/resultat</text>
+<text class="cell-text" x="270" y="506">Point pr. runde…</text>
+<text class="cell-text" x="550" y="506">Gentages på resultatside</text>
+<rect class="row-odd" x="0" y="534" width="840" height="44" />
+<text class="cell-text" x="10" y="550">Online lobby</text>
+<text class="cell-text" x="270" y="550">Online · Lobby ·</text>
+<text class="cell-text" x="270" y="564">v0.2.103</text>
+<text class="cell-text" x="550" y="550">Gentager kontekst/version</text>
+<rect class="row-even" x="0" y="578" width="840" height="44" />
+<text class="cell-text" x="10" y="594">Online lobby/bud/spil/</text>
+<text class="cell-text" x="10" y="608">resultat</text>
+<text class="cell-text" x="270" y="594">Online spil · spar er</text>
+<text class="cell-text" x="270" y="608">trumf…</text>
+<text class="cell-text" x="550" y="594">Gentages på flere sider</text>
+<rect class="row-odd" x="0" y="622" width="840" height="44" />
+<text class="cell-text" x="10" y="638">Online bud</text>
+<text class="cell-text" x="270" y="638">Tip: Scroll ned…</text>
+<text class="cell-text" x="550" y="638">Oversigt er allerede</text>
+<text class="cell-text" x="550" y="652">synlig</text>
+<rect class="row-even" x="0" y="666" width="840" height="44" />
+<text class="cell-text" x="10" y="682">Online spil (play)</text>
+<text class="cell-text" x="270" y="682">Tip: Scroll ned…</text>
+<text class="cell-text" x="550" y="682">Oversigt er allerede på</text>
+<text class="cell-text" x="550" y="696">siden</text>
+<rect class="row-odd" x="0" y="710" width="840" height="44" />
+<text class="cell-text" x="10" y="726">Online spil (game)</text>
+<text class="cell-text" x="270" y="726">Bud og score-oversigt…</text>
+<text class="cell-text" x="550" y="726">Sektioner + CTA forklarer</text>
+<line class="border" x1="0" y1="0" x2="0" y2="754" />
+<line class="border" x1="260" y1="0" x2="260" y2="754" />
+<line class="border" x1="540" y1="0" x2="540" y2="754" />
+<line class="border" x1="840" y1="0" x2="840" y2="754" />
+<line class="border" x1="0" y1="50" x2="840" y2="50" />
+<line class="border" x1="0" y1="94" x2="840" y2="94" />
+<line class="border" x1="0" y1="138" x2="840" y2="138" />
+<line class="border" x1="0" y1="182" x2="840" y2="182" />
+<line class="border" x1="0" y1="226" x2="840" y2="226" />
+<line class="border" x1="0" y1="270" x2="840" y2="270" />
+<line class="border" x1="0" y1="314" x2="840" y2="314" />
+<line class="border" x1="0" y1="358" x2="840" y2="358" />
+<line class="border" x1="0" y1="402" x2="840" y2="402" />
+<line class="border" x1="0" y1="446" x2="840" y2="446" />
+<line class="border" x1="0" y1="490" x2="840" y2="490" />
+<line class="border" x1="0" y1="534" x2="840" y2="534" />
+<line class="border" x1="0" y1="578" x2="840" y2="578" />
+<line class="border" x1="0" y1="622" x2="840" y2="622" />
+<line class="border" x1="0" y1="666" x2="840" y2="666" />
+<line class="border" x1="0" y1="710" x2="840" y2="710" />
+<line class="border" x1="0" y1="754" x2="840" y2="754" />
+</svg>
