@@ -155,6 +155,7 @@ body.page-play .twoCol.playLayout{ grid-template-columns: 1fr !important; }
   background: radial-gradient(ellipse at center, rgba(255,255,255,.08) 0%, rgba(0,0,0,.18) 58%, rgba(0,0,0,.28) 100%);
   border: 1px solid rgba(255,255,255,.08);
   overflow: hidden;
+  --seat-scale: 1;
 }
 
 /* Mobile/compact play: use the full viewport and avoid vertical scrolling */
@@ -215,8 +216,9 @@ body.page-play .twoCol.playLayout{ grid-template-columns: 1fr !important; }
 
 .boardSeats .seat{
   position:absolute;
-  transform:translate(-50%,-50%);
+  transform:translate(-50%,-50%) scale(var(--seat-scale, 1));
   text-align:center;
+  width: clamp(120px, 20vw, 170px);
   max-width:240px;
 }
 
@@ -382,6 +384,11 @@ body.hideBottomHud .bottomBar{ display:flex !important; }
 
   /* Keep mid-side seats (C2/C6) narrower so they never overlap the center image */
   .boardSeats .seat.mid-side{ width: 26%; max-width: 26%; }
+
+  .boardSeats .seat{
+    width: clamp(110px, 34vw, 160px);
+    max-width: 42%;
+  }
 
   /* Allow long names to wrap up to 2 lines instead of increasing width */
   .boardSeats .seat .seatName{

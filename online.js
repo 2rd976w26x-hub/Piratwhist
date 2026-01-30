@@ -396,6 +396,15 @@ function positionPlayBoard(n){
   const board = document.querySelector(".board");
   if (!seatsWrap || !slotsWrap || !board) return;
 
+  const boardRect = board.getBoundingClientRect ? board.getBoundingClientRect() : { width: board.clientWidth || 1, height: board.clientHeight || 1 };
+  const minBoardDim = Math.max(1, Math.min(boardRect.width || 1, boardRect.height || 1));
+  let seatScale = minBoardDim / 680;
+  if (n >= 7) seatScale *= 0.88;
+  else if (n >= 6) seatScale *= 0.92;
+  else if (n === 5) seatScale *= 0.96;
+  seatScale = Math.max(0.72, Math.min(1.05, seatScale));
+  board.style.setProperty("--seat-scale", seatScale.toFixed(2));
+
   const my = (typeof mySeat === "number" && mySeat >= 0) ? mySeat : 0;
   // Seat ring radius in %.
   // NOTE: The board container has overflow:hidden, so on small screens we must
@@ -509,14 +518,14 @@ function positionPlayBoard(n){
         seatEl.classList.toggle("seat-top", !!p.isTop);
 
         // Apply transform anchoring directly
-        if (p.anchor === "left") seatEl.style.transform = "translate(-100%, -50%)";
-        else if (p.anchor === "right") seatEl.style.transform = "translate(0%, -50%)";
+        if (p.anchor === "left") seatEl.style.transform = "translate(-100%, -50%) scale(var(--seat-scale))";
+        else if (p.anchor === "right") seatEl.style.transform = "translate(0%, -50%) scale(var(--seat-scale))";
         else {
           // On mobile, the bottom (local) seat must not be vertically centered,
           // otherwise it can overlap the center pile when the scene is shifted.
           const isBottomSeat = seatEl.classList.contains("seat-bottom");
-          if (isMobile && isBottomSeat) seatEl.style.transform = "translate(-50%, -20%)";
-          else seatEl.style.transform = "translate(-50%, -50%)";
+          if (isMobile && isBottomSeat) seatEl.style.transform = "translate(-50%, -20%) scale(var(--seat-scale))";
+          else seatEl.style.transform = "translate(-50%, -50%) scale(var(--seat-scale))";
         }
       }
 
