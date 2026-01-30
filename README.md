@@ -44,6 +44,16 @@ Der må kun eksistere én ZIP pr version
 
 Ingen “glemte versioner”
 
+Release-script
+
+Brug scripts/release.sh for at sikre, at versionen er opdateret alle relevante steder:
+
+  scripts/release.sh check
+
+Opdatering af version (v0.2.xx) i alle påkrævede UI/dokumentationsfiler:
+
+  scripts/release.sh bump v0.2.xx
+
 2) Kortdesign – fast kontrakt (KRITISK)
 Kortbagside (LÅST)
 
