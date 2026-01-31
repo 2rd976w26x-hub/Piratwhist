@@ -17,8 +17,12 @@
 .cardbtn:disabled{opacity:.35; cursor:not-allowed;}
 .warn{margin-top:10px; padding:10px 12px; border:1px solid rgba(255,210,122,.45); background: rgba(255,210,122,.08); border-radius:14px; color:#ffd27a;}
 .hidden{display:none;}
+.lobby-setup .grid2{grid-template-columns: minmax(0, 1fr) minmax(0, 140px);}
+.lobby-setup .grid2 > div{min-width: 0;}
+.lobby-setup .input.compact{width: 100%; max-width: 140px;}
 @media (max-width: 900px){
   .grid2{grid-template-columns: 1fr;}
+  .lobby-setup .input.compact{max-width: 100%;}
   .table{grid-template-columns: 1fr 1fr;}
 }
 
@@ -98,7 +102,7 @@
 .cardbtn:disabled .playingcard{filter: grayscale(.4);}
 .slot .playingcard{transform: scale(.95); transform-origin: left top;}
 
-/* --- v0.2.107: winner sweep + play animation helpers (2s) --- */
+/* --- v0.2.108: winner sweep + play animation helpers (2s) --- */
 .flycard{
   position: fixed;
   z-index: 9999;
@@ -112,7 +116,7 @@
 }
 
 
-/* --- v0.2.107: fixed card back (2 persons + 4 butterflies) --- */
+/* --- v0.2.108: fixed card back (2 persons + 4 butterflies) --- */
 .playingcard.back{
   background-image: var(--cardback-url);
   background-size: cover;
