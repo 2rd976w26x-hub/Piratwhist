@@ -1,4 +1,4 @@
-# Piratwhist – Scorekeeper (v0.2.106)
+# Piratwhist – Scorekeeper (v0.2.107)
 
 ## MASTERPROMPT – PIRATWHIST
 
