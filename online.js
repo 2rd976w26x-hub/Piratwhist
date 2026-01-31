@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.105)
+// Piratwhist Online Multiplayer (v0.2.106)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -46,7 +46,7 @@ function applyHandOverlap(cardsEl){
   overlap = Math.max(minOverlap, Math.min(maxOverlap, overlap));
   cardsEl.style.setProperty("--hand-overlap", `${overlap.toFixed(2)}px`);
 }
-const APP_VERSION = "0.2.103";
+const APP_VERSION = "0.2.106";
 const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") === "1");
 const DEBUG_MODE = (new URLSearchParams(window.location.search).get("debug") === "1");
 
@@ -286,7 +286,7 @@ const PW_DEBUG = (() => {
     });
   }catch(e){ /* ignore */ }
 })();
-// v0.2.105:
+// v0.2.106:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -375,7 +375,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.105: dynamic round-table board (2–8 players) ---
+// --- v0.2.106: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 
 function ensurePlayBoard(n){
@@ -440,7 +440,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v0.2.105 Dev + layout: SceneShift for mobile to utilize top space and
+    // v0.2.106 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -468,37 +468,37 @@ function positionPlayBoard(n){
 
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      // v0.2.105 Mobile: push the whole "scene" up to utilize top space and
-      // create more vertical room for the hand row (no scroll).
-      top:      { x: 50, y: 18, anchor: "center", isTop: true },
-      topLeft:  { x: 32, y: 22, anchor: "left"   },
-      topRight: { x: 68, y: 22, anchor: "right"  },
-      midLeft:  { x: 24, y: 40, anchor: "left",  midSide: true },
-      midRight: { x: 76, y: 40, anchor: "right", midSide: true },
-      botLeft:  { x: 32, y: 64, anchor: "left"   },
-      botRight: { x: 68, y: 64, anchor: "right"  },
-      bottom:   { x: 50, y: 62, anchor: "center", bottom: true }
+      // v0.2.106 Mobile: lift top seats so the top player stays visible.
+      // Keep the bottom seat readable while leaving room for the hand under it.
+      top:      { x: 50, y: 14, anchor: "center", isTop: true },
+      topLeft:  { x: 32, y: 18, anchor: "left"   },
+      topRight: { x: 68, y: 18, anchor: "right"  },
+      midLeft:  { x: 24, y: 38, anchor: "left",  midSide: true },
+      midRight: { x: 76, y: 38, anchor: "right", midSide: true },
+      botLeft:  { x: 32, y: 62, anchor: "left"   },
+      botRight: { x: 68, y: 62, anchor: "right"  },
+      bottom:   { x: 50, y: 60, anchor: "center", bottom: true }
     };
 
     // 4-player mobile layout: reduce the vertical gap between the top seat and the table scene.
     // Keep the same slot *shape* as 8-player, but pull the active seats slightly upward.
     if (n === 4){
       // v3: 4p mobile needs the whole scene higher (reduce empty gap between T and table)
-      slot.top.y      = 16;
-      slot.midLeft.y  = 34;
-      slot.midRight.y = 34;
-      slot.bottom.y   = 58;
+      slot.top.y      = 12;
+      slot.midLeft.y  = 32;
+      slot.midRight.y = 32;
+      slot.bottom.y   = 56;
     }
 
     // Trick-slot positions aligned with the player who played the card.
     const trick = {
-      top:      { x: 50, y: 22 },
-      topLeft:  { x: 40, y: 26 },
-      topRight: { x: 60, y: 26 },
-      midLeft:  { x: 36, y: 38 },
-      midRight: { x: 64, y: 38 },
-      botLeft:  { x: 42, y: 46 },
-      botRight: { x: 58, y: 46 },
+      top:      { x: 50, y: 20 },
+      topLeft:  { x: 40, y: 24 },
+      topRight: { x: 60, y: 24 },
+      midLeft:  { x: 36, y: 36 },
+      midRight: { x: 64, y: 36 },
+      botLeft:  { x: 42, y: 44 },
+      botRight: { x: 58, y: 44 },
       bottom:   { x: 50, y: 50 }
     };
 
@@ -507,7 +507,7 @@ function positionPlayBoard(n){
     // matches the desired mobile UI (not the ring math).
     const orderByN = {
       2: ["top"],
-      3: ["topLeft","topRight"],
+      3: ["top","topRight"],
       4: ["midLeft","top","midRight"],
       5: ["botLeft","topLeft","topRight","botRight"],
       6: ["botLeft","midLeft","top","midRight","botRight"],
@@ -1337,6 +1337,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       const cards = document.querySelectorAll("#olHands .cards");
       cards.forEach((el) => applyHandOverlap(el));
+      alignHandDockToBottomSeat();
     }catch(e){ /* ignore */ }
   });
   pendingCreateRoom = false;
@@ -2098,7 +2099,8 @@ function render(){
                                 : `<b>Din hånd</b> <span class="sub">(${mine.length} kort)</span>`;
       const right = document.createElement("div");
       right.className = "sub";
-      right.textContent = (state.turn===mySeat && state.phase==="playing") ? "Din tur" : "";
+      const canPlayTurn = (state.phase === "playing") && (state.turn === mySeat);
+      right.textContent = canPlayTurn ? "Din tur" : "";
       head.appendChild(left); head.appendChild(right);
 
       const cards = document.createElement("div");
@@ -2182,7 +2184,7 @@ function render(){
         const mineSorted = sortHand(mine);
         for (const c of mineSorted){
           const b = makeCardEl(c);
-          b.disabled = !isPlayable(c);
+          b.disabled = !(canPlayTurn && isPlayable(c));
           // Debug: trace touch/pointer events on hand cards (mobile freeze cases)
         try{
           if (PW_DEBUG?.enabled){
@@ -2207,6 +2209,7 @@ function render(){
         });
         cards.appendChild(b);
       }
+        cards.classList.toggle("handLocked", !canPlayTurn);
       }
 
       h.appendChild(head);
@@ -2241,6 +2244,7 @@ function render(){
 
   // PC layout: enforce the hand no-fly zone after seats have been positioned
   applyPcNoFlyZoneForSeats();
+  requestAnimationFrame(() => alignHandDockToBottomSeat());
 
   renderScores();
 }
@@ -2317,7 +2321,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.105 PC HUD sync + button wiring
+// v0.2.106 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -2358,7 +2362,30 @@ function goToRules(){
   window.location.href = `/rules.html?from=${from}`;
 }
 
-// v0.2.105 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+function alignHandDockToBottomSeat(){
+  if (!document.body.classList.contains("page-play")) return;
+  const handDock = document.querySelector(".handDock");
+  const bottomSeat = document.querySelector(".boardSeats .seat-bottom");
+  const panel = document.querySelector(".boardPanel");
+  if (!handDock || !bottomSeat || !panel) return;
+
+  const panelRect = panel.getBoundingClientRect();
+  const seatRect = bottomSeat.getBoundingClientRect();
+  const handRect = handDock.getBoundingClientRect();
+  const gap = window.innerWidth < 900 ? 10 : 14;
+
+  const desiredTop = seatRect.bottom + gap;
+  const maxTop = panelRect.bottom - 8 - handRect.height;
+  const minTop = panelRect.top + 8;
+  const top = Math.max(minTop, Math.min(desiredTop, maxTop));
+  const offsetTop = top - panelRect.top;
+
+  handDock.style.top = `${offsetTop.toFixed(1)}px`;
+  handDock.style.bottom = "auto";
+  handDock.classList.add("handDockAuto");
+}
+
+// v0.2.106 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
