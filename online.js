@@ -1328,18 +1328,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }catch(e){ /* ignore */ }
   }, { passive: true });
 
-  // Keep the round-table layout stable on resize / orientation change.
-  window.addEventListener("resize", () => {
-    try{
-      if (state && el("olCenter")){
-        ensurePlayBoard(state.n);
-        positionPlayBoard(state.n);
-      }
-      const cards = document.querySelectorAll("#olHands .cards");
-      cards.forEach((el) => applyHandOverlap(el));
-      alignHandDockToBottomSeat();
-    }catch(e){ /* ignore */ }
-  });
+  // Keep the round-table layout stable on resize / orientation change / zoom.
+  let layoutRaf = null;
+  const scheduleLayoutUpdate = () => {
+    if (layoutRaf) cancelAnimationFrame(layoutRaf);
+    layoutRaf = requestAnimationFrame(() => {
+      layoutRaf = null;
+      try{
+        if (state && el("olCenter")){
+          ensurePlayBoard(state.n);
+          positionPlayBoard(state.n);
+        }
+        const cards = document.querySelectorAll("#olHands .cards");
+        cards.forEach((el) => applyHandOverlap(el));
+        alignHandDockToBottomSeat();
+        applyPcNoFlyZoneForSeats();
+      }catch(e){ /* ignore */ }
+    });
+  };
+  window.addEventListener("resize", scheduleLayoutUpdate, { passive: true });
+  window.addEventListener("scroll", scheduleLayoutUpdate, { passive: true });
+  if (window.visualViewport){
+    window.visualViewport.addEventListener("resize", scheduleLayoutUpdate, { passive: true });
+    window.visualViewport.addEventListener("scroll", scheduleLayoutUpdate, { passive: true });
+  }
   pendingCreateRoom = false;
 });
 
@@ -2393,6 +2405,11 @@ function applyPcNoFlyZoneForSeats(){
   const nfRect = nf.getBoundingClientRect();
   // Find the bottom-left seat (closest to left+bottom among non-local seats)
   const seats = Array.from(document.querySelectorAll(".boardSeats .seat"));
+  seats.forEach((s) => {
+    if (s.dataset.baseTransform !== undefined){
+      s.style.transform = s.dataset.baseTransform;
+    }
+  });
   let best = null;
   let bestScore = 1e18;
   for (const s of seats){
@@ -2406,7 +2423,9 @@ function applyPcNoFlyZoneForSeats(){
   const overlap = !(r.right < nfRect.left || r.left > nfRect.right || r.bottom < nfRect.top || r.top > nfRect.bottom);
   if (overlap){
     // Solution A: move the offending seat slightly up/left
-    best.style.transform = (best.style.transform || "translate(-50%, -50%)") + " translate(-18px, -42px)";
+    const base = best.dataset.baseTransform ?? best.style.transform ?? "translate(-50%, -50%)";
+    best.dataset.baseTransform = base;
+    best.style.transform = base + " translate(-18px, -42px)";
   }
 }
 
