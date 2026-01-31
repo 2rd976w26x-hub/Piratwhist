@@ -470,9 +470,9 @@ function positionPlayBoard(n){
     const slot = {
       // v0.2.104 Mobile: push the whole "scene" up to utilize top space and
       // create more vertical room for the hand row (no scroll).
-      top:      { x: 50, y: 10, anchor: "center", isTop: true },
-      topLeft:  { x: 32, y: 14, anchor: "left"   },
-      topRight: { x: 68, y: 14, anchor: "right"  },
+      top:      { x: 50, y: 14, anchor: "center", isTop: true },
+      topLeft:  { x: 32, y: 18, anchor: "left"   },
+      topRight: { x: 68, y: 18, anchor: "right"  },
       midLeft:  { x: 24, y: 40, anchor: "left",  midSide: true },
       midRight: { x: 76, y: 40, anchor: "right", midSide: true },
       botLeft:  { x: 32, y: 64, anchor: "left"   },
@@ -484,7 +484,7 @@ function positionPlayBoard(n){
     // Keep the same slot *shape* as 8-player, but pull the active seats slightly upward.
     if (n === 4){
       // v3: 4p mobile needs the whole scene higher (reduce empty gap between T and table)
-      slot.top.y      = 9;
+      slot.top.y      = 12;
       slot.midLeft.y  = 34;
       slot.midRight.y = 34;
       slot.bottom.y   = 58;

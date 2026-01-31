@@ -66,7 +66,7 @@ body.page-play .handDock{
   bottom: clamp(70px, 8vh, 120px);
   transform: translateX(-50%);
   width: min(1040px, 88%);
-  z-index: 15;
+  z-index: 40;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -109,7 +109,7 @@ body.page-play .handDock .cards .cardbtn:focus{ z-index: 6; }
   /* Preview: move the hand into the lower "unused" area of the board (above the bottom bar)
      and keep the bottom seat readable. */
   /* Mobile: dock the hand low (blue box) and keep it from covering HUD text. */
-  body.page-play .handDock{ left: 50%; right: auto; transform: translateX(-50%); bottom: 120px; width: 98%; z-index: 10; }
+  body.page-play .handDock{ left: 50%; right: auto; transform: translateX(-50%); bottom: 120px; width: 98%; z-index: 40; }
   body.page-play .handDock .cards .cardbtn{ margin-left: -22px; }
 }
 @media (max-width: 480px){
@@ -197,7 +197,7 @@ body.page-play .twoCol.playLayout{ grid-template-columns: 1fr !important; }
     transform: translateX(-50%) !important;
     bottom: calc(var(--mobileHudH) + max(12px, env(safe-area-inset-bottom)));
     width: 98% !important;
-    z-index: 25;
+    z-index: 40;
   }
 
   /* Hide the footer on the play page to save space */
