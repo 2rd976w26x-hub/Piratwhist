@@ -61,17 +61,17 @@ body.page-play .handDock{
   position:absolute;
   /* PC: Dock the hand in the lower mid-left area (as agreed),
      so it doesn't overlap the left/bottom opponent seat. */
-  left: 24%;
+  left: 50%;
   right: auto;
-  bottom: 90px;
-  transform: none;
-  width: min(900px, 70%);
-  z-index: 7;
+  bottom: clamp(70px, 8vh, 120px);
+  transform: translateX(-50%);
+  width: min(1040px, 88%);
+  z-index: 15;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
-  pointer-events: none;
+  pointer-events: auto;
 }
 body.page-play .handDock #olHands{ pointer-events:auto; }
 body.page-play .handDock #olWarn{ pointer-events:auto; }
@@ -83,14 +83,15 @@ body.page-play .handDock .hand{
 body.page-play .handDock .hand .head{ display:none; }
 body.page-play .handDock .cards{
   flex-wrap: nowrap;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: visible;
-  padding: 6px 10px;
+  padding: 6px 8px;
   gap: 0;
   align-items: flex-end;
+  --hand-overlap: -28px;
 }
 body.page-play .handDock .cards .cardbtn{
-  margin-left: -28px;
+  margin-left: var(--hand-overlap);
 }
 body.page-play .handDock .cards .cardbtn:first-child{ margin-left: 0; }
 body.page-play .handDock .cards .cardbtn{
@@ -218,7 +219,7 @@ body.page-play .twoCol.playLayout{ grid-template-columns: 1fr !important; }
   position:absolute;
   transform:translate(-50%,-50%) scale(var(--seat-scale, 1));
   text-align:center;
-  width: clamp(120px, 20vw, 170px);
+  width: clamp(110px, 18vw, 160px);
   max-width:240px;
 }
 
@@ -307,9 +308,9 @@ body.page-play .playingcard{ width:96px; height:134px; border-radius:16px; }
 
 .seat{
   position:absolute;
-  width: 170px;
-  max-width: 38%;
-  padding: 8px 10px;
+  width: 160px;
+  max-width: 34%;
+  padding: 6px 8px;
   border-radius: 18px;
   background: rgba(0,0,0,.10);
   border: 1px solid rgba(255,255,255,.10);
@@ -468,7 +469,7 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
   /* Mobile seats: keep them around the board (top/left/right/bottom).
      Make left/right seats narrower to avoid overlapping the center image.
      Seats may be taller (name + badges) without crowding the board. */
-  .seat { width: 34%; max-width: 34%; padding: 8px 10px; }
+  .seat { width: 30%; max-width: 30%; padding: 6px 8px; }
   .seat-left, .seat-right { top: 50%; transform: translateY(-50%); }
   .seat-left { left: 10px; }
   .seat-right { right: 10px; }
