@@ -1,4 +1,4 @@
-// Piratwhist Guide Overlay (v0.2.103)
+// Piratwhist Guide Overlay (v0.2.104)
 // Lightweight SVG overlay for arrows + labels. Used in guide mode only.
 (function(){
   function ensureLayer(){
