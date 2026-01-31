@@ -460,7 +460,7 @@ body.page-play #olDeck{ display:none !important; }
 /* v0.2.107: Room code should not be visible on the play board (still shown in lobby/bidding). */
 body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important; }
 
-.seat-top { left: 50%; top: 32px; transform: translateX(-50%); text-align:center; }
+.seat-top { left: 50%; top: 12px; transform: translateX(-50%); text-align:center; }
 .seat-bottom { left: 50%; bottom: 86px; transform: translateX(-50%); text-align:center; }
 .seat-left { left: 6px; top: 50%; transform: translateY(-50%); }
 .seat-right { right: 6px; top: 50%; transform: translateY(-50%); }
