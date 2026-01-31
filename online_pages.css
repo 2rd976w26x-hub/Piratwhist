@@ -1,4 +1,4 @@
-/
+/* Online pages layout helpers */
 .page-bidding .oppWrap{
   margin-top: 10px;
   padding-top: 8px;
@@ -24,7 +24,7 @@
   opacity: 0.85;
   font-size: 12px;
 }
-* Page layouts for split-phase online UI (v0.2) */
+/* Page layouts for split-phase online UI (v0.2) */
 html, body { height: 100%; }
 .app { min-height: 100vh; display: flex; flex-direction: column; }
 .top { position: sticky; top: 0; z-index: 5; backdrop-filter: blur(8px); }
