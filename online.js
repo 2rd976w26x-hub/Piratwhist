@@ -24,6 +24,28 @@ function sortHand(cards){
     return ra - rb;
   });
 }
+
+function applyHandOverlap(cardsEl){
+  if (!cardsEl) return;
+  const cards = Array.from(cardsEl.querySelectorAll(".cardbtn"));
+  if (!cards.length) return;
+  const container = cardsEl.getBoundingClientRect();
+  if (!container.width) return;
+  const cardRect = cards[0].getBoundingClientRect();
+  const cardWidth = cardRect.width || 96;
+
+  if (cards.length === 1){
+    cardsEl.style.setProperty("--hand-overlap", "0px");
+    return;
+  }
+
+  const step = (container.width - cardWidth) / (cards.length - 1);
+  let overlap = step - cardWidth;
+  const minOverlap = -cardWidth * 0.82;
+  const maxOverlap = 0;
+  overlap = Math.max(minOverlap, Math.min(maxOverlap, overlap));
+  cardsEl.style.setProperty("--hand-overlap", `${overlap.toFixed(2)}px`);
+}
 const APP_VERSION = "0.2.103";
 const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") === "1");
 const DEBUG_MODE = (new URLSearchParams(window.location.search).get("debug") === "1");
@@ -399,10 +421,11 @@ function positionPlayBoard(n){
   const boardRect = board.getBoundingClientRect ? board.getBoundingClientRect() : { width: board.clientWidth || 1, height: board.clientHeight || 1 };
   const minBoardDim = Math.max(1, Math.min(boardRect.width || 1, boardRect.height || 1));
   let seatScale = minBoardDim / 680;
-  if (n >= 7) seatScale *= 0.88;
-  else if (n >= 6) seatScale *= 0.92;
-  else if (n === 5) seatScale *= 0.96;
-  seatScale = Math.max(0.72, Math.min(1.05, seatScale));
+  if (n >= 8) seatScale *= 0.82;
+  else if (n >= 7) seatScale *= 0.86;
+  else if (n >= 6) seatScale *= 0.9;
+  else if (n === 5) seatScale *= 0.94;
+  seatScale = Math.max(0.66, Math.min(1.02, seatScale));
   board.style.setProperty("--seat-scale", seatScale.toFixed(2));
 
   const my = (typeof mySeat === "number" && mySeat >= 0) ? mySeat : 0;
@@ -1312,6 +1335,8 @@ document.addEventListener("DOMContentLoaded", () => {
         ensurePlayBoard(state.n);
         positionPlayBoard(state.n);
       }
+      const cards = document.querySelectorAll("#olHands .cards");
+      cards.forEach((el) => applyHandOverlap(el));
     }catch(e){ /* ignore */ }
   });
   pendingCreateRoom = false;
@@ -2057,6 +2082,7 @@ function render(){
       h.appendChild(head);
       h.appendChild(cards);
       hands.appendChild(h);
+      requestAnimationFrame(() => applyHandOverlap(cards));
       return; // do not render normal hand UI
     }
 
@@ -2186,6 +2212,7 @@ function render(){
       h.appendChild(head);
       h.appendChild(cards);
       hands.appendChild(h);
+      requestAnimationFrame(() => applyHandOverlap(cards));
     } else {
       const p = document.createElement("div");
       p.className = "sub";
