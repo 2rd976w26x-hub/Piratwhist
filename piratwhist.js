@@ -1,6 +1,6 @@
-/* Piratwhist – v0.2.116 (rooms) */
+/* Piratwhist – v0.2.117 (rooms) */
 const APP_NAME = "Piratwhist";
-const APP_VERSION = "0.2.115";
+const APP_VERSION = "0.2.117";
 
 const el = (id) => document.getElementById(id);
 
