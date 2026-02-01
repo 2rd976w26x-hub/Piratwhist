@@ -5,12 +5,13 @@ import random
 import time
 from typing import Any, Dict, List, Optional
 
-from flask import Flask, send_from_directory, request
+from flask import Flask, send_from_directory, request, abort
 from flask_socketio import SocketIO, join_room, leave_room, emit
 
 # --- App setup ---
 app = Flask(__name__, static_folder=".", static_url_path="")
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "piratwhist-secret")
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
 
 # IMPORTANT (Render + Python 3.13):
 # eventlet currently breaks on Python 3.13 (threading API change).
@@ -63,9 +64,23 @@ def _broadcast_state(room: str) -> None:
     socketio.emit("state", rooms[room], to=room)
 
 
+def _admin_allowed() -> bool:
+    if not ADMIN_TOKEN:
+        return False
+    token = request.args.get("token") or request.headers.get("X-Admin-Token")
+    return token == ADMIN_TOKEN
+
+
 @app.get("/")
 def index():
     return send_from_directory(".", "piratwhist.html")
+
+
+@app.get("/admin")
+def admin_page():
+    if not _admin_allowed():
+        abort(403)
+    return send_from_directory(".", "admin.html")
 
 @app.get("/online.html")
 def online_page():
@@ -82,6 +97,8 @@ def online_css():
 
 @app.get("/<path:path>")
 def static_files(path: str):
+    if path.startswith("admin") and not _admin_allowed():
+        abort(403)
     return send_from_directory(".", path)
 
 
