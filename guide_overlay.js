@@ -1,6 +1,21 @@
-// Piratwhist Guide Overlay (v0.2.110)
+// Piratwhist Guide Overlay (v0.2.111)
 // Lightweight SVG overlay for arrows + labels. Used in guide mode only.
 (function(){
+  let activeScene = null;
+  let pendingRender = null;
+
+  function scheduleRender(){
+    if (!activeScene || pendingRender) return;
+    pendingRender = window.requestAnimationFrame(()=>{
+      pendingRender = null;
+      activeScene();
+    });
+  }
+
+  function runScene(fn){
+    activeScene = fn;
+    fn();
+  }
   function ensureLayer(){
     let wrap = document.getElementById('pwGuideOverlay');
     if (wrap) return wrap;
@@ -40,8 +55,10 @@
 
     function resize(){
       svg.setAttribute('viewBox',`0 0 ${window.innerWidth} ${window.innerHeight}`);
+      scheduleRender();
     }
-    window.addEventListener('resize', ()=>{ resize(); });
+    window.addEventListener('resize', resize);
+    window.addEventListener('scroll', scheduleRender, { passive: true });
     return wrap;
   }
 
@@ -177,42 +194,52 @@
   // Scene-specific overlays
   window.PW_GUIDE_OVERLAYS = {
     onecard(){
-      clear();
-      addCallout(14, 14, '1-korts runde (bud)\nDu ser IKKE dit eget kort\nDu ser ALLE modstanderes kort');
-      addBox('#olHands', 'Dit kort er skjult');
-      addBox('#olOppCards', 'Modstandernes kort (synlige)');
-      addArrow('#olOppCards', '#olBidSelect', 'Vælg bud');
-      addArrow('#olBidSelect', '#olBidSubmit', 'Afgiv bud');
+      runScene(()=>{
+        clear();
+        addCallout(14, 14, '1-korts runde (bud)\nDu ser IKKE dit eget kort\nDu ser ALLE modstanderes kort');
+        addBox('#olHands', 'Dit kort er skjult');
+        addBox('#olOppCards', 'Modstandernes kort (synlige)');
+        addArrow('#olOppCards', '#olBidSelect', 'Vælg bud');
+        addArrow('#olBidSelect', '#olBidSubmit', 'Afgiv bud');
+      });
     },
     normal_bidding(){
-      clear();
-      addCallout(14, 14, 'Normal runde (bud)\nDu ser kun dine egne kort');
-      addBox('#olHands', 'Din hånd (synlig)');
-      addArrow('#olHands', '#olBidSelect', 'Vælg bud');
-      addArrow('#olBidSelect', '#olBidSubmit', 'Afgiv bud');
+      runScene(()=>{
+        clear();
+        addCallout(14, 14, 'Normal runde (bud)\nDu ser kun dine egne kort');
+        addBox('#olHands', 'Din hånd (synlig)');
+        addArrow('#olHands', '#olBidSelect', 'Vælg bud');
+        addArrow('#olBidSelect', '#olBidSubmit', 'Afgiv bud');
+      });
     },
     trumpwin(){
-      clear();
-      addCallout(14, 14, 'Stik og trumf\nSpar (♠) er altid trumf\nMan skal bekende kulør hvis muligt');
-      addBox('#olPile', 'Kort på bordet (stik)');
-      addArrow('#olPile', '.seat[data-seat="2"]', 'Vinder (trumf ♠)');
+      runScene(()=>{
+        clear();
+        addCallout(14, 14, 'Stik og trumf\nSpar (♠) er altid trumf\nMan skal bekende kulør hvis muligt');
+        addBox('#olPile', 'Kort på bordet (stik)');
+        addArrow('#olPile', '.seat[data-seat="2"]', 'Vinder (trumf ♠)');
+      });
     },
     clockwise(){
-      clear();
-      addBox('#olPile', 'Bord');
-      addCallout(14, 14, 'Tur-rækkefølge\nAltid med uret (clockwise)');
-      // Cue arrows (simple, deterministic)
-      addArrow('.seat[data-seat="0"]', '.seat[data-seat="1"]', 'Med uret');
-      addArrow('.seat[data-seat="1"]', '.seat[data-seat="2"]', '');
-      addArrow('.seat[data-seat="2"]', '.seat[data-seat="3"]', '');
+      runScene(()=>{
+        clear();
+        addBox('#olPile', 'Bord');
+        addCallout(14, 14, 'Tur-rækkefølge\nAltid med uret (clockwise)');
+        // Cue arrows (simple, deterministic)
+        addArrow('.seat[data-seat="0"]', '.seat[data-seat="1"]', 'Med uret');
+        addArrow('.seat[data-seat="1"]', '.seat[data-seat="2"]', '');
+        addArrow('.seat[data-seat="2"]', '.seat[data-seat="3"]', '');
+      });
     },
     scoretable(){
-      clear();
-      addCallout(14, 14, 'Pointoversigt\nTOTAL øverst (kun point)\nSeneste runde øverst\nFormat: Bud / Stik (Point)');
-      addBox('#olHistoryTable', 'Samlet oversigt');
-      // Highlight TOTAL row + newest round row (if present)
-      addBox('#olHistoryTable tbody tr:nth-child(1)', 'TOTAL');
-      addBox('#olHistoryTable tbody tr:nth-child(2)', 'Seneste runde');
+      runScene(()=>{
+        clear();
+        addCallout(14, 14, 'Pointoversigt\nTOTAL øverst (kun point)\nSeneste runde øverst\nFormat: Bud / Stik (Point)');
+        addBox('#olHistoryTable', 'Samlet oversigt');
+        // Highlight TOTAL row + newest round row (if present)
+        addBox('#olHistoryTable tbody tr:nth-child(1)', 'TOTAL');
+        addBox('#olHistoryTable tbody tr:nth-child(2)', 'Seneste runde');
+      });
     }
   };
 })();
