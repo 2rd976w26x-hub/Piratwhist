@@ -255,12 +255,12 @@ const PW_DEBUG = (() => {
 
 // --- Navigation robustness (mobile): returning from rules page ---
 // On mobile browsers, navigating away to rules.html and coming back can
-// restore the play page in a stale state (timers/socket/raf not resuming).
-// The server is authoritative, so a safe full reload of online_play.html
-// (keeping the room code in the URL) is the most robust recovery.
+// restore the play/bidding page in a stale state (timers/socket/raf not resuming).
+// The server is authoritative, so a safe full reload (keeping the room code
+// in the URL) is the most robust recovery.
 (function setupReturnFromRulesReload(){
   try{
-    if (!/online_play\.html$/.test(window.location.pathname)) return;
+    if (!/(online_play|online_bidding)\.html$/.test(window.location.pathname)) return;
 
     const maybeReload = () => {
       try{
@@ -1321,9 +1321,13 @@ document.addEventListener("DOMContentLoaded", () => {
       const nav = performance.getEntriesByType?.("navigation")?.[0];
       const backForward = nav && nav.type === "back_forward";
       const restored = !!ev.persisted || backForward;
-      if (restored && document.body && document.body.classList.contains("page-play")){
-        // Preserve URL (room code) and force a clean re-init.
-        window.location.reload();
+      if (restored && document.body){
+        const isPhasePage = document.body.classList.contains("page-play")
+          || document.body.classList.contains("page-bidding");
+        if (isPhasePage){
+          // Preserve URL (room code) and force a clean re-init.
+          window.location.reload();
+        }
       }
     }catch(e){ /* ignore */ }
   }, { passive: true });
