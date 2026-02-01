@@ -13,6 +13,17 @@
 .hand{border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:12px; background: rgba(255,255,255,.02);}
 .hand .head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
 .cards{display:flex; flex-wrap:wrap; gap:10px;}
+.hand .cards{
+  flex-wrap: nowrap;
+  gap: 0;
+  --hand-overlap: 0px;
+}
+.hand .cardbtn{
+  position: relative;
+  margin-left: var(--hand-overlap);
+}
+.hand .cardbtn:first-child{ margin-left: 0; }
+.hand .cardbtn:disabled{ opacity: 1; }
 .cardbtn{border:1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.04); color:inherit; padding:8px 10px; border-radius:12px; cursor:pointer;}
 .cardbtn:disabled{opacity:.35; cursor:not-allowed;}
 .warn{margin-top:10px; padding:10px 12px; border:1px solid rgba(255,210,122,.45); background: rgba(255,210,122,.08); border-radius:14px; color:#ffd27a;}
@@ -102,7 +113,7 @@
 .cardbtn:disabled .playingcard{filter: grayscale(.4);}
 .slot .playingcard{transform: scale(.95); transform-origin: left top;}
 
-/* --- v0.2.111: winner sweep + play animation helpers (2s) --- */
+/* --- v0.2.112: winner sweep + play animation helpers (2s) --- */
 .flycard{
   position: fixed;
   z-index: 9999;
@@ -116,7 +127,7 @@
 }
 
 
-/* --- v0.2.111: fixed card back (2 persons + 4 butterflies) --- */
+/* --- v0.2.112: fixed card back (2 persons + 4 butterflies) --- */
 .playingcard.back{
   background-image: var(--cardback-url);
   background-size: cover;
