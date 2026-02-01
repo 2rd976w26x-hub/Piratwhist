@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.117)
+// Piratwhist Online Multiplayer (v0.2.118)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -49,7 +49,7 @@ function applyHandOverlap(cardsEl){
   overlap = Math.max(minOverlap, Math.min(maxOverlap, overlap));
   cardsEl.style.setProperty("--hand-overlap", `${overlap.toFixed(2)}px`);
 }
-const APP_VERSION = "0.2.117";
+const APP_VERSION = "0.2.118";
 const PW_TELEMETRY = window.PW_TELEMETRY || null;
 const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") === "1");
 const DEBUG_MODE = (new URLSearchParams(window.location.search).get("debug") === "1");
@@ -391,7 +391,7 @@ const PW_DEBUG = (() => {
     });
   }catch(e){ /* ignore */ }
 })();
-// v0.2.117:
+// v0.2.118:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -480,7 +480,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.117: dynamic round-table board (2–8 players) ---
+// --- v0.2.118: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 
 function ensurePlayBoard(n){
@@ -545,7 +545,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v0.2.117 Dev + layout: SceneShift for mobile to utilize top space and
+    // v0.2.118 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -685,12 +685,25 @@ function positionPlayBoard(n){
     ? ((n <= 2) ? 34 : (n <= 4 ? 36 : 38))
     : ((n <= 2) ? 42 : (n <= 4 ? 44 : 46));
   const slotR = isMobile ? 16 : 18;
+  const aspect = (!isMobile && boardRect.height)
+    ? (boardRect.width / boardRect.height)
+    : 1;
+  const aspectScaleX = (!isMobile)
+    ? Math.max(0.9, Math.min(1.12, aspect))
+    : 1;
+  const aspectScaleY = (!isMobile)
+    ? Math.max(0.88, Math.min(1.12, 1 / aspect))
+    : 1;
+  const seatRX = seatR * aspectScaleX;
+  const seatRY = seatR * aspectScaleY;
+  const slotRX = slotR * aspectScaleX;
+  const slotRY = slotR * aspectScaleY;
 
   for (let i=0;i<n;i++){
     const rel = (i - my + n) % n;
     const ang = (90 + (rel * 360 / n)) * Math.PI / 180;
-    let x = 50 + seatR * Math.cos(ang);
-    let y = 50 + seatR * Math.sin(ang);
+    let x = 50 + seatRX * Math.cos(ang);
+    let y = 50 + seatRY * Math.sin(ang);
 
 
     // --- PC fixed layout v3 for 4 players (deterministic, avoids hand overlap) ---
@@ -708,7 +721,8 @@ function positionPlayBoard(n){
         3: { x: 56, y: 50 }
       };
       const p = fixedSeat[rel] || { x: x, y: y };
-      x = p.x; y = p.y;
+      x = 50 + (p.x - 50) * aspectScaleX;
+      y = 50 + (p.y - 50) * aspectScaleY;
 
       const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
       if (seatEl){
@@ -720,8 +734,10 @@ function positionPlayBoard(n){
       const sp = fixedSlot[rel] || { x: 50, y: 50 };
       const slotEl = el(`olTrickSlot${i}`);
       if (slotEl){
-        slotEl.style.left = sp.x.toFixed(2) + "%";
-        slotEl.style.top  = sp.y.toFixed(2) + "%";
+        const slotX = 50 + (sp.x - 50) * aspectScaleX;
+        const slotY = 50 + (sp.y - 50) * aspectScaleY;
+        slotEl.style.left = slotX.toFixed(2) + "%";
+        slotEl.style.top  = slotY.toFixed(2) + "%";
       }
       continue;
     }
@@ -753,8 +769,8 @@ function positionPlayBoard(n){
       seatEl.classList.toggle("seat-top", n >= 2 && rel === Math.floor(n/2));
     }
 
-    const sx = 50 + slotR * Math.cos(ang);
-    const sy = 50 + slotR * Math.sin(ang);
+    const sx = 50 + slotRX * Math.cos(ang);
+    const sy = 50 + slotRY * Math.sin(ang);
     const slotEl = el(`olTrickSlot${i}`);
     if (slotEl){
       slotEl.style.left = sx.toFixed(2) + "%";
@@ -2539,7 +2555,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.117 PC HUD sync + button wiring
+// v0.2.118 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -2603,7 +2619,7 @@ function alignHandDockToBottomSeat(){
   handDock.classList.add("handDockAuto");
 }
 
-// v0.2.117 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.118 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");

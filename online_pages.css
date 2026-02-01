@@ -230,7 +230,7 @@ body.page-play .twoCol.playLayout{ grid-template-columns: 1fr !important; }
   body.page-play{ --mobileHudH: 92px; }
 }
 
-/* v0.2.117: dynamic seats/trick slots (2–8 players) */
+/* v0.2.118: dynamic seats/trick slots (2–8 players) */
 .boardSeats{
   position:absolute;
   inset:0;
@@ -306,7 +306,7 @@ body.page-play .twoCol.playLayout{ grid-template-columns: 1fr !important; }
 }
 .played {
   position: absolute;
-  /* v0.2.117: played cards on the table are ~20% larger for readability */
+  /* v0.2.118: played cards on the table are ~20% larger for readability */
   width: 125px;
   height: 175px;
   border-radius: 14px;
@@ -366,16 +366,16 @@ body.page-play .footer{ display:none; }
 .bottomBar .lbl{ display:inline; }
 
 /* If user hides the HUD on small screens (Panel button), reclaim the space */
-/* v0.2.117: Do NOT hide the bottomBar (it contains the only way to restore UI). */
+/* v0.2.118: Do NOT hide the bottomBar (it contains the only way to restore UI). */
 body.hideBottomHud .bottomBar{ display:flex !important; }
 
-/* v0.2.117: When the players panel is open on mobile, hide only HUD text to avoid overlap.
+/* v0.2.118: When the players panel is open on mobile, hide only HUD text to avoid overlap.
    Keep the bottomRight buttons (Panel/Regler/Forlad) always visible. */
 @media (max-width: 860px){
   body.hideBottomHud.page-play .handDock{ bottom: 16px !important; }
 }
 
-/* v0.2.117: The players panel is always available as an overlay (toggle controls visibility).
+/* v0.2.118: The players panel is always available as an overlay (toggle controls visibility).
    Do NOT force-hide it by phase, otherwise the Panel button appears broken. */
 /* Seat player name must always remain readable on the board.
    Mobile especially can have long names, so clamp to max 2 lines
@@ -394,7 +394,7 @@ body.hideBottomHud .bottomBar{ display:flex !important; }
   -webkit-box-orient: vertical;
 }
 
-/* v0.2.117: Mobile 8-player square layout helpers (used when JS applies anchor-* classes) */
+/* v0.2.118: Mobile 8-player square layout helpers (used when JS applies anchor-* classes) */
 @media (max-width: 520px){
   .boardSeats .seat.anchor-left{ text-align:left; }
   .boardSeats .seat.anchor-right{ text-align:right; }
@@ -487,7 +487,7 @@ body.hideBottomHud .bottomBar{ display:flex !important; }
 /* Deal/deck anchor should not be visible on the play board (deal happens on bidding page) */
 body.page-play #olDeck{ display:none !important; }
 
-/* v0.2.117: Room code should not be visible on the play board (still shown in lobby/bidding). */
+/* v0.2.118: Room code should not be visible on the play board (still shown in lobby/bidding). */
 body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important; }
 
 .seat-top { left: 50%; top: var(--seat-edge-y); transform: translateX(-50%); text-align:center; }
@@ -505,7 +505,7 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
   }
 }
 
-/* No global deck pile on the play board in v0.2.117+ (we use per-seat piles instead). */
+/* No global deck pile on the play board in v0.2.118+ (we use per-seat piles instead). */
 
 /* Prevent overflow in the left panel on the play page */
 
@@ -546,7 +546,7 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
 /* === Mobile play polish (compact, no scroll, clear layering) === */
 @media (max-width: 520px){
   /* Keep the center trick area compact so it never dominates the viewport */
-  /* v0.2.117: Shift the center (table/trick) upward on mobile to use the empty top
+  /* v0.2.118: Shift the center (table/trick) upward on mobile to use the empty top
      space and to create more vertical room for the hand row (no scroll). */
   .centerPile{ width: min(62vmin, 210px); height: min(62vmin, 210px); top: 44%; }
 
@@ -611,12 +611,12 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
 .scoreRow:last-child{ border-bottom: none; }
 .pill.tiny{ padding: 3px 8px; font-size: .82rem; }
 
-/* (deprecated) Older hand-overlay rules removed in v0.2.117.
+/* (deprecated) Older hand-overlay rules removed in v0.2.118.
    The authoritative hand overlay + spacing rules live near the top of this file. */
 
 
 
-/* v0.2.117 PC HUD: remove bottom bar on play board and move info to corners */
+/* v0.2.118 PC HUD: remove bottom bar on play board and move info to corners */
 @media (min-width: 900px) {
   body.page-play .bottomBar{
     display:none !important;
@@ -625,6 +625,7 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
   body.page-play .pcHud{
     position: absolute;
     inset: 0;
+    --pc-hud-pad: clamp(10px, 1.4vw, 20px);
     pointer-events: none;
     z-index: 70; /* above seats, below flycards (which are fixed/high) */
   }
@@ -633,12 +634,12 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
     display:flex;
     gap:8px;
     flex-wrap: wrap;
-    max-width: 38vw;
+    max-width: clamp(220px, 32vw, 420px);
     pointer-events:none;
   }
-  body.page-play .pcHud .hudTL{ top: 14px; left: 14px; }
-  body.page-play .pcHud .hudTR{ top: 14px; right: 14px; justify-content:flex-end; }
-  body.page-play .pcHud .hudBR{ right: 14px; bottom: 14px; flex-direction: column; align-items:flex-end; gap:10px; }
+  body.page-play .pcHud .hudTL{ top: var(--pc-hud-pad); left: var(--pc-hud-pad); }
+  body.page-play .pcHud .hudTR{ top: var(--pc-hud-pad); right: var(--pc-hud-pad); justify-content:flex-end; }
+  body.page-play .pcHud .hudBR{ right: var(--pc-hud-pad); bottom: var(--pc-hud-pad); flex-direction: column; align-items:flex-end; gap:10px; }
 
   /* Compact buttons in corner */
   body.page-play .pcHud .hudBR button{
@@ -650,7 +651,7 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
   body.page-play .pill.roomPill{ display:none !important; }
 }
 
-/* v0.2.117 no-fly zone helper class for PC overlap avoidance */
+/* v0.2.118 no-fly zone helper class for PC overlap avoidance */
 @media (min-width: 900px) {
   body.page-play .handNoFly{
     position:absolute;
