@@ -225,7 +225,7 @@ body.page-play .twoCol.playLayout{ grid-template-columns: 1fr !important; }
   body.page-play{ --mobileHudH: 92px; }
 }
 
-/* v0.2.114: dynamic seats/trick slots (2–8 players) */
+/* v0.2.115: dynamic seats/trick slots (2–8 players) */
 .boardSeats{
   position:absolute;
   inset:0;
@@ -301,7 +301,7 @@ body.page-play .twoCol.playLayout{ grid-template-columns: 1fr !important; }
 }
 .played {
   position: absolute;
-  /* v0.2.114: played cards on the table are ~20% larger for readability */
+  /* v0.2.115: played cards on the table are ~20% larger for readability */
   width: 125px;
   height: 175px;
   border-radius: 14px;
@@ -361,16 +361,16 @@ body.page-play .footer{ display:none; }
 .bottomBar .lbl{ display:inline; }
 
 /* If user hides the HUD on small screens (Panel button), reclaim the space */
-/* v0.2.114: Do NOT hide the bottomBar (it contains the only way to restore UI). */
+/* v0.2.115: Do NOT hide the bottomBar (it contains the only way to restore UI). */
 body.hideBottomHud .bottomBar{ display:flex !important; }
 
-/* v0.2.114: When the players panel is open on mobile, hide only HUD text to avoid overlap.
+/* v0.2.115: When the players panel is open on mobile, hide only HUD text to avoid overlap.
    Keep the bottomRight buttons (Panel/Regler/Forlad) always visible. */
 @media (max-width: 860px){
   body.hideBottomHud.page-play .handDock{ bottom: 16px !important; }
 }
 
-/* v0.2.114: The players panel is always available as an overlay (toggle controls visibility).
+/* v0.2.115: The players panel is always available as an overlay (toggle controls visibility).
    Do NOT force-hide it by phase, otherwise the Panel button appears broken. */
 /* Seat player name must always remain readable on the board.
    Mobile especially can have long names, so clamp to max 2 lines
@@ -389,7 +389,7 @@ body.hideBottomHud .bottomBar{ display:flex !important; }
   -webkit-box-orient: vertical;
 }
 
-/* v0.2.114: Mobile 8-player square layout helpers (used when JS applies anchor-* classes) */
+/* v0.2.115: Mobile 8-player square layout helpers (used when JS applies anchor-* classes) */
 @media (max-width: 520px){
   .boardSeats .seat.anchor-left{ text-align:left; }
   .boardSeats .seat.anchor-right{ text-align:right; }
@@ -466,7 +466,7 @@ body.hideBottomHud .bottomBar{ display:flex !important; }
 /* Deal/deck anchor should not be visible on the play board (deal happens on bidding page) */
 body.page-play #olDeck{ display:none !important; }
 
-/* v0.2.114: Room code should not be visible on the play board (still shown in lobby/bidding). */
+/* v0.2.115: Room code should not be visible on the play board (still shown in lobby/bidding). */
 body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important; }
 
 .seat-top { left: 50%; top: 12px; transform: translateX(-50%); text-align:center; }
@@ -474,7 +474,7 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
 .seat-left { left: 6px; top: 50%; transform: translateY(-50%); }
 .seat-right { right: 6px; top: 50%; transform: translateY(-50%); }
 
-/* No global deck pile on the play board in v0.2.114+ (we use per-seat piles instead). */
+/* No global deck pile on the play board in v0.2.115+ (we use per-seat piles instead). */
 
 /* Prevent overflow in the left panel on the play page */
 
@@ -483,16 +483,17 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
   .playLayout { grid-template-columns: 1fr; }
   .boardPanel { order: 1; }
   .board { min-height: 420px; }
+  .board { --seat-scale: 0.92; }
   /* Mobile seats: keep them around the board (top/left/right/bottom).
      Make left/right seats narrower to avoid overlapping the center image.
      Seats may be taller (name + badges) without crowding the board. */
-  .seat { width: 30%; max-width: 30%; padding: 6px 8px; }
+  .seat { width: 32%; max-width: 32%; padding: 4px 6px; }
   .seat-left, .seat-right { top: 50%; transform: translateY(-50%); }
   .seat-left { left: 10px; }
   .seat-right { right: 10px; }
-  .seat-top { left: 50%; top: 32px; transform: translateX(-50%); text-align:center; }
+  .seat-top { left: 50%; top: max(44px, env(safe-area-inset-top) + 10px); transform: translateX(-50%); text-align:center; }
   /* Pull bottom seat up under the center image (so the very bottom area is free for the hand) */
-  .seat-bottom { left: 50%; bottom: 120px; transform: translateX(-50%); text-align:center; }
+  .seat-bottom { left: 50%; bottom: calc(var(--mobileHudH) + 8px); transform: translateX(-50%); text-align:center; }
   .centerPile { width: 280px; height: 280px; }
   .played-top { top: -22px; }
   .played-bottom { bottom: -22px; }
@@ -514,7 +515,7 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
 /* === Mobile play polish (compact, no scroll, clear layering) === */
 @media (max-width: 520px){
   /* Keep the center trick area compact so it never dominates the viewport */
-  /* v0.2.114: Shift the center (table/trick) upward on mobile to use the empty top
+  /* v0.2.115: Shift the center (table/trick) upward on mobile to use the empty top
      space and to create more vertical room for the hand row (no scroll). */
   .centerPile{ width: min(62vmin, 210px); height: min(62vmin, 210px); top: 44%; }
 
@@ -549,6 +550,9 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
 @media (max-width: 520px){
   /* Compact center pile so it never becomes a huge square on narrow screens */
   .centerPile{ width: min(62vmin, 210px); height: min(62vmin, 210px); top: 44%; }
+  .seat { width: 34%; max-width: 34%; }
+  .seat-top { top: max(36px, env(safe-area-inset-top) + 8px); }
+  .seat-bottom { bottom: calc(var(--mobileHudH) + 4px); }
 
   /* Hand: keep it above the bottom bar and fully transparent */
   body.page-play .handDock{
@@ -576,12 +580,12 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
 .scoreRow:last-child{ border-bottom: none; }
 .pill.tiny{ padding: 3px 8px; font-size: .82rem; }
 
-/* (deprecated) Older hand-overlay rules removed in v0.2.114.
+/* (deprecated) Older hand-overlay rules removed in v0.2.115.
    The authoritative hand overlay + spacing rules live near the top of this file. */
 
 
 
-/* v0.2.114 PC HUD: remove bottom bar on play board and move info to corners */
+/* v0.2.115 PC HUD: remove bottom bar on play board and move info to corners */
 @media (min-width: 900px) {
   body.page-play .bottomBar{
     display:none !important;
@@ -615,7 +619,7 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
   body.page-play .pill.roomPill{ display:none !important; }
 }
 
-/* v0.2.114 no-fly zone helper class for PC overlap avoidance */
+/* v0.2.115 no-fly zone helper class for PC overlap avoidance */
 @media (min-width: 900px) {
   body.page-play .handNoFly{
     position:absolute;
