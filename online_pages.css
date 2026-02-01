@@ -97,10 +97,10 @@ body.page-play .handDock .cards{
 body.page-play .handDock .cards.handLocked .cardbtn{
   pointer-events: none;
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.8;
 }
 body.page-play .handDock .cards.handLocked .cardbtn .playingcard{
-  filter: grayscale(0.2);
+  filter: grayscale(0.1);
 }
 body.page-play .handDock .cards .cardbtn{
   margin-left: var(--hand-overlap);
