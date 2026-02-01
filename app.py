@@ -671,6 +671,68 @@ def _online_emit_full_state(code: str, room):
         else:
             payload_state["hands"] = [hand if i == seat else None for i in range(st["n"])]
         socketio.emit("online_state", {"room": code, "seat": seat, "state": payload_state}, to=sid)
+
+def _online_mark_seat_bot_takeover(code: str, room, seat: int):
+    st = room["state"]
+    if st.get("phase") == "lobby":
+        return
+    bot_seats = set(st.get("botSeats", set()))
+    if seat not in bot_seats:
+        prev_name = st["names"][seat] or f"Spiller {seat+1}"
+        st["names"][seat] = f"Computer (overtog {prev_name})"
+        bot_seats.add(seat)
+        st["botSeats"] = bot_seats
+
+    if st.get("phase") == "bidding":
+        _online_bot_choose_bid(room)
+        if all(b is not None for b in st["bids"]):
+            st["phase"] = "playing"
+            st["turn"] = st["leader"]
+            st["lastActionAt"] = time.time()
+
+    _online_emit_full_state(code, room)
+
+    if st.get("phase") == "playing" and st.get("turn") in st.get("botSeats", set()):
+        _online_schedule_bot_turn(code)
+
+def _online_schedule_bot_takeover(code: str, seat: int, client_id: Optional[str]):
+    room = ONLINE_ROOMS.get(code)
+    if not room:
+        return
+    pending = room.setdefault("pendingBotTakeover", {})
+    if seat in pending:
+        return
+    marker = time.time()
+    pending[seat] = marker
+
+    def _task():
+        try:
+            socketio.sleep(30)
+            room2 = ONLINE_ROOMS.get(code)
+            if not room2:
+                return
+            st2 = room2["state"]
+            pending2 = room2.get("pendingBotTakeover", {})
+            if pending2.get(seat) != marker:
+                return
+            pending2.pop(seat, None)
+            if st2.get("phase") == "lobby":
+                return
+            if seat in room2.get("members", {}).values():
+                return
+            if client_id and client_id in (room2.get("clients") or {}):
+                try:
+                    last_seen = float(room2["clients"][client_id].get("lastSeen", 0) or 0)
+                except Exception:
+                    last_seen = 0.0
+                if time.time() - last_seen < 30:
+                    return
+                room2["clients"].pop(client_id, None)
+            _online_mark_seat_bot_takeover(code, room2, seat)
+        except Exception:
+            return
+
+    socketio.start_background_task(_task)
 def _online_schedule_auto_next_round(code: str, round_index: int):
     # Start next round automatically 2 seconds after the final card of a round is played.
     def _task():
@@ -730,13 +792,17 @@ def _online_cleanup_sid(sid):
             if client_id and room.get("clients") and client_id in room["clients"]:
                 room["clients"][client_id]["lastSeen"] = time.time()
             else:
-                st["names"][seat] = None
+                if st.get("phase") == "lobby":
+                    st["names"][seat] = None
             # if room empty, keep it briefly (redirects/reloads) then purge later
             if not room["members"]:
                 room["emptySince"] = time.time()
             else:
                 room["emptySince"] = None
                 _online_emit_full_state(code, room)
+
+            if st.get("phase") != "lobby" and seat is not None:
+                _online_schedule_bot_takeover(code, seat, client_id)
 
 # ---------- Online multiplayer socket events ----------
 @socketio.on("online_create_room")
@@ -891,7 +957,16 @@ def online_leave_room(data):
 
     if seat is not None:
         st = room["state"]
-        st["names"][seat] = None
+        if st.get("phase") == "lobby":
+            st["names"][seat] = None
+        else:
+            _online_mark_seat_bot_takeover(code, room, seat)
+            if not room["members"]:
+                room["emptySince"] = time.time()
+            else:
+                room["emptySince"] = None
+            emit("online_left")
+            return
         # IMPORTANT: Do NOT delete the room immediately when it becomes empty.
         # Redirects/navigation between phase pages can briefly leave the room
         # with 0 live members, and immediate deletion causes "Rum ikke fundet"
