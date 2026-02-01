@@ -1,4 +1,4 @@
-// Piratwhist Online Lobby - v0.2.110
+// Piratwhist Online Lobby - v0.2.111
 (() => {
   const socket = io();
 

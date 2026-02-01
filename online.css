@@ -102,7 +102,7 @@
 .cardbtn:disabled .playingcard{filter: grayscale(.4);}
 .slot .playingcard{transform: scale(.95); transform-origin: left top;}
 
-/* --- v0.2.110: winner sweep + play animation helpers (2s) --- */
+/* --- v0.2.111: winner sweep + play animation helpers (2s) --- */
 .flycard{
   position: fixed;
   z-index: 9999;
@@ -116,7 +116,7 @@
 }
 
 
-/* --- v0.2.110: fixed card back (2 persons + 4 butterflies) --- */
+/* --- v0.2.111: fixed card back (2 persons + 4 butterflies) --- */
 .playingcard.back{
   background-image: var(--cardback-url);
   background-size: cover;
