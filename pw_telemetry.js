@@ -3,13 +3,17 @@
     feedback: "PW_FEEDBACK_ENTRIES",
     logins: "PW_LOGIN_EVENTS",
     rounds: "PW_ROUND_EVENTS",
-    sessions: "PW_ACTIVE_SESSIONS"
+    sessions: "PW_ACTIVE_SESSIONS",
+    errors: "PW_CLIENT_ERRORS",
+    games: "PW_GAME_EVENTS"
   };
 
   const LIMITS = {
     feedback: 200,
     logins: 500,
-    rounds: 1000
+    rounds: 1000,
+    errors: 200,
+    games: 500
   };
 
   function safeParse(value, fallback) {
@@ -79,6 +83,21 @@
     };
   }
 
+  function collectDebugLog(limit = 40) {
+    try {
+      const raw = localStorage.getItem("PW_DEBUG_LOG");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const buf = Array.isArray(parsed?.buf) ? parsed.buf.slice(-limit) : [];
+      return {
+        meta: parsed?.meta || null,
+        events: buf
+      };
+    } catch (err) {
+      return null;
+    }
+  }
+
   function pushEvent(key, entry, limit) {
     const list = readJson(key, []);
     list.push(entry);
@@ -88,6 +107,23 @@
     }
     writeJson(key, list);
     return list;
+  }
+
+  function logClientError(entry = {}) {
+    if (!entry) return;
+    const payload = {
+      id: `${ensureSessionId?.() || "pw"}-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      page: window.location.pathname,
+      ...entry,
+      client: entry.client || collectClientInfo(),
+      debugLog: entry.debugLog || collectDebugLog()
+    };
+    pushEvent(
+      STORAGE_KEYS.errors,
+      payload,
+      LIMITS.errors
+    );
   }
 
   function recordSessionPing(extra = {}) {
@@ -120,9 +156,36 @@
     pushEvent,
     ensureSessionId,
     collectClientInfo,
+    collectDebugLog,
+    logClientError,
     recordSessionPing
   };
 
-  recordSessionPing();
-  setInterval(() => recordSessionPing(), 60000);
+  if (window?.addEventListener) {
+    window.addEventListener("error", (event) => {
+      const error = event?.error;
+      logClientError({
+        type: "window_error",
+        message: event?.message || error?.message || "Ukendt fejl",
+        name: error?.name || null,
+        stack: error?.stack || null,
+        source: event?.filename || null,
+        line: event?.lineno ?? null,
+        column: event?.colno ?? null
+      });
+    });
+
+    window.addEventListener("unhandledrejection", (event) => {
+      const reason = event?.reason;
+      logClientError({
+        type: "unhandledrejection",
+        message: reason?.message || String(reason || "Ukendt fejl"),
+        name: reason?.name || null,
+        stack: reason?.stack || null
+      });
+    });
+  }
+
+  recordSessionPing({ client: collectClientInfo() });
+  setInterval(() => recordSessionPing({ client: collectClientInfo() }), 60000);
 })();
