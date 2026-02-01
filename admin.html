@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Piratwhist v0.2.114 · Administrator</title>
+  <link rel="stylesheet" href="/pw_mini.css" />
+  <link rel="stylesheet" href="/admin.css" />
+  <link rel="stylesheet" href="/feedback.css" />
+</head>
+<body class="pwPage">
+  <header class="pwHeader">
+    <div class="pwBrand">
+      <div class="pwTitle">Piratwhist</div>
+      <div class="pwVersion">v0.2.114</div>
+    </div>
+    <nav class="pwPills" aria-label="Admin navigation">
+      <a class="pwPill" href="/piratwhist.html">Start</a>
+      <a class="pwPill" href="/online.html">Online</a>
+      <a class="pwPill" href="/rules.html">Regler</a>
+    </nav>
+  </header>
+
+  <main class="pwMain">
+    <h1>Administrator</h1>
+    <p class="pwSubtitle">Live og historiske data gemmes lokalt i browseren. Udskift data-provider i <code>admin.js</code> for at hente fra database/API.</p>
+
+    <section class="adminGrid">
+      <article class="adminCard">
+        <h2>Live aktive sessioner</h2>
+        <div id="admLiveActive" class="adminMetric">0</div>
+        <div class="adminHint">Beregnet fra sessioner set de seneste 10 minutter.</div>
+      </article>
+      <article class="adminCard">
+        <h2>Logins (seneste 60 min)</h2>
+        <div id="admLiveLogins" class="adminMetric">0</div>
+        <div class="adminHint">Logges når en spiller tilkobler et online rum.</div>
+      </article>
+      <article class="adminCard">
+        <h2>Runder spillet (seneste 60 min)</h2>
+        <div id="admLiveRounds" class="adminMetric">0</div>
+        <div class="adminHint">Logges når en runde afsluttes.</div>
+      </article>
+    </section>
+
+    <section class="adminGrid">
+      <article class="adminCard">
+        <h2>Totale logins</h2>
+        <div id="admTotalLogins" class="adminMetric">0</div>
+        <div class="adminHint">Historiske logins registreret på denne enhed.</div>
+      </article>
+      <article class="adminCard">
+        <h2>Totale runder</h2>
+        <div id="admTotalRounds" class="adminMetric">0</div>
+        <div class="adminHint">Historiske runder registreret på denne enhed.</div>
+      </article>
+    </section>
+
+    <section class="pwPanel">
+      <h2 class="adminSectionTitle">Historik pr. dag</h2>
+      <div class="adminGrid">
+        <div class="adminCard">
+          <h3>Logins</h3>
+          <div id="admLoginHistory"></div>
+        </div>
+        <div class="adminCard">
+          <h3>Runder</h3>
+          <div id="admRoundHistory"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pwPanel">
+      <h2 class="adminSectionTitle">Feedback fra brugere</h2>
+      <div id="admFeedbackList" class="adminList"></div>
+    </section>
+
+    <section class="pwPanel">
+      <h2 class="adminSectionTitle">Forslag til ekstra logning</h2>
+      <ul class="adminSuggestions">
+        <li>Gennemsnitlig tid pr. runde og antal kort spillet pr. spiller.</li>
+        <li>Fejltyper og klientfejl (fx fejl-log fra online_debug).</li>
+        <li>Enheder, skærmstørrelser og sprog (for UI-tilpasning).</li>
+        <li>Konvertering: hvor mange der starter vs. gennemfører et spil.</li>
+        <li>Populære rumstørrelser og brug af bots.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="pwFooter">
+    <div class="pwSubtitle">Piratwhist v0.2.114</div>
+    <nav class="pwPills" aria-label="Footer navigation">
+      <a class="pwPill" href="/piratwhist.html">Start</a>
+      <a class="pwPill" href="/online.html">Online</a>
+      <a class="pwPill" href="/rules.html">Regler</a>
+    </nav>
+  </footer>
+
+  <script src="/pw_telemetry.js"></script>
+  <script src="/admin.js"></script>
+  <script src="/feedback.js"></script>
+</body>
+</html>

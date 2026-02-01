@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.113)
+// Piratwhist Online Multiplayer (v0.2.114)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -49,9 +49,45 @@ function applyHandOverlap(cardsEl){
   overlap = Math.max(minOverlap, Math.min(maxOverlap, overlap));
   cardsEl.style.setProperty("--hand-overlap", `${overlap.toFixed(2)}px`);
 }
-const APP_VERSION = "0.2.113";
+const APP_VERSION = "0.2.114";
+const PW_TELEMETRY = window.PW_TELEMETRY || null;
 const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") === "1");
 const DEBUG_MODE = (new URLSearchParams(window.location.search).get("debug") === "1");
+
+function logOnlineLogin(context = {}) {
+  if (!PW_TELEMETRY?.pushEvent) return;
+  const entry = {
+    id: `${PW_TELEMETRY.ensureSessionId?.() || "pw"}-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    roomCode: context.roomCode || null,
+    seat: (context.seat ?? null),
+    playerName: context.playerName || null,
+    phase: context.phase || null,
+    client: PW_TELEMETRY.collectClientInfo?.() || null
+  };
+  PW_TELEMETRY.pushEvent(
+    PW_TELEMETRY.STORAGE_KEYS?.logins || "PW_LOGIN_EVENTS",
+    entry,
+    PW_TELEMETRY.LIMITS?.logins || 500
+  );
+}
+
+function logRoundFinished(context = {}) {
+  if (!PW_TELEMETRY?.pushEvent) return;
+  const entry = {
+    id: `${PW_TELEMETRY.ensureSessionId?.() || "pw"}-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    roomCode: context.roomCode || null,
+    roundIndex: context.roundIndex ?? null,
+    playerCount: context.playerCount ?? null,
+    client: PW_TELEMETRY.collectClientInfo?.() || null
+  };
+  PW_TELEMETRY.pushEvent(
+    PW_TELEMETRY.STORAGE_KEYS?.rounds || "PW_ROUND_EVENTS",
+    entry,
+    PW_TELEMETRY.LIMITS?.rounds || 1000
+  );
+}
 
 // --- Debug logger (play input freeze tracing) ---
 // Enable with: online_play.html?code=XXXX&debug=1
@@ -289,7 +325,7 @@ const PW_DEBUG = (() => {
     });
   }catch(e){ /* ignore */ }
 })();
-// v0.2.113:
+// v0.2.114:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -378,7 +414,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.113: dynamic round-table board (2–8 players) ---
+// --- v0.2.114: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 
 function ensurePlayBoard(n){
@@ -443,7 +479,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v0.2.113 Dev + layout: SceneShift for mobile to utilize top space and
+    // v0.2.114 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -471,7 +507,7 @@ function positionPlayBoard(n){
 
     // Slot positions (in % of board), tuned for mobile.
     const slot = {
-      // v0.2.113 Mobile: lift top seats so the top player stays visible.
+      // v0.2.114 Mobile: lift top seats so the top player stays visible.
       // Keep the bottom seat readable while leaving room for the hand under it.
       top:      { x: 50, y: 14, anchor: "center", isTop: true },
       topLeft:  { x: 32, y: 18, anchor: "left"   },
@@ -1301,6 +1337,8 @@ function emitWhenConnected(fn){
 let roomCode = null;
 let mySeat = null;
 let state = null;
+let lastLoggedRoom = null;
+let lastRoundLoggedKey = null;
 let prevState = null;
 
 socket.on("connect", () => {
@@ -1399,6 +1437,36 @@ function handleOnlineState(payload){
   prevState = state;
   state = payload.state;
   try{ if (PW_DEBUG?.enabled){ PW_DEBUG.setLastState(); PW_DEBUG.push('state', {phase: state?.phase, turn: state?.turn, leadSuit: state?.leadSuit, n: state?.n, cardsPer: state?.cardsPer}); } }catch(e){}
+  const playerName = (typeof mySeat === "number") ? (state?.names?.[mySeat] || null) : null;
+  window.PW_CONTEXT = {
+    roomCode: roomCode || null,
+    seat: (typeof mySeat === "number") ? mySeat : null,
+    playerName,
+    phase: state?.phase || null,
+    roundIndex: state?.roundIndex ?? null
+  };
+
+  if (roomCode && roomCode !== lastLoggedRoom) {
+    logOnlineLogin({
+      roomCode,
+      seat: (typeof mySeat === "number") ? mySeat : null,
+      playerName,
+      phase: state?.phase || null
+    });
+    lastLoggedRoom = roomCode;
+  }
+
+  if (roomCode && state?.phase === "round_finished") {
+    const roundKey = `${roomCode}|${state?.roundIndex ?? "?"}`;
+    if (roundKey !== lastRoundLoggedKey) {
+      logRoundFinished({
+        roomCode,
+        roundIndex: state?.roundIndex ?? null,
+        playerCount: state?.n ?? state?.names?.length ?? null
+      });
+      lastRoundLoggedKey = roundKey;
+    }
+  }
 
   // Expose the current phase to CSS (for responsive layout + hiding side panels during play)
   try{
@@ -2349,7 +2417,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.113 PC HUD sync + button wiring
+// v0.2.114 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -2413,7 +2481,7 @@ function alignHandDockToBottomSeat(){
   handDock.classList.add("handDockAuto");
 }
 
-// v0.2.113 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.114 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");

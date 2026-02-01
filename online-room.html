@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.1.36 · Online</title>
+  <title>Piratwhist v0.2.114 · Online</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
+  <link rel="stylesheet" href="/feedback.css" />
 </head><body>
   <div class="app">
     <header class="top">
       <div>
         <div class="title">Piratwhist</div>
-        <div class="sub">Spil online · v0.1.36</div>
+        <div class="sub">Spil online · v0.2.114</div>
       </div>
       <div class="topRight">
         <a class="ghost" href="/">Tilbage</a>
@@ -122,6 +123,8 @@
     </footer>
   </div>
   <!-- Socket.IO client (compatible with python-socketio 5.x / Socket.IO v4) -->
+  <script src="/pw_telemetry.js"></script>
+  <script src="/feedback.js"></script>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="/online.js"></script>
 </body>
