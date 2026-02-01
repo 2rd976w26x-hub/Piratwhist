@@ -105,6 +105,9 @@ body.page-play .handDock .cards.handLocked .cardbtn{
 body.page-play .handDock .cards.handLocked .cardbtn .playingcard{
   filter: grayscale(0.1);
 }
+body.page-play .handDock .cards:not(.handLocked) .cardbtn:not(:disabled){
+  transform: translateY(-10%);
+}
 body.page-play .handDock .cards .cardbtn{
   margin-left: var(--hand-overlap);
 }
