@@ -1,0 +1,86 @@
+.adminGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.adminCard {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+}
+
+.adminCard h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.adminMetric {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 4px 0 6px;
+}
+
+.adminHint {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.adminList {
+  display: grid;
+  gap: 12px;
+}
+
+.adminFeedbackItem {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f9fafb;
+}
+
+.adminFeedbackItem h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.adminFeedbackMeta {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.adminFeedbackMessage {
+  font-size: 14px;
+  margin: 0 0 8px;
+  white-space: pre-wrap;
+}
+
+.adminTag {
+  display: inline-block;
+  background: #e2e8f0;
+  color: #1f2937;
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  margin: 2px 6px 2px 0;
+}
+
+.adminEmpty {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.adminSectionTitle {
+  margin-top: 22px;
+}
+
+.adminSuggestions {
+  margin: 0;
+  padding-left: 18px;
+  color: #374151;
+  font-size: 14px;
+}
