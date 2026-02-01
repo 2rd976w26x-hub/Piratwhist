@@ -80,6 +80,11 @@ function logRoundFinished(context = {}) {
     roomCode: context.roomCode || null,
     roundIndex: context.roundIndex ?? null,
     playerCount: context.playerCount ?? null,
+    botCount: context.botCount ?? null,
+    cardsPer: context.cardsPer ?? null,
+    roundDurationMs: context.roundDurationMs ?? null,
+    cardsPlayedBySeat: context.cardsPlayedBySeat || null,
+    playerNames: context.playerNames || null,
     client: PW_TELEMETRY.collectClientInfo?.() || null
   };
   PW_TELEMETRY.pushEvent(
@@ -87,6 +92,67 @@ function logRoundFinished(context = {}) {
     entry,
     PW_TELEMETRY.LIMITS?.rounds || 1000
   );
+}
+
+function logGameEvent(context = {}) {
+  if (!PW_TELEMETRY?.pushEvent) return;
+  const entry = {
+    id: `${PW_TELEMETRY.ensureSessionId?.() || "pw"}-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+    roomCode: context.roomCode || null,
+    event: context.event || null,
+    roundIndex: context.roundIndex ?? null,
+    playerCount: context.playerCount ?? null,
+    botCount: context.botCount ?? null,
+    seat: context.seat ?? null,
+    playerName: context.playerName || null,
+    startedFromPhase: context.startedFromPhase || null,
+    client: PW_TELEMETRY.collectClientInfo?.() || null
+  };
+  PW_TELEMETRY.pushEvent(
+    PW_TELEMETRY.STORAGE_KEYS?.games || "PW_GAME_EVENTS",
+    entry,
+    PW_TELEMETRY.LIMITS?.games || 500
+  );
+}
+
+const ROUND_METRICS = {
+  roundIndex: null,
+  startedAt: null,
+  cardsPlayedBySeat: [],
+  lastTable: []
+};
+
+function updateRoundMetrics(prev, current) {
+  if (!current) return;
+  const roundIndex = current.roundIndex ?? null;
+  if (roundIndex === null || roundIndex === undefined) return;
+  const roundChanged = ROUND_METRICS.roundIndex !== roundIndex;
+  if (roundChanged) {
+    ROUND_METRICS.roundIndex = roundIndex;
+    ROUND_METRICS.startedAt = null;
+    ROUND_METRICS.cardsPlayedBySeat = Array.from({ length: current.n || 0 }, () => 0);
+    ROUND_METRICS.lastTable = Array.isArray(current.table) ? current.table.slice() : [];
+  }
+
+  if (!ROUND_METRICS.startedAt && current.phase && current.phase !== "lobby") {
+    ROUND_METRICS.startedAt = Date.now();
+  }
+
+  const nextTable = Array.isArray(current.table) ? current.table : [];
+  const prevTable = Array.isArray(ROUND_METRICS.lastTable) ? ROUND_METRICS.lastTable : [];
+  const seatCount = Math.max(current.n || 0, nextTable.length, prevTable.length);
+  if (ROUND_METRICS.cardsPlayedBySeat.length < seatCount) {
+    const missing = seatCount - ROUND_METRICS.cardsPlayedBySeat.length;
+    ROUND_METRICS.cardsPlayedBySeat = ROUND_METRICS.cardsPlayedBySeat.concat(Array.from({ length: missing }, () => 0));
+  }
+
+  for (let i = 0; i < seatCount; i += 1) {
+    if (!prevTable[i] && nextTable[i]) {
+      ROUND_METRICS.cardsPlayedBySeat[i] += 1;
+    }
+  }
+  ROUND_METRICS.lastTable = nextTable.slice();
 }
 
 // --- Debug logger (play input freeze tracing) ---
@@ -1339,6 +1405,8 @@ let mySeat = null;
 let state = null;
 let lastLoggedRoom = null;
 let lastRoundLoggedKey = null;
+let lastGameStartKey = null;
+let lastGameFinishKey = null;
 let prevState = null;
 
 socket.on("connect", () => {
@@ -1402,6 +1470,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 socket.on("error", (data) => {
   const msg = (data?.message || "Ukendt fejl");
+  if (PW_TELEMETRY?.logClientError) {
+    PW_TELEMETRY.logClientError({
+      type: "socket_error",
+      message: msg,
+      roomCode: roomCode || null
+    });
+  }
 
   // Robust join: During fast redirects between pages, the server may still be
   // finishing room creation / re-attachment. If we get "Rum ikke fundet" while
@@ -1438,6 +1513,7 @@ function handleOnlineState(payload){
   state = payload.state;
   try{ if (PW_DEBUG?.enabled){ PW_DEBUG.setLastState(); PW_DEBUG.push('state', {phase: state?.phase, turn: state?.turn, leadSuit: state?.leadSuit, n: state?.n, cardsPer: state?.cardsPer}); } }catch(e){}
   const playerName = (typeof mySeat === "number") ? (state?.names?.[mySeat] || null) : null;
+  updateRoundMetrics(prevState, state);
   window.PW_CONTEXT = {
     roomCode: roomCode || null,
     seat: (typeof mySeat === "number") ? mySeat : null,
@@ -1445,6 +1521,8 @@ function handleOnlineState(payload){
     phase: state?.phase || null,
     roundIndex: state?.roundIndex ?? null
   };
+  const playerCount = state?.n ?? state?.names?.length ?? null;
+  const botCount = Array.isArray(state?.botSeats) ? state.botSeats.length : null;
 
   if (roomCode && roomCode !== lastLoggedRoom) {
     logOnlineLogin({
@@ -1456,13 +1534,52 @@ function handleOnlineState(payload){
     lastLoggedRoom = roomCode;
   }
 
+  if (roomCode && state?.phase && state.phase !== "lobby") {
+    const startKey = `${roomCode}|${state?.roundIndex ?? "?"}|start`;
+    if ((!prevState || prevState?.phase === "lobby") && startKey !== lastGameStartKey) {
+      logGameEvent({
+        event: "game_started",
+        roomCode,
+        roundIndex: state?.roundIndex ?? null,
+        playerCount,
+        botCount,
+        seat: (typeof mySeat === "number") ? mySeat : null,
+        playerName,
+        startedFromPhase: prevState?.phase || null
+      });
+      lastGameStartKey = startKey;
+    }
+  }
+
+  if (roomCode && state?.phase === "game_finished") {
+    const finishKey = `${roomCode}|${state?.roundIndex ?? "?"}|finish`;
+    if (finishKey !== lastGameFinishKey) {
+      logGameEvent({
+        event: "game_completed",
+        roomCode,
+        roundIndex: state?.roundIndex ?? null,
+        playerCount,
+        botCount,
+        seat: (typeof mySeat === "number") ? mySeat : null,
+        playerName,
+        startedFromPhase: prevState?.phase || null
+      });
+      lastGameFinishKey = finishKey;
+    }
+  }
+
   if (roomCode && state?.phase === "round_finished") {
     const roundKey = `${roomCode}|${state?.roundIndex ?? "?"}`;
     if (roundKey !== lastRoundLoggedKey) {
       logRoundFinished({
         roomCode,
         roundIndex: state?.roundIndex ?? null,
-        playerCount: state?.n ?? state?.names?.length ?? null
+        playerCount,
+        botCount,
+        cardsPer: state?.cardsPer ?? null,
+        roundDurationMs: ROUND_METRICS.startedAt ? Date.now() - ROUND_METRICS.startedAt : null,
+        cardsPlayedBySeat: ROUND_METRICS.cardsPlayedBySeat?.slice?.() || null,
+        playerNames: Array.isArray(state?.names) ? state.names.slice() : null
       });
       lastRoundLoggedKey = roundKey;
     }
