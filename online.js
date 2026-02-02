@@ -491,8 +491,8 @@ function pcLayoutTunerActive(){
   const nameFromState = (typeof mySeat === "number" && Array.isArray(state?.names))
     ? (state.names[mySeat] || "").trim()
     : "";
-  const name = nameFromState || myName();
-  return name.trim() === "LaBA";
+  if (!nameFromState) return false;
+  return nameFromState === "LaBA";
 }
 
 function updatePcLayoutOutput(){
