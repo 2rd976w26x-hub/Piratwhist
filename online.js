@@ -704,6 +704,12 @@ function positionPlayBoard(n){
   const slotRadius = Math.max(40, Math.min(pileRadius * 0.62, Math.min(radiusX, radiusY) * 0.75));
   const slotRX = (slotRadius / boardW) * 100;
   const slotRY = (slotRadius / boardH) * 100;
+  const noFly = document.querySelector(".handNoFly");
+  const noFlyRect = noFly?.getBoundingClientRect?.() || null;
+  const noFlyTopPx = noFlyRect ? (noFlyRect.top - boardRect.top) : null;
+  const noFlySeatCenterY = (noFlyTopPx !== null)
+    ? Math.max(0, (noFlyTopPx - seatHalfH - 12) / boardH * 100)
+    : null;
 
   for (let i=0;i<n;i++){
     const rel = (i - my + n) % n;
@@ -712,9 +718,8 @@ function positionPlayBoard(n){
     let y = 50 + seatRY * Math.sin(ang);
 
 
-    // Keep the local (bottom) seat slightly right to leave the hand dock clear.
-    if (rel === 0) {
-      x += 6;
+    if (noFlySeatCenterY !== null && y > noFlySeatCenterY){
+      y = noFlySeatCenterY;
     }
 
     const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
