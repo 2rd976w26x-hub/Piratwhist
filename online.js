@@ -679,25 +679,31 @@ function positionPlayBoard(n){
     }
     return;
   }
-  // Mobile tweak (stable): pull seats slightly inward so top seats never get clipped.
-  // This is a temporary, conservative setting while we finalize the approved mobile layout.
-  const seatR = isMobile
-    ? ((n <= 2) ? 34 : (n <= 4 ? 36 : 38))
-    : ((n <= 2) ? 42 : (n <= 4 ? 44 : 46));
-  const slotR = isMobile ? 16 : 18;
-  const aspect = (!isMobile && boardRect.height)
-    ? (boardRect.width / boardRect.height)
-    : 1;
-  const aspectScaleX = (!isMobile)
-    ? Math.max(0.9, Math.min(1.12, aspect))
-    : 1;
-  const aspectScaleY = (!isMobile)
-    ? Math.max(0.88, Math.min(1.12, 1 / aspect))
-    : 1;
-  const seatRX = seatR * aspectScaleX;
-  const seatRY = seatR * aspectScaleY;
-  const slotRX = slotR * aspectScaleX;
-  const slotRY = slotR * aspectScaleY;
+  // PC layout: keep seats evenly spaced around the center table image.
+  const boardW = boardRect.width || board.clientWidth || 1;
+  const boardH = boardRect.height || board.clientHeight || 1;
+  const pile = el("olPile");
+  const pileRect = pile?.getBoundingClientRect?.() || null;
+  const pileRadius = pileRect
+    ? Math.max(1, Math.min(pileRect.width, pileRect.height) / 2)
+    : Math.max(120, Math.min(boardW, boardH) * 0.22);
+  const sampleSeat = seatsWrap.querySelector(".seat");
+  const seatRect = sampleSeat?.getBoundingClientRect?.() || null;
+  const seatHalfW = seatRect ? seatRect.width / 2 : Math.max(70, Math.min(boardW, boardH) * 0.12);
+  const seatHalfH = seatRect ? seatRect.height / 2 : Math.max(42, Math.min(boardW, boardH) * 0.08);
+  const edgePad = 16;
+  const baseRadius = Math.min(boardW, boardH) * 0.38;
+  const minRadiusX = pileRadius + seatHalfW + 18;
+  const minRadiusY = pileRadius + seatHalfH + 18;
+  const maxRadiusX = (boardW / 2) - seatHalfW - edgePad;
+  const maxRadiusY = (boardH / 2) - seatHalfH - edgePad;
+  const radiusX = Math.max(minRadiusX, Math.min(maxRadiusX, baseRadius));
+  const radiusY = Math.max(minRadiusY, Math.min(maxRadiusY, baseRadius));
+  const seatRX = (radiusX / boardW) * 100;
+  const seatRY = (radiusY / boardH) * 100;
+  const slotRadius = Math.max(40, Math.min(pileRadius * 0.62, Math.min(radiusX, radiusY) * 0.75));
+  const slotRX = (slotRadius / boardW) * 100;
+  const slotRY = (slotRadius / boardH) * 100;
 
   for (let i=0;i<n;i++){
     const rel = (i - my + n) % n;
@@ -706,56 +712,9 @@ function positionPlayBoard(n){
     let y = 50 + seatRY * Math.sin(ang);
 
 
-    // --- PC fixed layout v3 for 4 players (deterministic, avoids hand overlap) ---
-    if (!isMobile && n === 4 && window.innerWidth >= 900){
-      const fixedSeat = {
-        0: { x: 66, y: 78 }, // bottom (local) slightly right + toward center
-        1: { x: 24, y: 58 }, // left
-        2: { x: 50, y: 28 }, // top
-        3: { x: 76, y: 58 }  // right
-      };
-      const fixedSlot = {
-        0: { x: 56, y: 62 },
-        1: { x: 44, y: 50 },
-        2: { x: 50, y: 38 },
-        3: { x: 56, y: 50 }
-      };
-      const p = fixedSeat[rel] || { x: x, y: y };
-      x = 50 + (p.x - 50) * aspectScaleX;
-      y = 50 + (p.y - 50) * aspectScaleY;
-
-      const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
-      if (seatEl){
-        seatEl.style.left = x.toFixed(2) + "%";
-        seatEl.style.top  = y.toFixed(2) + "%";
-        seatEl.classList.toggle("seat-bottom", rel === 0);
-        seatEl.classList.toggle("seat-top", rel === 2);
-      }
-      const sp = fixedSlot[rel] || { x: 50, y: 50 };
-      const slotEl = el(`olTrickSlot${i}`);
-      if (slotEl){
-        const slotX = 50 + (sp.x - 50) * aspectScaleX;
-        const slotY = 50 + (sp.y - 50) * aspectScaleY;
-        slotEl.style.left = slotX.toFixed(2) + "%";
-        slotEl.style.top  = slotY.toFixed(2) + "%";
-      }
-      continue;
-    }
-
-    // PC polish (approved): bring top + bottom seats closer to the center,
-    // and shift the bottom seat slightly right so the docked hand has room.
-    if (!isMobile && window.innerWidth >= 900) {
-      const topRel = Math.floor(n/2);
-      if (rel === 0) { // local (bottom)
-        x += 8;   // slightly right
-        y -= 10;  // up toward center
-      }
-      if (n >= 2 && rel === topRel) { // top seat
-        y += 12;  // down toward center
-      }
-      // Clamp to keep seats safely inside the board container.
-      x = Math.max(6, Math.min(94, x));
-      y = Math.max(6, Math.min(94, y));
+    // Keep the local (bottom) seat slightly right to leave the hand dock clear.
+    if (rel === 0) {
+      x += 6;
     }
 
     const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
