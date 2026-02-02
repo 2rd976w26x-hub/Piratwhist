@@ -60,6 +60,31 @@
       <div class="handNoFly" aria-hidden="true"></div>
     </div>
 
+    <aside id="pcLayoutTuner" class="pcLayoutTuner" hidden>
+      <div class="pcLayoutTuner__title">PC layout-tuner</div>
+      <div class="pcLayoutTuner__row">
+        <label for="pcLayoutSeatSelect">Spiller</label>
+        <select id="pcLayoutSeatSelect"></select>
+        <label for="pcLayoutStep">Trin (%)</label>
+        <input id="pcLayoutStep" type="number" min="0.1" step="0.5" value="1" />
+      </div>
+      <div class="pcLayoutTuner__controls" role="group" aria-label="Flyt spiller">
+        <div></div>
+        <button id="pcLayoutUp" class="ghost" type="button" aria-label="Flyt op">⬆️</button>
+        <div></div>
+        <button id="pcLayoutLeft" class="ghost" type="button" aria-label="Flyt venstre">⬅️</button>
+        <button id="pcLayoutDown" class="ghost" type="button" aria-label="Flyt ned">⬇️</button>
+        <button id="pcLayoutRight" class="ghost" type="button" aria-label="Flyt højre">➡️</button>
+      </div>
+      <div class="pcLayoutTuner__row">
+        <button id="pcLayoutReset" class="ghost" type="button">Nulstil valgt</button>
+        <button id="pcLayoutResetAll" class="ghost" type="button">Nulstil alle</button>
+        <button id="pcLayoutCopy" class="ghost" type="button">Kopiér værdier</button>
+      </div>
+      <textarea id="pcLayoutOutput" rows="6" readonly></textarea>
+      <div class="pcLayoutTuner__hint">Aktiveres med <code>?layoutTune=1</code> i URL.</div>
+    </aside>
+
     <!-- Bottom bar (replaces the old top header + the 'Spil' section) -->
     <div class="bottomBar" role="status" aria-live="polite">
       <div class="bottomLeft">
