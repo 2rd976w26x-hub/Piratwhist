@@ -840,14 +840,14 @@ function positionPlayBoard(n){
   const clampPct = (value, min, max) => Math.max(min, Math.min(max, value));
 
   const slot = {
-    top:        { x: 50, y: 14 },
-    topLeft:    { x: 28, y: 20 },
-    topRight:   { x: 72, y: 20 },
-    left:       { x: 14, y: 50 },
-    right:      { x: 86, y: 50 },
-    bottomLeft: { x: 28, y: 72 },
-    bottomRight:{ x: 72, y: 72 },
-    bottom:     { x: 78, y: 82 }
+    top:        { x: 52.4, y: 11.6 },
+    topLeft:    { x: 31.6, y: 21 },
+    topRight:   { x: 72.6, y: 21.8 },
+    left:       { x: 22.4, y: 45.8 },
+    right:      { x: 78.8, y: 43.4 },
+    bottomLeft: { x: 30.2, y: 62.4 },
+    bottomRight:{ x: 72, y: 66.6 },
+    bottom:     { x: 52.4, y: 82 }
   };
 
   const trick = {
