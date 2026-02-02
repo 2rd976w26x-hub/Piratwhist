@@ -137,3 +137,69 @@
 }
 .playingcard.back .corner,
 .playingcard.back .cardface-svg{ display:none !important; }
+
+/* --- PC layout tuner (temporary tooling) --- */
+.pcLayoutTuner{
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  width: min(320px, 90vw);
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(10, 10, 12, 0.9);
+  border: 1px solid rgba(255,255,255,.12);
+  color: #f2f2f2;
+  display: grid;
+  gap: 8px;
+  z-index: 40;
+  box-shadow: 0 18px 45px rgba(0,0,0,.4);
+  font-size: 13px;
+}
+.pcLayoutTuner__title{
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+.pcLayoutTuner__row{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.pcLayoutTuner__row label{
+  font-size: 12px;
+  opacity: .8;
+}
+.pcLayoutTuner__row select,
+.pcLayoutTuner__row input{
+  background: rgba(255,255,255,.06);
+  color: inherit;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+.pcLayoutTuner__controls{
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  justify-items: center;
+}
+.pcLayoutTuner__controls button{
+  width: 44px;
+  height: 36px;
+  border-radius: 8px;
+}
+.pcLayoutTuner textarea{
+  width: 100%;
+  resize: vertical;
+  border-radius: 8px;
+  padding: 6px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.06);
+  color: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+.pcLayoutTuner__hint{
+  font-size: 11px;
+  opacity: .7;
+}

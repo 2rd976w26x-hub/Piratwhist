@@ -482,6 +482,141 @@ function el(id){ return document.getElementById(id); }
 
 // --- v0.2.118: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
+const __pwPcLayoutTuner = { initialized: false, enabled: false, lastSeatCount: 0 };
+const __pwSeatOverrides = {};
+const __pwSeatPositions = {};
+
+function pcLayoutTunerActive(){
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search || "");
+  return params.has("layoutTune");
+}
+
+function updatePcLayoutOutput(){
+  const output = el("pcLayoutOutput");
+  if (!output) return;
+  const source = Object.keys(__pwSeatPositions).length ? __pwSeatPositions : __pwSeatOverrides;
+  const entries = Object.keys(source)
+    .map((key) => ({ seat: Number(key), ...source[key] }))
+    .sort((a, b) => a.seat - b.seat)
+    .map((entry) => ({
+      seat: entry.seat,
+      x: Number(entry.x.toFixed(2)),
+      y: Number(entry.y.toFixed(2))
+    }));
+  output.value = entries.length ? JSON.stringify(entries, null, 2) : "[]";
+}
+
+function syncPcLayoutSelect(n){
+  const select = el("pcLayoutSeatSelect");
+  if (!select) return;
+  if (select.options.length === n) return;
+  select.innerHTML = "";
+  for (let i = 0; i < n; i += 1){
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = `Spiller ${i + 1} (sæde ${i})`;
+    select.appendChild(opt);
+  }
+}
+
+function selectedPcLayoutSeat(){
+  const select = el("pcLayoutSeatSelect");
+  const val = select ? Number(select.value) : 0;
+  return Number.isFinite(val) ? val : 0;
+}
+
+function adjustPcLayoutSeat(dx, dy){
+  const seat = selectedPcLayoutSeat();
+  const current = __pwSeatOverrides[seat] || __pwSeatPositions[seat];
+  if (!current) return;
+  const next = {
+    x: Math.max(0, Math.min(100, current.x + dx)),
+    y: Math.max(0, Math.min(100, current.y + dy))
+  };
+  __pwSeatOverrides[seat] = next;
+  updatePcLayoutOutput();
+  if (__pwPcLayoutTuner.lastSeatCount){
+    positionPlayBoard(__pwPcLayoutTuner.lastSeatCount);
+  }
+}
+
+function resetPcLayoutSeat(seat){
+  if (typeof seat !== "number") return;
+  delete __pwSeatOverrides[seat];
+  updatePcLayoutOutput();
+  if (__pwPcLayoutTuner.lastSeatCount){
+    positionPlayBoard(__pwPcLayoutTuner.lastSeatCount);
+  }
+}
+
+function resetAllPcLayoutSeats(){
+  Object.keys(__pwSeatOverrides).forEach((key) => { delete __pwSeatOverrides[key]; });
+  updatePcLayoutOutput();
+  if (__pwPcLayoutTuner.lastSeatCount){
+    positionPlayBoard(__pwPcLayoutTuner.lastSeatCount);
+  }
+}
+
+function initPcLayoutTuner(){
+  if (__pwPcLayoutTuner.initialized) return;
+  const up = el("pcLayoutUp");
+  const down = el("pcLayoutDown");
+  const left = el("pcLayoutLeft");
+  const right = el("pcLayoutRight");
+  const reset = el("pcLayoutReset");
+  const resetAll = el("pcLayoutResetAll");
+  const copy = el("pcLayoutCopy");
+  const stepInput = el("pcLayoutStep");
+
+  const readStep = () => {
+    const raw = stepInput ? Number(stepInput.value) : 1;
+    return Number.isFinite(raw) && raw > 0 ? raw : 1;
+  };
+
+  if (up) up.addEventListener("click", () => adjustPcLayoutSeat(0, -readStep()));
+  if (down) down.addEventListener("click", () => adjustPcLayoutSeat(0, readStep()));
+  if (left) left.addEventListener("click", () => adjustPcLayoutSeat(-readStep(), 0));
+  if (right) right.addEventListener("click", () => adjustPcLayoutSeat(readStep(), 0));
+  if (reset) reset.addEventListener("click", () => resetPcLayoutSeat(selectedPcLayoutSeat()));
+  if (resetAll) resetAll.addEventListener("click", () => resetAllPcLayoutSeats());
+  if (copy) copy.addEventListener("click", async () => {
+    updatePcLayoutOutput();
+    const output = el("pcLayoutOutput");
+    const text = output ? output.value : "";
+    if (navigator.clipboard?.writeText){
+      try{
+        await navigator.clipboard.writeText(text);
+      }catch(e){
+        if (output){
+          output.focus();
+          output.select();
+        }
+      }
+    }else if (output){
+      output.focus();
+      output.select();
+    }
+  });
+
+  __pwPcLayoutTuner.initialized = true;
+}
+
+function setupPcLayoutTuner(n){
+  const panel = el("pcLayoutTuner");
+  if (!panel) return;
+  const isMobile = (typeof window !== "undefined" && window.matchMedia)
+    ? window.matchMedia("(max-width: 520px)").matches
+    : false;
+  const enabled = pcLayoutTunerActive() && !isMobile;
+  panel.hidden = !enabled;
+  __pwPcLayoutTuner.enabled = enabled;
+  __pwPcLayoutTuner.lastSeatCount = n;
+  if (!enabled) return;
+  initPcLayoutTuner();
+  syncPcLayoutSelect(n);
+  updatePcLayoutOutput();
+}
 
 function ensurePlayBoard(n){
   const seatsWrap = el("olBoardSeats");
@@ -515,6 +650,7 @@ function ensurePlayBoard(n){
     slot.id = `olTrickSlot${i}`;
     slotsWrap.appendChild(slot);
   }
+  setupPcLayoutTuner(n);
 }
 
 function positionPlayBoard(n){
@@ -746,6 +882,13 @@ function positionPlayBoard(n){
     if (!skipNoFly && noFlySeatCenterY !== null && noFlyRightPct !== null && x <= (noFlyRightPct - padXPct)){
       if (y > noFlySeatCenterY) y = noFlySeatCenterY;
     }
+    if (__pwPcLayoutTuner.enabled && __pwSeatOverrides[i]){
+      const override = __pwSeatOverrides[i];
+      if (typeof override.x === "number" && typeof override.y === "number"){
+        x = Math.max(0, Math.min(100, override.x));
+        y = Math.max(0, Math.min(100, override.y));
+      }
+    }
 
     const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
     if (seatEl){
@@ -757,6 +900,7 @@ function positionPlayBoard(n){
       seatEl.classList.toggle("seat-bottom", rel === 0);
       seatEl.classList.toggle("seat-top", slotName === "top");
     }
+    __pwSeatPositions[i] = { x, y };
 
     const sp = trick[slotName] || trick.bottom;
     const slotEl = el(`olTrickSlot${i}`);
@@ -765,6 +909,7 @@ function positionPlayBoard(n){
       slotEl.style.top  = sp.y.toFixed(2) + "%";
     }
   }
+  if (__pwPcLayoutTuner.enabled) updatePcLayoutOutput();
 }
 
 function desiredPathForPhase(phase){
