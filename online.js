@@ -704,17 +704,44 @@ function positionPlayBoard(n){
   const slotRadius = Math.max(40, Math.min(pileRadius * 0.62, Math.min(radiusX, radiusY) * 0.75));
   const slotRX = (slotRadius / boardW) * 100;
   const slotRY = (slotRadius / boardH) * 100;
+  const noFly = document.querySelector(".handNoFly");
+  const noFlyRect = noFly?.getBoundingClientRect?.() || null;
+  const noFlyTopPx = noFlyRect ? (noFlyRect.top - boardRect.top) : null;
+  const noFlySeatCenterY = (noFlyTopPx !== null)
+    ? Math.max(0, (noFlyTopPx - seatHalfH - 12) / boardH * 100)
+    : null;
+  const useCustomSeven = n === 7;
+  const customSlots = useCustomSeven ? {
+    top:      { x: 50, y: 18 },
+    topLeft:  { x: 32, y: 22 },
+    topRight: { x: 68, y: 22 },
+    midLeft:  { x: 18, y: 48 },
+    midRight: { x: 82, y: 48 },
+    botLeft:  { x: 32, y: 70 },
+    botRight: { x: 68, y: 70 },
+    bottom:   { x: 50, y: 84 }
+  } : null;
+  const customOrder = ["botLeft","midLeft","topLeft","topRight","midRight","botRight"];
 
   for (let i=0;i<n;i++){
     const rel = (i - my + n) % n;
     const ang = (90 + (rel * 360 / n)) * Math.PI / 180;
     let x = 50 + seatRX * Math.cos(ang);
     let y = 50 + seatRY * Math.sin(ang);
+    if (useCustomSeven){
+      let slotName = "bottom";
+      if (rel === 0) slotName = "bottom";
+      else slotName = customOrder[rel - 1] || "top";
+      const slotPos = customSlots?.[slotName];
+      if (slotPos){
+        x = slotPos.x;
+        y = slotPos.y;
+      }
+    }
 
 
-    // Keep the local (bottom) seat slightly right to leave the hand dock clear.
-    if (rel === 0) {
-      x += 6;
+    if (noFlySeatCenterY !== null && y > noFlySeatCenterY){
+      y = noFlySeatCenterY;
     }
 
     const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
