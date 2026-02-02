@@ -693,6 +693,9 @@ function positionPlayBoard(n){
   const noFlySeatCenterY = (noFlyTopPx !== null)
     ? Math.max(0, (noFlyTopPx - seatHalfH - 12) / boardH * 100)
     : null;
+  const noFlyRightPct = noFlyRect
+    ? Math.max(0, Math.min(100, ((noFlyRect.right - boardRect.left) / boardW) * 100))
+    : null;
   const padXPct = ((seatHalfW + edgePad) / boardW) * 100;
   const padYPct = ((seatHalfH + edgePad) / boardH) * 100;
   const clampPct = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -703,9 +706,9 @@ function positionPlayBoard(n){
     topRight:   { x: 72, y: 20 },
     left:       { x: 14, y: 50 },
     right:      { x: 86, y: 50 },
-    bottomLeft: { x: 28, y: 76 },
-    bottomRight:{ x: 72, y: 76 },
-    bottom:     { x: 50, y: 82 }
+    bottomLeft: { x: 26, y: 74 },
+    bottomRight:{ x: 70, y: 74 },
+    bottom:     { x: 78, y: 82 }
   };
 
   const trick = {
@@ -739,7 +742,9 @@ function positionPlayBoard(n){
     const p = slot[slotName] || slot.bottom;
     let x = clampPct(p.x, padXPct, 100 - padXPct);
     let y = clampPct(p.y, padYPct, 100 - padYPct);
-    if (noFlySeatCenterY !== null && y > noFlySeatCenterY) y = noFlySeatCenterY;
+    if (noFlySeatCenterY !== null && noFlyRightPct !== null && x <= (noFlyRightPct - padXPct)){
+      if (y > noFlySeatCenterY) y = noFlySeatCenterY;
+    }
 
     const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
     if (seatEl){
