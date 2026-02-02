@@ -710,8 +710,8 @@ function positionPlayBoard(n){
   const noFlySeatCenterY = (noFlyTopPx !== null)
     ? Math.max(0, (noFlyTopPx - seatHalfH - 12) / boardH * 100)
     : null;
-  const useCustomSeven = n === 7;
-  const customSlots = useCustomSeven ? {
+  const useCustomEight = n === 8;
+  const customSlots = useCustomEight ? {
     top:      { x: 50, y: 18 },
     topLeft:  { x: 32, y: 22 },
     topRight: { x: 68, y: 22 },
@@ -721,14 +721,14 @@ function positionPlayBoard(n){
     botRight: { x: 68, y: 70 },
     bottom:   { x: 50, y: 84 }
   } : null;
-  const customOrder = ["botLeft","midLeft","topLeft","topRight","midRight","botRight"];
+  const customOrder = ["botLeft","midLeft","topLeft","top","topRight","midRight","botRight"];
 
   for (let i=0;i<n;i++){
     const rel = (i - my + n) % n;
     const ang = (90 + (rel * 360 / n)) * Math.PI / 180;
     let x = 50 + seatRX * Math.cos(ang);
     let y = 50 + seatRY * Math.sin(ang);
-    if (useCustomSeven){
+    if (useCustomEight){
       let slotName = "bottom";
       if (rel === 0) slotName = "bottom";
       else slotName = customOrder[rel - 1] || "top";
