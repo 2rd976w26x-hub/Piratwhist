@@ -488,8 +488,11 @@ const __pwSeatPositions = {};
 
 function pcLayoutTunerActive(){
   if (typeof window === "undefined") return false;
-  const params = new URLSearchParams(window.location.search || "");
-  return params.has("layoutTune");
+  const nameFromState = (typeof mySeat === "number" && Array.isArray(state?.names))
+    ? (state.names[mySeat] || "").trim()
+    : "";
+  const name = nameFromState || myName();
+  return name.trim() === "LaBA";
 }
 
 function updatePcLayoutOutput(){
