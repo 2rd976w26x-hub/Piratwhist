@@ -706,8 +706,8 @@ function positionPlayBoard(n){
     topRight:   { x: 72, y: 20 },
     left:       { x: 14, y: 50 },
     right:      { x: 86, y: 50 },
-    bottomLeft: { x: 26, y: 74 },
-    bottomRight:{ x: 70, y: 74 },
+    bottomLeft: { x: 28, y: 72 },
+    bottomRight:{ x: 72, y: 72 },
     bottom:     { x: 78, y: 82 }
   };
 
@@ -742,7 +742,8 @@ function positionPlayBoard(n){
     const p = slot[slotName] || slot.bottom;
     let x = clampPct(p.x, padXPct, 100 - padXPct);
     let y = clampPct(p.y, padYPct, 100 - padYPct);
-    if (noFlySeatCenterY !== null && noFlyRightPct !== null && x <= (noFlyRightPct - padXPct)){
+    const skipNoFly = slotName === "bottom" || slotName === "bottomLeft" || slotName === "bottomRight";
+    if (!skipNoFly && noFlySeatCenterY !== null && noFlyRightPct !== null && x <= (noFlyRightPct - padXPct)){
       if (y > noFlySeatCenterY) y = noFlySeatCenterY;
     }
 
