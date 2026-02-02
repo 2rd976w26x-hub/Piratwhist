@@ -900,6 +900,27 @@ function positionPlayBoard(n){
     slot.top = { x: 52.4, y: 9.6 };
   }
 
+  if (n === 3){
+    slot.bottom = { x: 58.4, y: 79 };
+  }
+
+  if (n === 5){
+    slot.bottom = { x: 57.4, y: 80 };
+    slot.bottomLeft = { x: 26.2, y: 61.4 };
+    slot.left = { x: 31.4, y: 28.8 };
+    slot.top = { x: 52.4, y: 10.6 };
+    slot.right = { x: 73.8, y: 43.4 };
+  }
+
+  if (n === 6){
+    slot.bottom = { x: 58.4, y: 79 };
+    slot.bottomLeft = { x: 30.2, y: 61.4 };
+    slot.left = { x: 30.4, y: 31.8 };
+    slot.topLeft = { x: 52.6, y: 9 };
+    slot.topRight = { x: 72.6, y: 32.8 };
+    slot.right = { x: 72.8, y: 68.4 };
+  }
+
   if (n === 7){
     slot.bottom = { x: 57.8, y: 80.8 };
     slot.bottomLeft = { x: 26.6, y: 62.4 };
