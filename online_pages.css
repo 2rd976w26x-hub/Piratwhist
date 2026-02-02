@@ -303,6 +303,8 @@ body.page-play .twoCol.playLayout{ grid-template-columns: 1fr !important; }
   overflow: visible;
   border: 2px dashed rgba(255,255,255,.18);
   background: transparent;
+  background-image: none;
+  box-shadow: none;
 }
 .played {
   position: absolute;
