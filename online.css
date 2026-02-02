@@ -177,6 +177,16 @@
   border-radius: 8px;
   padding: 4px 6px;
 }
+.pcLayoutTuner__stepPresets{
+  display: inline-flex;
+  gap: 6px;
+}
+.pcLayoutTuner__step{
+  min-width: 36px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+}
 .pcLayoutTuner__controls{
   display: grid;
   grid-template-columns: repeat(3, 1fr);

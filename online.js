@@ -510,6 +510,30 @@ function updatePcLayoutOutput(){
   output.value = entries.length ? JSON.stringify(entries, null, 2) : "[]";
 }
 
+function applyPcLayoutOverrides(entries){
+  if (!Array.isArray(entries)) return false;
+  let applied = 0;
+  entries.forEach((entry) => {
+    if (!entry || typeof entry.seat !== "number") return;
+    const seat = Number(entry.seat);
+    const x = Number(entry.x);
+    const y = Number(entry.y);
+    if (!Number.isFinite(seat) || !Number.isFinite(x) || !Number.isFinite(y)) return;
+    __pwSeatOverrides[seat] = {
+      x: Math.max(0, Math.min(100, x)),
+      y: Math.max(0, Math.min(100, y))
+    };
+    applied += 1;
+  });
+  if (applied){
+    updatePcLayoutOutput();
+    if (__pwPcLayoutTuner.lastSeatCount){
+      positionPlayBoard(__pwPcLayoutTuner.lastSeatCount);
+    }
+  }
+  return applied > 0;
+}
+
 function syncPcLayoutSelect(n){
   const select = el("pcLayoutSeatSelect");
   if (!select) return;
@@ -570,7 +594,9 @@ function initPcLayoutTuner(){
   const reset = el("pcLayoutReset");
   const resetAll = el("pcLayoutResetAll");
   const copy = el("pcLayoutCopy");
+  const paste = el("pcLayoutPaste");
   const stepInput = el("pcLayoutStep");
+  const stepPresets = document.querySelectorAll("[data-pc-step]");
 
   const readStep = () => {
     const raw = stepInput ? Number(stepInput.value) : 1;
@@ -600,6 +626,25 @@ function initPcLayoutTuner(){
       output.focus();
       output.select();
     }
+  });
+  stepPresets.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const value = Number(btn.dataset.pcStep);
+      if (!stepInput || !Number.isFinite(value)) return;
+      stepInput.value = String(value);
+    });
+  });
+  if (paste) paste.addEventListener("click", () => {
+    const output = el("pcLayoutOutput");
+    const raw = output ? output.value : "";
+    if (!raw) return;
+    let parsed = null;
+    try{
+      parsed = JSON.parse(raw);
+    }catch(e){
+      return;
+    }
+    applyPcLayoutOverrides(parsed);
   });
 
   __pwPcLayoutTuner.initialized = true;
@@ -850,6 +895,21 @@ function positionPlayBoard(n){
     bottom:     { x: 52.4, y: 82 }
   };
 
+  if (n === 4){
+    slot.bottom = { x: 56.4, y: 79 };
+    slot.top = { x: 52.4, y: 9.6 };
+  }
+
+  if (n === 7){
+    slot.bottom = { x: 57.8, y: 80.8 };
+    slot.bottomLeft = { x: 26.6, y: 62.4 };
+    slot.left = { x: 22.4, y: 45.8 };
+    slot.topLeft = { x: 31.6, y: 21 };
+    slot.top = { x: 52.4, y: 9.8 };
+    slot.topRight = { x: 72.6, y: 21.8 };
+    slot.right = { x: 78.8, y: 43.4 };
+  }
+
   const trick = {
     top:        { x: 50, y: 32 },
     topLeft:    { x: 42, y: 36 },
@@ -867,7 +927,7 @@ function positionPlayBoard(n){
     4: ["left","top","right"],
     5: ["bottomLeft","left","top","right","bottomRight"],
     6: ["bottomLeft","left","topLeft","topRight","right","bottomRight"],
-    7: ["bottomLeft","left","topLeft","top","topRight","right","bottomRight"],
+    7: ["bottomLeft","left","topLeft","top","topRight","right"],
     8: ["bottomLeft","left","topLeft","top","topRight","right","bottomRight"]
   };
 

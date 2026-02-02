@@ -67,6 +67,11 @@
         <select id="pcLayoutSeatSelect"></select>
         <label for="pcLayoutStep">Trin (%)</label>
         <input id="pcLayoutStep" type="number" min="0.1" step="0.5" value="1" />
+        <div class="pcLayoutTuner__stepPresets" role="group" aria-label="Trin presets">
+          <button class="ghost pcLayoutTuner__step" type="button" data-pc-step="0.5">0.5</button>
+          <button class="ghost pcLayoutTuner__step" type="button" data-pc-step="1">1</button>
+          <button class="ghost pcLayoutTuner__step" type="button" data-pc-step="2">2</button>
+        </div>
       </div>
       <div class="pcLayoutTuner__controls" role="group" aria-label="Flyt spiller">
         <div></div>
@@ -80,9 +85,10 @@
         <button id="pcLayoutReset" class="ghost" type="button">Nulstil valgt</button>
         <button id="pcLayoutResetAll" class="ghost" type="button">Nulstil alle</button>
         <button id="pcLayoutCopy" class="ghost" type="button">Kopiér værdier</button>
+        <button id="pcLayoutPaste" class="ghost" type="button">Indsæt værdier</button>
       </div>
       <textarea id="pcLayoutOutput" rows="6" readonly></textarea>
-      <div class="pcLayoutTuner__hint">Aktiveres med <code>?layoutTune=1</code> i URL.</div>
+      <div class="pcLayoutTuner__hint">Synlig for spilleren <code>LaBA</code>.</div>
     </aside>
 
     <!-- Bottom bar (replaces the old top header + the 'Spil' section) -->
