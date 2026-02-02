@@ -498,13 +498,13 @@ function ensurePlayBoard(n){
     seat.className = "seat dyn";
     seat.dataset.seat = String(i);
     seat.innerHTML = `
-      <div class="seatName" id="olSeatName${i}">-</div>
+      <div class="seatName" id="olSeatName${i}" title="-">-</div>
       <div class="seatBadges">
         <span class="chip budChip">Bud: <span id="olSeatBid${i}">—</span></span>
         <span class="chip trickChip">Stik: <span id="olSeatTricks${i}">0</span></span>
         <span class="chip totalChip ghost">Total: <span id="olSeatTotal${i}">0</span></span>
       </div>
-      <div class="trickViz" id="olSeatViz${i}" aria-label="Stik i runden"></div>
+      <div class="trickViz" id="olSeatViz${i}" aria-label="Stik i runden"><span class="zero">0</span></div>
       <div class="seatPile" id="olSeatPile${i}" title="Stik vundet"></div>
     `;
     seatsWrap.appendChild(seat);
