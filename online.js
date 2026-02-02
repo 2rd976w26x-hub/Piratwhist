@@ -682,45 +682,64 @@ function positionPlayBoard(n){
   // PC layout: keep seats evenly spaced around the center table image.
   const boardW = boardRect.width || board.clientWidth || 1;
   const boardH = boardRect.height || board.clientHeight || 1;
-  const pile = el("olPile");
-  const pileRect = pile?.getBoundingClientRect?.() || null;
-  const pileRadius = pileRect
-    ? Math.max(1, Math.min(pileRect.width, pileRect.height) / 2)
-    : Math.max(120, Math.min(boardW, boardH) * 0.22);
   const sampleSeat = seatsWrap.querySelector(".seat");
   const seatRect = sampleSeat?.getBoundingClientRect?.() || null;
   const seatHalfW = seatRect ? seatRect.width / 2 : Math.max(70, Math.min(boardW, boardH) * 0.12);
   const seatHalfH = seatRect ? seatRect.height / 2 : Math.max(42, Math.min(boardW, boardH) * 0.08);
   const edgePad = 16;
-  const baseRadius = Math.min(boardW, boardH) * 0.38;
-  const minRadiusX = pileRadius + seatHalfW + 18;
-  const minRadiusY = pileRadius + seatHalfH + 18;
-  const maxRadiusX = (boardW / 2) - seatHalfW - edgePad;
-  const maxRadiusY = (boardH / 2) - seatHalfH - edgePad;
-  const radiusX = Math.max(minRadiusX, Math.min(maxRadiusX, baseRadius));
-  const radiusY = Math.max(minRadiusY, Math.min(maxRadiusY, baseRadius));
-  const seatRX = (radiusX / boardW) * 100;
-  const seatRY = (radiusY / boardH) * 100;
-  const slotRadius = Math.max(40, Math.min(pileRadius * 0.62, Math.min(radiusX, radiusY) * 0.75));
-  const slotRX = (slotRadius / boardW) * 100;
-  const slotRY = (slotRadius / boardH) * 100;
   const noFly = document.querySelector(".handNoFly");
   const noFlyRect = noFly?.getBoundingClientRect?.() || null;
   const noFlyTopPx = noFlyRect ? (noFlyRect.top - boardRect.top) : null;
   const noFlySeatCenterY = (noFlyTopPx !== null)
     ? Math.max(0, (noFlyTopPx - seatHalfH - 12) / boardH * 100)
     : null;
+  const padXPct = ((seatHalfW + edgePad) / boardW) * 100;
+  const padYPct = ((seatHalfH + edgePad) / boardH) * 100;
+  const clampPct = (value, min, max) => Math.max(min, Math.min(max, value));
+
+  const slot = {
+    top:        { x: 50, y: 14 },
+    topLeft:    { x: 28, y: 20 },
+    topRight:   { x: 72, y: 20 },
+    left:       { x: 14, y: 50 },
+    right:      { x: 86, y: 50 },
+    bottomLeft: { x: 28, y: 76 },
+    bottomRight:{ x: 72, y: 76 },
+    bottom:     { x: 50, y: 82 }
+  };
+
+  const trick = {
+    top:        { x: 50, y: 32 },
+    topLeft:    { x: 42, y: 36 },
+    topRight:   { x: 58, y: 36 },
+    left:       { x: 36, y: 50 },
+    right:      { x: 64, y: 50 },
+    bottomLeft: { x: 42, y: 64 },
+    bottomRight:{ x: 58, y: 64 },
+    bottom:     { x: 50, y: 68 }
+  };
+
+  const orderByN = {
+    2: ["top"],
+    3: ["topLeft","topRight"],
+    4: ["left","top","right"],
+    5: ["bottomLeft","left","top","right","bottomRight"],
+    6: ["bottomLeft","left","topLeft","topRight","right","bottomRight"],
+    7: ["bottomLeft","left","topLeft","top","topRight","right","bottomRight"],
+    8: ["bottomLeft","left","topLeft","top","topRight","right","bottomRight"]
+  };
+
+  const ord = orderByN[n] || orderByN[8];
 
   for (let i=0;i<n;i++){
     const rel = (i - my + n) % n;
-    const ang = (90 + (rel * 360 / n)) * Math.PI / 180;
-    let x = 50 + seatRX * Math.cos(ang);
-    let y = 50 + seatRY * Math.sin(ang);
-
-
-    if (noFlySeatCenterY !== null && y > noFlySeatCenterY){
-      y = noFlySeatCenterY;
-    }
+    let slotName = "bottom";
+    if (rel === 0) slotName = "bottom";
+    else slotName = ord[rel - 1] || "top";
+    const p = slot[slotName] || slot.bottom;
+    let x = clampPct(p.x, padXPct, 100 - padXPct);
+    let y = clampPct(p.y, padYPct, 100 - padYPct);
+    if (noFlySeatCenterY !== null && y > noFlySeatCenterY) y = noFlySeatCenterY;
 
     const seatEl = seatsWrap.querySelector(`[data-seat="${i}"]`);
     if (seatEl){
@@ -730,15 +749,14 @@ function positionPlayBoard(n){
       // Tag relative positions so CSS can treat bottom seat (me) differently.
       // rel==0 is always the local player (bottom).
       seatEl.classList.toggle("seat-bottom", rel === 0);
-      seatEl.classList.toggle("seat-top", n >= 2 && rel === Math.floor(n/2));
+      seatEl.classList.toggle("seat-top", slotName === "top");
     }
 
-    const sx = 50 + slotRX * Math.cos(ang);
-    const sy = 50 + slotRY * Math.sin(ang);
+    const sp = trick[slotName] || trick.bottom;
     const slotEl = el(`olTrickSlot${i}`);
     if (slotEl){
-      slotEl.style.left = sx.toFixed(2) + "%";
-      slotEl.style.top  = sy.toFixed(2) + "%";
+      slotEl.style.left = sp.x.toFixed(2) + "%";
+      slotEl.style.top  = sp.y.toFixed(2) + "%";
     }
   }
 }
