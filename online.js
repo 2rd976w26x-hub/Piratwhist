@@ -490,13 +490,9 @@ function pcLayoutTunerActive(){
   if (typeof window === "undefined") return false;
   const targetName = "LaBA";
   const stateNames = Array.isArray(state?.names) ? state.names : null;
-  if (typeof mySeat === "number" && stateNames){
-    const nameFromState = (stateNames[mySeat] || "").trim();
-    return nameFromState === targetName;
-  }
-  if (stateNames && stateNames.length) return false;
-  const storedName = getStoredName();
-  return storedName === targetName;
+  if (typeof mySeat !== "number" || !stateNames) return false;
+  const nameFromState = (stateNames[mySeat] || "").trim();
+  return nameFromState === targetName;
 }
 
 function updatePcLayoutOutput(){
