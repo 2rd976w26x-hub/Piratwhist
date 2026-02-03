@@ -2344,6 +2344,7 @@ function render(){
   if (el("olCenter")){
     // Build + position the dynamic board DOM (2–8 players)
     ensurePlayBoard(state.n);
+    setupPcLayoutTuner(state.n);
     positionPlayBoard(state.n);
 
     const bids = state.bids || [];
