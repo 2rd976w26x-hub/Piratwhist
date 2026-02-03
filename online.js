@@ -488,11 +488,11 @@ const __pwSeatPositions = {};
 
 function pcLayoutTunerActive(){
   if (typeof window === "undefined") return false;
-  const targetName = "LaBA";
-  const stateNames = Array.isArray(state?.names) ? state.names : null;
-  if (typeof mySeat !== "number" || !stateNames) return false;
-  const nameFromState = (stateNames[mySeat] || "").trim();
-  return nameFromState === targetName;
+  try{
+    return localStorage.getItem("pw_pc_layout_tuner_enabled") === "true";
+  }catch(e){
+    return false;
+  }
 }
 
 function updatePcLayoutOutput(){
