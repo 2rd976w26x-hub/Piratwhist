@@ -6,6 +6,9 @@
     rounds: "PW_ROUND_EVENTS",
     sessions: "PW_ACTIVE_SESSIONS"
   };
+  const ADMIN_FLAGS = {
+    pcLayoutTuner: "pw_pc_layout_tuner_enabled"
+  };
 
   const provider = window.PW_ADMIN_PROVIDER || {
     async getFeedback() {
@@ -132,6 +135,29 @@
     });
   }
 
+  function isPcLayoutTunerEnabled() {
+    try{
+      return localStorage.getItem(ADMIN_FLAGS.pcLayoutTuner) === "true";
+    }catch(e){
+      return false;
+    }
+  }
+
+  function setPcLayoutTunerEnabled(enabled) {
+    try{
+      localStorage.setItem(ADMIN_FLAGS.pcLayoutTuner, enabled ? "true" : "false");
+    }catch(e){}
+  }
+
+  function updatePcLayoutStatus() {
+    const status = document.getElementById("admPcLayoutStatus");
+    const button = document.getElementById("admPcLayoutEnable");
+    if (!status && !button) return;
+    const enabled = isPcLayoutTunerEnabled();
+    if (status) status.textContent = enabled ? "Aktiv" : "Skjult";
+    if (button) button.disabled = enabled;
+  }
+
   async function refresh() {
     const [feedback, logins, rounds, sessions] = await Promise.all([
       provider.getFeedback(),
@@ -169,6 +195,14 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    const enableBtn = document.getElementById("admPcLayoutEnable");
+    if (enableBtn) {
+      enableBtn.addEventListener("click", () => {
+        setPcLayoutTunerEnabled(true);
+        updatePcLayoutStatus();
+      });
+    }
+    updatePcLayoutStatus();
     refresh();
     setInterval(refresh, 15000);
   });
