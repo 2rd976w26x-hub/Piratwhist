@@ -8,6 +8,22 @@
   };
   const PLAYER_NAME_KEY = "pw_player_name";
 
+
+  // Back button (fallback to rules)
+  (function setupBack(){
+    const btn = document.getElementById("adminBack");
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      try {
+        if (window.history && window.history.length > 1) {
+          window.history.back();
+          return;
+        }
+      } catch(e) {}
+      window.location.href = "/rules.html";
+    });
+  })();
+
   function readCookie(name) {
     if (typeof document === "undefined") return "";
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

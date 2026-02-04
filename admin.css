@@ -88,3 +88,7 @@
   color: #374151;
   font-size: 14px;
 }
+
+
+/* Ensure pill buttons match pill links */
+button.pwPill{color:inherit;cursor:pointer;font:inherit}
