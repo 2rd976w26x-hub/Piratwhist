@@ -686,9 +686,6 @@ function setupPcLayoutTuner(n){
   const enabled = pcLayoutTunerActive() && !isMobile;
   panel.hidden = !enabled;
   panel.setAttribute("aria-hidden", String(!enabled));
-  panel.querySelectorAll("button, select, input, textarea").forEach((control) => {
-    control.disabled = !enabled;
-  });
   __pwPcLayoutTuner.enabled = enabled;
   __pwPcLayoutTuner.lastSeatCount = n;
   if (!enabled) return;
