@@ -14,7 +14,7 @@
     </div>
     <div class="actions">
       <button id="rulesBack" class="ghost linkbtn" type="button">← Tilbage</button>
-      <a class="ghost linkbtn" href="/admin.html">Admin</a>
+      <a id="rulesAdmin" class="ghost linkbtn" href="/admin.html" hidden>Admin</a>
     </div>
   </header>
 
@@ -175,6 +175,15 @@
           window.location.href = fallback;
         }
       });
+
+      function getStoredName(){
+        try { return (localStorage.getItem("pw_player_name") || "").trim(); } catch(e){ return ""; }
+      }
+      const adminLink = document.getElementById('rulesAdmin');
+      if (adminLink){
+        const name = getStoredName();
+        adminLink.hidden = name !== 'LaBA';
+      }
     })();
   </script>
   <script src="/pw_telemetry.js"></script>
