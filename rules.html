@@ -3,18 +3,38 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist – Regler v0.2.119</title>
+  <title>Piratwhist – Regler v0.2.120</title>
   <link rel="stylesheet" href="piratwhist.css" />
   <link rel="stylesheet" href="/feedback.css" />
+  <style>
+    .admin-icon{
+      width:36px; height:36px;
+      display:inline-flex; align-items:center; justify-content:center;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.22);
+      background: rgba(0,0,0,0.18);
+      color: inherit;
+      text-decoration:none;
+      line-height:1;
+      user-select:none;
+    }
+    .admin-icon:hover{ background: rgba(0,0,0,0.28); }
+    .admin-icon svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; }
+  </style>
 </head>
 <body class="page-rules">
   <header class="topbar">
     <div class="title">
-      Piratwhist – Regler <span class="badge">v0.2.119</span>
+      Piratwhist – Regler <span class="badge">v0.2.120</span>
     </div>
     <div class="actions">
       <button id="rulesBack" class="ghost linkbtn" type="button">← Tilbage</button>
-      <a class="ghost linkbtn" href="/admin.html">Admin</a>
+      <a id="adminIcon" class="admin-icon" href="/admin.html" aria-label="Admin" title="Admin">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09 a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06 a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09 a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06 a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09 a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06 a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09 a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </a>
     </div>
   </header>
 
@@ -130,7 +150,7 @@
   </main>
 
   <footer class="footer">
-    Piratwhist v0.2.119
+    Piratwhist v0.2.120
   </footer>
 
   <script>
@@ -165,6 +185,15 @@
 
       // Clear stored return once we've used the rules page (prevents stale returns later)
       try { sessionStorage.removeItem('pw_rules_return'); } catch(_) {}
+      // Admin icon: only visible for LaBA
+      (function(){
+        const el = document.getElementById('adminIcon');
+        if(!el) return;
+        let name = "";
+        try { name = (localStorage.getItem("pw_player_name") || "").trim(); } catch(e){ name = ""; }
+        if (name !== "LaBA") { el.remove(); }
+      })();
+
 
       // If the rules page was opened in a new tab, the user might "close" the tab.
       // Provide a safe close attempt via ESC (optional):
