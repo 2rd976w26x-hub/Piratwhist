@@ -176,9 +176,9 @@
     const button = document.getElementById("admPcLayoutEnable");
     if (!status && !button) return;
     const enabled = isPcLayoutTunerEnabled();
-    if (status) status.textContent = enabled ? "Aktiv" : "Skjult";
+    if (status) status.textContent = enabled ? "Synlig" : "Skjult";
     if (button) {
-      button.textContent = enabled ? "Skjul layout-tuner" : "Aktiver layout-tuner";
+      button.textContent = enabled ? "Skjul layout-tuner" : "Vis layout-tuner";
       button.classList.toggle("pwBtnDanger", enabled);
     }
   }
