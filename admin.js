@@ -10,6 +10,22 @@
     pcLayoutTuner: "pw_pc_layout_tuner_enabled"
   };
 
+  function readCookie(name) {
+    if (typeof document === "undefined") return "";
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : "";
+  }
+
+  function writeCookie(name, value, maxAgeDays = 30) {
+    if (typeof document === "undefined") return;
+    const maxAge = Math.max(1, Number(maxAgeDays) || 1) * 24 * 60 * 60;
+    const host = window.location?.hostname || "";
+    const parts = host.split(".");
+    const domain = parts.length > 1 ? `; domain=.${parts.slice(-2).join(".")}` : "";
+    document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${maxAge}; path=/; SameSite=Lax${domain}`;
+  }
+
   const provider = window.PW_ADMIN_PROVIDER || {
     async getFeedback() {
       return telemetry?.readJson ? telemetry.readJson(STORAGE.feedback, []) : [];
@@ -136,17 +152,23 @@
   }
 
   function isPcLayoutTunerEnabled() {
+    let value = null;
     try{
-      return localStorage.getItem(ADMIN_FLAGS.pcLayoutTuner) === "true";
+      value = localStorage.getItem(ADMIN_FLAGS.pcLayoutTuner);
     }catch(e){
-      return false;
+      value = null;
     }
+    if (value === null || value === undefined || value === "") {
+      value = readCookie(ADMIN_FLAGS.pcLayoutTuner);
+    }
+    return value === "true";
   }
 
   function setPcLayoutTunerEnabled(enabled) {
     try{
       localStorage.setItem(ADMIN_FLAGS.pcLayoutTuner, enabled ? "true" : "false");
     }catch(e){}
+    writeCookie(ADMIN_FLAGS.pcLayoutTuner, enabled ? "true" : "false");
   }
 
   function updatePcLayoutStatus() {
