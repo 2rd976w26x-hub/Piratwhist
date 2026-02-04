@@ -155,7 +155,10 @@
     if (!status && !button) return;
     const enabled = isPcLayoutTunerEnabled();
     if (status) status.textContent = enabled ? "Aktiv" : "Skjult";
-    if (button) button.disabled = enabled;
+    if (button) {
+      button.textContent = enabled ? "Skjul layout-tuner" : "Aktiver layout-tuner";
+      button.classList.toggle("pwBtnDanger", enabled);
+    }
   }
 
   async function refresh() {
@@ -198,7 +201,7 @@
     const enableBtn = document.getElementById("admPcLayoutEnable");
     if (enableBtn) {
       enableBtn.addEventListener("click", () => {
-        setPcLayoutTunerEnabled(true);
+        setPcLayoutTunerEnabled(!isPcLayoutTunerEnabled());
         updatePcLayoutStatus();
       });
     }
