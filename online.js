@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.118)
+// Piratwhist Online Multiplayer (v0.2.119)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -391,7 +391,7 @@ const PW_DEBUG = (() => {
     });
   }catch(e){ /* ignore */ }
 })();
-// v0.2.118:
+// v0.2.119:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -480,7 +480,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.118: dynamic round-table board (2–8 players) ---
+// --- v0.2.119: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 const __pwPcLayoutTuner = { initialized: false, enabled: false, lastSeatCount: 0 };
 const __pwSeatOverrides = {};
@@ -677,6 +677,32 @@ function initPcLayoutTuner(){
   __pwPcLayoutTuner.initialized = true;
 }
 
+function setPcLayoutTunerPanelEnabled(panel, enabled){
+  if (!panel) return;
+  // Use both the hidden attribute and inline display to ensure the full panel
+  // (and its controls) is truly removed from the UI when disabled.
+  panel.hidden = !enabled;
+  panel.style.display = enabled ? "" : "none";
+  panel.setAttribute("aria-hidden", String(!enabled));
+
+  const controls = panel.querySelectorAll("button, input, select, textarea");
+  controls.forEach((ctrl) => {
+    if (!enabled){
+      // Remember prior disabled-state so we can restore it.
+      ctrl.dataset.pwPrevDisabled = ctrl.disabled ? "1" : "0";
+      ctrl.disabled = true;
+      // Make sure keyboard focus can't land here even if a browser ignores display:none momentarily.
+      ctrl.tabIndex = -1;
+    }else{
+      const prev = ctrl.dataset.pwPrevDisabled;
+      if (prev === "0") ctrl.disabled = false;
+      delete ctrl.dataset.pwPrevDisabled;
+      // Let the browser decide default tab order.
+      ctrl.removeAttribute("tabindex");
+    }
+  });
+}
+
 function setupPcLayoutTuner(n){
   const panel = el("pcLayoutTuner");
   if (!panel) return;
@@ -684,8 +710,7 @@ function setupPcLayoutTuner(n){
     ? window.matchMedia("(max-width: 520px)").matches
     : false;
   const enabled = pcLayoutTunerActive() && !isMobile;
-  panel.hidden = !enabled;
-  panel.setAttribute("aria-hidden", String(!enabled));
+  setPcLayoutTunerPanelEnabled(panel, enabled);
   __pwPcLayoutTuner.enabled = enabled;
   __pwPcLayoutTuner.lastSeatCount = n;
   if (!enabled) return;
@@ -762,7 +787,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v0.2.118 Dev + layout: SceneShift for mobile to utilize top space and
+    // v0.2.119 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -2811,7 +2836,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.118 PC HUD sync + button wiring
+// v0.2.119 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -2875,7 +2900,7 @@ function alignHandDockToBottomSeat(){
   handDock.classList.add("handDockAuto");
 }
 
-// v0.2.118 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.119 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
