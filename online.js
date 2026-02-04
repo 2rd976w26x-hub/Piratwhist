@@ -485,13 +485,40 @@ let __pwBoardBuiltFor = null;
 const __pwPcLayoutTuner = { initialized: false, enabled: false, lastSeatCount: 0 };
 const __pwSeatOverrides = {};
 const __pwSeatPositions = {};
+let __pwPcLayoutTunerFlag = false;
+
+function readCookie(name) {
+  if (typeof document === "undefined") return "";
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : "";
+}
 
 function pcLayoutTunerActive(){
   if (typeof window === "undefined") return false;
+  const key = "pw_pc_layout_tuner_enabled";
+  let value = null;
   try{
-    return localStorage.getItem("pw_pc_layout_tuner_enabled") === "true";
+    value = localStorage.getItem(key);
   }catch(e){
-    return false;
+    value = null;
+  }
+  const cookieValue = readCookie(key);
+  if (cookieValue && cookieValue !== value){
+    value = cookieValue;
+    try{
+      localStorage.setItem(key, cookieValue);
+    }catch(e){}
+  }
+  return value === "true";
+}
+
+function syncPcLayoutTunerState(){
+  const next = pcLayoutTunerActive();
+  if (next === __pwPcLayoutTunerFlag) return;
+  __pwPcLayoutTunerFlag = next;
+  if (__pwPcLayoutTuner.lastSeatCount){
+    setupPcLayoutTuner(__pwPcLayoutTuner.lastSeatCount);
   }
 }
 
@@ -668,6 +695,11 @@ function setupPcLayoutTuner(n){
   initPcLayoutTuner();
   syncPcLayoutSelect(n);
   updatePcLayoutOutput();
+}
+
+function handlePcLayoutStorageChange(event){
+  if (!event || event.key !== "pw_pc_layout_tuner_enabled") return;
+  syncPcLayoutTunerState();
 }
 
 function ensurePlayBoard(n){
@@ -1658,6 +1690,7 @@ socket.on("connect", () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+  __pwPcLayoutTunerFlag = pcLayoutTunerActive();
   // In case the socket connects after DOM is ready or the page is restored
   // from bfcache.
   bootFromUrl();
@@ -1707,6 +1740,10 @@ document.addEventListener("DOMContentLoaded", () => {
     window.visualViewport.addEventListener("resize", scheduleLayoutUpdate, { passive: true });
     window.visualViewport.addEventListener("scroll", scheduleLayoutUpdate, { passive: true });
   }
+  window.addEventListener("storage", handlePcLayoutStorageChange);
+  window.addEventListener("focus", syncPcLayoutTunerState, { passive: true });
+  document.addEventListener("visibilitychange", syncPcLayoutTunerState);
+  setInterval(syncPcLayoutTunerState, 1000);
   pendingCreateRoom = false;
 });
 
