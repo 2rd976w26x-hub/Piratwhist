@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v0.2.121)
+// Piratwhist Online Multiplayer (v0.2.123)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -49,7 +49,7 @@ function applyHandOverlap(cardsEl){
   overlap = Math.max(minOverlap, Math.min(maxOverlap, overlap));
   cardsEl.style.setProperty("--hand-overlap", `${overlap.toFixed(2)}px`);
 }
-const APP_VERSION = "0.2.121";
+const APP_VERSION = "0.2.123";
 const PW_TELEMETRY = window.PW_TELEMETRY || null;
 const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") === "1");
 const DEBUG_MODE = (new URLSearchParams(window.location.search).get("debug") === "1");
@@ -391,7 +391,7 @@ const PW_DEBUG = (() => {
     });
   }catch(e){ /* ignore */ }
 })();
-// v0.2.121:
+// v0.2.123:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -472,6 +472,25 @@ function setStoredName(v){
   try { localStorage.setItem("pw_player_name", (v||"").trim()); } catch(e){}
 }
 
+// --- Deal animation tuning (LaBA / PC layout-tuner) ---
+function getDealGapMs(){
+  // Gap between each dealt card (ms). Used by the deal animation.
+  // Stored in localStorage so LaBA can tune it live.
+  const def = 55;
+  try {
+    const raw = Number(localStorage.getItem("pw_deal_gap_ms"));
+    if (!Number.isFinite(raw)) return def;
+    return Math.max(0, Math.min(400, Math.round(raw)));
+  } catch(e){
+    return def;
+  }
+}
+function setDealGapMs(ms){
+  const v = (Number.isFinite(ms) ? Math.max(0, Math.min(400, Math.round(ms))) : 55);
+  try { localStorage.setItem("pw_deal_gap_ms", String(v)); } catch(e){}
+  return v;
+}
+
 let joinInProgress = false;
 let pendingJoinRoom = null;
 let pendingCreateRoom = false;
@@ -480,7 +499,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v0.2.121: dynamic round-table board (2–8 players) ---
+// --- v0.2.123: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 const __pwPcLayoutTuner = { initialized: false, enabled: false, lastSeatCount: 0 };
 const __pwSeatOverrides = {};
@@ -495,7 +514,7 @@ function readCookie(name) {
 }
 
 function pcLayoutTunerActive(){
-  // v0.2.121: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
+  // v0.2.123: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
   // Vi bruger det gemte spillernavn (som også bruges på tværs af online sider).
   if (typeof window === "undefined") return false;
   const name = getStoredName();
@@ -614,6 +633,40 @@ function initPcLayoutTuner(){
   const stepInput = el("pcLayoutStep");
   const stepPresets = document.querySelectorAll("[data-pc-step]");
 
+  // Deal animation controls (LaBA only)
+  const dealGapInput = el("pcDealGap");
+  const dealGapRange = el("pcDealGapRange");
+  const dealGapReset = el("pcDealGapReset");
+
+  const syncDealGapUi = (ms) => {
+    const v = setDealGapMs(ms);
+    if (dealGapInput) dealGapInput.value = String(v);
+    if (dealGapRange) dealGapRange.value = String(v);
+  };
+
+  if (dealGapInput){
+    dealGapInput.addEventListener("input", () => {
+      const raw = Number(dealGapInput.value);
+      syncDealGapUi(raw);
+    });
+    dealGapInput.addEventListener("change", () => {
+      const raw = Number(dealGapInput.value);
+      syncDealGapUi(raw);
+    });
+  }
+  if (dealGapRange){
+    dealGapRange.addEventListener("input", () => {
+      const raw = Number(dealGapRange.value);
+      syncDealGapUi(raw);
+    });
+  }
+  if (dealGapReset){
+    dealGapReset.addEventListener("click", () => syncDealGapUi(55));
+  }
+
+  // Initialize deal-gap UI from stored value.
+  syncDealGapUi(getDealGapMs());
+
   const readStep = () => {
     const raw = stepInput ? Number(stepInput.value) : 1;
     return Number.isFinite(raw) && raw > 0 ? raw : 1;
@@ -662,6 +715,9 @@ function initPcLayoutTuner(){
     }
     applyPcLayoutOverrides(parsed);
   });
+
+  // Init deal-gap UI from stored value
+  syncDealGapUi(getDealGapMs());
 
   __pwPcLayoutTuner.initialized = true;
 }
@@ -776,7 +832,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v0.2.121 Dev + layout: SceneShift for mobile to utilize top space and
+    // v0.2.123 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -1217,7 +1273,8 @@ async function runDealAnimation(seq){
 
   const sleep = (ms) => new Promise((res)=>setTimeout(res, ms));
   // Faster deal so it doesn't feel sluggish, but still clearly visible.
-  const perCardGap = 55;
+  // NOTE: Gap is user-tunable (LaBA) via PC layout-tuner.
+  const perCardGap = () => getDealGapMs();
   const flightMs = 280;
 
   // If we're on the page that shows "Din hånd" (bidding/dealing), we want each
@@ -1321,7 +1378,7 @@ async function runDealAnimation(seq){
       }catch(e){ /* ignore */ }
     }
 
-    await sleep(perCardGap);
+    await sleep(perCardGap());
   }
 
   PW_ANIM.dealInProgress = false;
@@ -2825,7 +2882,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v0.2.121 PC HUD sync + button wiring
+// v0.2.123 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -2889,7 +2946,7 @@ function alignHandDockToBottomSeat(){
   handDock.classList.add("handDockAuto");
 }
 
-// v0.2.121 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v0.2.123 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");

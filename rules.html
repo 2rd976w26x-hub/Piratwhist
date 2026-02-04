@@ -3,18 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist – Regler v0.2.121</title>
+  <title>Piratwhist – Regler v0.2.123</title>
   <link rel="stylesheet" href="piratwhist.css" />
   <link rel="stylesheet" href="/feedback.css" />
 </head>
 <body class="page-rules">
   <header class="topbar">
     <div class="title">
-      Piratwhist – Regler <span class="badge">v0.2.121</span>
+      Piratwhist – Regler <span class="badge">v0.2.123</span>
     </div>
     <div class="actions">
       <button id="rulesBack" class="ghost linkbtn" type="button">← Tilbage</button>
-      <a id="rulesAdmin" class="ghost linkbtn" href="/admin.html" hidden>Admin</a>
+      <!-- Admin-link: skal KUN være synlig for spillernavn "LaBA" (robust skjul også uden JS). -->
+      <a id="rulesAdmin" class="ghost linkbtn" href="/admin.html" hidden style="display:none">Admin</a>
     </div>
   </header>
 
@@ -130,7 +131,7 @@
   </main>
 
   <footer class="footer">
-    Piratwhist v0.2.121
+    Piratwhist v0.2.123
   </footer>
 
   <script>
@@ -182,7 +183,10 @@
       const adminLink = document.getElementById('rulesAdmin');
       if (adminLink){
         const name = getStoredName();
-        adminLink.hidden = name !== 'LaBA';
+        const isAdmin = name === 'LaBA';
+        // Dobbelt-sikring: både hidden-attribut og inline display.
+        adminLink.hidden = !isAdmin;
+        adminLink.style.display = isAdmin ? '' : 'none';
       }
     })();
   </script>

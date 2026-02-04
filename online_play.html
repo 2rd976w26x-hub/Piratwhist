@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v0.2.121 · Spil</title>
+  <title>Piratwhist v0.2.123 · Spil</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
   <link rel="stylesheet" href="/online_pages.css" />
@@ -72,6 +72,13 @@
           <button class="ghost pcLayoutTuner__step" type="button" data-pc-step="1">1</button>
           <button class="ghost pcLayoutTuner__step" type="button" data-pc-step="2">2</button>
         </div>
+      </div>
+
+      <div class="pcLayoutTuner__row">
+        <label for="pcDealGap">Uddeling pause (ms)</label>
+        <input id="pcDealGap" type="number" min="0" max="400" step="5" value="55" />
+        <input id="pcDealGapRange" type="range" min="0" max="400" step="5" value="55" aria-label="Uddeling pause" />
+        <button id="pcDealGapReset" class="ghost" type="button">Reset</button>
       </div>
       <div class="pcLayoutTuner__controls" role="group" aria-label="Flyt spiller">
         <div></div>
@@ -142,7 +149,7 @@
       <div class="brand">
         <div class="logo">🏴‍☠️</div>
         <div>
-          <div class="title">Piratwhist <span class="ver">v0.2.121</span></div>
+          <div class="title">Piratwhist <span class="ver">v0.2.123</span></div>
           <div class="sub">Online spil · spar er trumf · bekend kulør</div>
         </div>
       </div>
