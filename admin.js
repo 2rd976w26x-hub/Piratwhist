@@ -6,9 +6,7 @@
     rounds: "PW_ROUND_EVENTS",
     sessions: "PW_ACTIVE_SESSIONS"
   };
-  const ADMIN_FLAGS = {
-    pcLayoutTuner: "pw_pc_layout_tuner_enabled"
-  };
+  const PLAYER_NAME_KEY = "pw_player_name";
 
   function readCookie(name) {
     if (typeof document === "undefined") return "";
@@ -151,36 +149,16 @@
     });
   }
 
-  function isPcLayoutTunerEnabled() {
-    let value = null;
-    try{
-      value = localStorage.getItem(ADMIN_FLAGS.pcLayoutTuner);
-    }catch(e){
-      value = null;
-    }
-    if (value === null || value === undefined || value === "") {
-      value = readCookie(ADMIN_FLAGS.pcLayoutTuner);
-    }
-    return value === "true";
-  }
-
-  function setPcLayoutTunerEnabled(enabled) {
-    try{
-      localStorage.setItem(ADMIN_FLAGS.pcLayoutTuner, enabled ? "true" : "false");
-    }catch(e){}
-    writeCookie(ADMIN_FLAGS.pcLayoutTuner, enabled ? "true" : "false");
+  function getStoredName(){
+    try{ return (localStorage.getItem(PLAYER_NAME_KEY) || "").trim(); }catch(e){ return ""; }
   }
 
   function updatePcLayoutStatus() {
     const status = document.getElementById("admPcLayoutStatus");
-    const button = document.getElementById("admPcLayoutEnable");
-    if (!status && !button) return;
-    const enabled = isPcLayoutTunerEnabled();
-    if (status) status.textContent = enabled ? "Synlig" : "Skjult";
-    if (button) {
-      button.textContent = enabled ? "Skjul layout-tuner" : "Vis layout-tuner";
-      button.classList.toggle("pwBtnDanger", enabled);
-    }
+    if (!status) return;
+    const name = getStoredName();
+    const enabled = name === "LaBA";
+    status.textContent = enabled ? "Synlig (LaBA)" : "Skjult";
   }
 
   async function refresh() {
@@ -220,13 +198,6 @@
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    const enableBtn = document.getElementById("admPcLayoutEnable");
-    if (enableBtn) {
-      enableBtn.addEventListener("click", () => {
-        setPcLayoutTunerEnabled(!isPcLayoutTunerEnabled());
-        updatePcLayoutStatus();
-      });
-    }
     updatePcLayoutStatus();
     refresh();
     setInterval(refresh, 15000);
