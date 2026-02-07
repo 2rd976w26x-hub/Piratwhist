@@ -50,6 +50,9 @@
         <span class="pill">Kulør: <b id="pcLeadSuit">-</b></span>
       </div>
       <div class="hudBox hudBR">
+        <button id="pcAskAi" class="ghost" title="Spørg AI (kun LaBA)" hidden>
+          <span class="ico" aria-hidden="true">🤖</span><span class="lbl">Spørg AI</span>
+        </button>
         <button id="pcRules" class="ghost" title="Åbn regler">
           <span class="ico" aria-hidden="true">📖</span><span class="lbl">Regler</span>
         </button>
@@ -110,6 +113,9 @@
         <span class="pill">Kulør: <b id="olLeadSuit">-</b></span>
       </div>
       <div class="bottomRight">
+        <button id="olAskAi" class="ghost" title="Spørg AI (kun LaBA)" hidden>
+          <span class="ico" aria-hidden="true">🤖</span><span class="lbl">Spørg AI</span>
+        </button>
         <button id="olRules" class="ghost" title="Åbn regler">
           <span class="ico" aria-hidden="true">📖</span><span class="lbl">Regler</span>
         </button>
@@ -161,6 +167,29 @@
       </div>
     </footer>
 
+  </div>
+
+  <!-- AI help modal (kun LaBA i første omgang) -->
+  <div id="pwAiModal" class="pwAiModal" hidden>
+    <div class="pwAiModal__overlay" data-pw-ai-close="1"></div>
+    <div class="pwAiModal__panel" role="dialog" aria-modal="true" aria-label="Spørg AI">
+      <div class="pwAiModal__head">
+        <div class="pwAiModal__title">🤖 Spørg AI</div>
+        <button class="ghost pwAiModal__close" type="button" data-pw-ai-close="1" aria-label="Luk">✖</button>
+      </div>
+      <div class="pwAiModal__meta">
+        <label class="pwAiModal__label">AI URL (gemmes lokalt)</label>
+        <input id="pwAiUrl" class="pwAiModal__url" type="text" placeholder="https://...trycloudflare.com" />
+        <div class="pwAiModal__hint">Tip: Quick tunnel URL ændrer sig når du genstarter cloudflared.</div>
+      </div>
+      <textarea id="pwAiQuestion" class="pwAiModal__q" rows="3" placeholder="Skriv dit spørgsmål om spillet…"></textarea>
+      <div class="pwAiModal__actions">
+        <button id="pwAiAsk" class="primary" type="button">Spørg</button>
+        <button class="ghost" type="button" data-pw-ai-close="1">Luk</button>
+      </div>
+      <div id="pwAiStatus" class="pwAiModal__status"></div>
+      <div id="pwAiAnswer" class="pwAiModal__answer"></div>
+    </div>
   </div>
   <script src="/pw_telemetry.js"></script>
   <script src="/feedback.js"></script>

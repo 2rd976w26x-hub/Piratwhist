@@ -36,23 +36,6 @@
         <li>Højeste kort vinder stikket i den udspillede kulør, medmindre der spilles trumf.</li>
       </ul>
 
-      <h2>Robot: Læs reglerne op (kort og simpelt)</h2>
-      <div class="rules-robot" aria-live="polite">
-        <p class="hint">Tryk på knappen, så får du en kort og enkel oplæsning af reglerne.</p>
-        <div class="rules-robot-actions">
-          <button id="rulesRobotSpeak" class="primary" type="button">🤖 Læs regler op</button>
-          <button id="rulesRobotStop" class="ghost" type="button">Stop</button>
-          <span id="rulesRobotStatus" class="rules-robot-status">Klar.</span>
-        </div>
-        <ul class="rules-robot-list">
-          <li>Spar er altid trumf.</li>
-          <li>Bekend kulør hvis du kan.</li>
-          <li>Højeste kort vinder stikket (medmindre trumf er spillet).</li>
-          <li>Før runden byder du, hvor mange stik du tror du vinder.</li>
-          <li>Rammer du dit bud: 10 point + bud. Ellers minus pr. fejlstik.</li>
-        </ul>
-      </div>
-
       <h2>Runder og antal kort (52-korts begrænsning)</h2>
       <ul>
         <li>Der bruges ét standard spil (52 kort).</li>
@@ -204,62 +187,6 @@
         // Dobbelt-sikring: både hidden-attribut og inline display.
         adminLink.hidden = !isAdmin;
         adminLink.style.display = isAdmin ? '' : 'none';
-      }
-
-      const robotSpeakBtn = document.getElementById('rulesRobotSpeak');
-      const robotStopBtn = document.getElementById('rulesRobotStop');
-      const robotStatus = document.getElementById('rulesRobotStatus');
-      const simpleRulesText = [
-        'Her er reglerne helt kort.',
-        'Spar er altid trumf.',
-        'Du skal bekende kulør, hvis du kan.',
-        'Højeste kort vinder stikket, medmindre trumf er spillet.',
-        'Før hver runde byder du, hvor mange stik du forventer.',
-        'Rammer du dit bud får du ti point plus buddet.',
-        'Ellers mister du point for hvert stik du rammer forkert.'
-      ].join(' ');
-
-      function setRobotStatus(text){
-        if (robotStatus) {
-          robotStatus.textContent = text;
-        }
-      }
-
-      function stopRobot(){
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-        }
-        setRobotStatus('Stoppet.');
-      }
-
-      function speakRules(){
-        if (!('speechSynthesis' in window)) {
-          setRobotStatus('Oplæsning understøttes ikke i denne browser.');
-          return;
-        }
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(simpleRulesText);
-        utterance.lang = 'da-DK';
-        utterance.rate = 1;
-        utterance.pitch = 1;
-        utterance.onstart = () => setRobotStatus('Robotten læser op…');
-        utterance.onend = () => setRobotStatus('Færdig.');
-        utterance.onerror = () => setRobotStatus('Kunne ikke læse op.');
-        window.speechSynthesis.speak(utterance);
-      }
-
-      if (robotSpeakBtn && robotStopBtn) {
-        if (!('speechSynthesis' in window)) {
-          robotSpeakBtn.disabled = true;
-          setRobotStatus('Oplæsning understøttes ikke i denne browser.');
-        }
-        robotSpeakBtn.addEventListener('click', speakRules);
-        robotStopBtn.addEventListener('click', stopRobot);
-        window.addEventListener('beforeunload', () => {
-          if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-          }
-        });
       }
     })();
   </script>

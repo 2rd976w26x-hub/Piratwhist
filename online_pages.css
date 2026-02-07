@@ -38,6 +38,35 @@ html, body { height: 100%; }
 .small { font-size: 0.9rem; opacity: .9; }
 .handDock{ margin-top:auto; }
 
+/* --- Piratwhist AI helper (LaBA only, initial rollout) --- */
+.pwAiModal[hidden]{ display:none !important; }
+.pwAiModal{ position:fixed; inset:0; z-index:99999; }
+.pwAiModal__overlay{ position:absolute; inset:0; background:rgba(0,0,0,.55); }
+.pwAiModal__panel{
+  position:relative;
+  margin: 10vh auto;
+  width: min(520px, calc(100vw - 24px));
+  background:#fff;
+  color:#000;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.35);
+}
+.pwAiModal__head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom: 8px; }
+.pwAiModal__title{ font-weight: 700; font-size: 16px; }
+.pwAiModal__close{ padding: 6px 10px; }
+.pwAiModal__meta{ margin-bottom: 8px; }
+.pwAiModal__label{ display:block; font-size: 12px; opacity: .85; margin-bottom: 4px; }
+.pwAiModal__url{ width:100%; padding: 8px 10px; border:1px solid rgba(0,0,0,.2); border-radius: 10px; }
+.pwAiModal__hint{ font-size: 11px; opacity: .75; margin-top: 4px; }
+.pwAiModal__q{ width:100%; padding: 10px; border:1px solid rgba(0,0,0,.2); border-radius: 10px; resize: vertical; }
+.pwAiModal__actions{ display:flex; gap:10px; justify-content:flex-end; margin-top: 10px; }
+.pwAiModal__status{ margin-top: 8px; font-size: 12px; opacity: .8; }
+.pwAiModal__answer{ margin-top: 10px; white-space: pre-wrap; line-height: 1.35; }
+
+/* Keep LaBA-only button visually consistent */
+#pcAskAi, #olAskAi{ white-space: nowrap; }
+
 /* Bidding: show the player's hand at full brightness even though cards are not playable. */
 body.page-bidding .cardbtn:disabled{ opacity: 1; }
 body.page-bidding .cardbtn:disabled .playingcard{ filter: none; }

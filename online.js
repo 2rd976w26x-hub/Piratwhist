@@ -521,6 +521,110 @@ function pcLayoutTunerActive(){
   return name === "LaBA";
 }
 
+// --- AI help (LaBA only in first rollout) ---
+const PW_AI_URL_KEY = "pw_ai_url";
+const PW_AI_DEFAULT_URL = "https://geographic-thus-excess-laptops.trycloudflare.com";
+
+function getPwAiBaseUrl(){
+  try{
+    const raw = (localStorage.getItem(PW_AI_URL_KEY) || "").trim();
+    return raw || PW_AI_DEFAULT_URL;
+  }catch(e){
+    return PW_AI_DEFAULT_URL;
+  }
+}
+
+function setPwAiBaseUrl(v){
+  try{ localStorage.setItem(PW_AI_URL_KEY, (v||"").trim()); }catch(e){}
+}
+
+function initPwAiHelp(){
+  const isAdmin = pcLayoutTunerActive();
+  const btnPc = el("pcAskAi");
+  const btnOl = el("olAskAi");
+  const modal = el("pwAiModal");
+  if (!modal) return;
+
+  // Hide by default for everyone.
+  if (btnPc) btnPc.hidden = true;
+  if (btnOl) btnOl.hidden = true;
+  modal.hidden = true;
+
+  if (!isAdmin) return;
+
+  if (btnPc) btnPc.hidden = false;
+  if (btnOl) btnOl.hidden = false;
+
+  const urlInput = el("pwAiUrl");
+  const q = el("pwAiQuestion");
+  const ask = el("pwAiAsk");
+  const status = el("pwAiStatus");
+  const answer = el("pwAiAnswer");
+
+  const closeAll = () => {
+    modal.hidden = true;
+    if (status) status.textContent = "";
+    if (answer) answer.textContent = "";
+  };
+
+  const open = () => {
+    modal.hidden = false;
+    if (urlInput) urlInput.value = getPwAiBaseUrl();
+    setTimeout(() => { try{ q?.focus(); }catch(e){} }, 0);
+  };
+
+  const closes = modal.querySelectorAll?.("[data-pw-ai-close]") || [];
+  closes.forEach((c) => c.addEventListener("click", closeAll));
+
+  document.addEventListener("keydown", (ev) => {
+    if (modal.hidden) return;
+    if (ev.key === "Escape") closeAll();
+  });
+
+  btnPc?.addEventListener("click", open);
+  btnOl?.addEventListener("click", open);
+
+  urlInput?.addEventListener("change", () => {
+    setPwAiBaseUrl(urlInput.value);
+  });
+
+  ask?.addEventListener("click", async () => {
+    const question = (q?.value || "").trim();
+    if (!question) return;
+
+    const base = (urlInput?.value || getPwAiBaseUrl()).trim();
+    if (urlInput) setPwAiBaseUrl(base);
+    const askUrl = base.replace(/\/$/, "") + "/ask";
+
+    if (status) status.textContent = "AI tænker…";
+    if (answer) answer.textContent = "";
+    ask.disabled = true;
+
+    try{
+      const game = {
+        phase: state?.phase || "unknown",
+        leadSuit: state?.leadSuit || null,
+        myTurn: (typeof mySeat === "number" && typeof state?.turn === "number") ? (state.turn === mySeat) : null,
+        room: roomCode || null
+      };
+
+      const resp = await fetch(askUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, game })
+      });
+      if (!resp.ok) throw new Error("AI svarer ikke");
+      const data = await resp.json();
+      if (answer) answer.textContent = (data?.answer || "Ingen svar.").trim();
+    }catch(e){
+      if (answer) answer.textContent = "AI er ikke tilgængelig lige nu. (Tjek at cloudflared + node serveren kører.)";
+    }finally{
+      if (status) status.textContent = "";
+      ask.disabled = false;
+    }
+  });
+}
+
 function syncPcLayoutTunerState(){
   const next = pcLayoutTunerActive();
   if (next === __pwPcLayoutTunerFlag) return;
@@ -1759,6 +1863,8 @@ socket.on("connect", () => {
 
 document.addEventListener("DOMContentLoaded", () => {
   __pwPcLayoutTunerFlag = pcLayoutTunerActive();
+  // LaBA-only AI helper (modal + button)
+  try{ initPwAiHelp(); }catch(e){ /* ignore */ }
   // In case the socket connects after DOM is ready or the page is restored
   // from bfcache.
   bootFromUrl();

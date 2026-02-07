@@ -428,28 +428,6 @@ body.page-rules .figcap{
   font-size: 13px;
   opacity: .85;
 }
-body.page-rules .rules-robot{
-  margin: 12px 0 20px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: rgba(0,0,0,.18);
-}
-body.page-rules .rules-robot-actions{
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  align-items:center;
-  margin-bottom: 10px;
-}
-body.page-rules .rules-robot-status{
-  font-size: 13px;
-  opacity: .8;
-}
-body.page-rules .rules-robot-list{
-  margin: 0;
-  padding-left: 18px;
-}
 @media (min-width: 900px){
   body.page-rules .rule-illustration{
     aspect-ratio: 16 / 9; /* larger on desktop */
