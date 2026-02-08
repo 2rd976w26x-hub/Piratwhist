@@ -32,8 +32,20 @@
     try{ return (localStorage.getItem(PW_AI_URL_KEY) || "").trim().replace(/\/+$/, ""); }catch(e){ return ""; }
   }
   function setAiUrl(v){
-    try{ localStorage.setItem(PW_AI_URL_KEY, (v||"").trim().replace(/\/+$/, "")); }catch(e){}
+    try{
+      let s = (v||"").trim();
+      // Remove surrounding quotes
+      s = s.replace(/^["']|["']$/g, "").trim();
+      // If user pasted /health, /ask or /speak, strip to base
+      s = s.replace(/\/(health|ask|speak)\s*$/i, "");
+      // Remove trailing slashes
+      s = s.replace(/\/+$/, "");
+      // Assume https if protocol missing
+      if (s && !/^https?:\/\//i.test(s)) s = "https://" + s;
+      localStorage.setItem(PW_AI_URL_KEY, s);
+    }catch(e){}
   }
+
 
   async function testAiUrl(url){
     const base = (url||"").trim().replace(/\/+$/, "");
@@ -54,14 +66,47 @@
     const input = document.getElementById("admAiUrlInput");
     const btnSave = document.getElementById("admAiSave");
     const btnTest = document.getElementById("admAiTest");
+    const btnPaste = document.getElementById("admAiPaste");
     const status = document.getElementById("admAiStatus");
-    if (!input || !btnSave || !btnTest || !status) return;
+    if (!input || !btnSave || !btnTest || !btnPaste || !status) return;
 
     input.value = getAiUrl();
+
+    // Paste URL from clipboard (works best on HTTPS). Fallback to prompt.
+    btnPaste.addEventListener("click", async () => {
+      try{
+        const clip = await navigator.clipboard.readText();
+        setAiUrl(clip);
+        input.value = getAiUrl();
+        status.textContent = "URL indsat og gemt ✅";
+      }catch(e){
+        const manual = prompt("Indsæt tunnel-URL:", input.value || "");
+        if (manual == null) return;
+        setAiUrl(manual);
+        input.value = getAiUrl();
+        status.textContent = "URL indsat og gemt ✅";
+      }
+    });
 
     btnSave.addEventListener("click", () => {
       setAiUrl(input.value);
       input.value = getAiUrl();
+
+    // Paste URL from clipboard (works best on HTTPS). Fallback to prompt.
+    btnPaste.addEventListener("click", async () => {
+      try{
+        const clip = await navigator.clipboard.readText();
+        setAiUrl(clip);
+        input.value = getAiUrl();
+        status.textContent = "URL indsat og gemt ✅";
+      }catch(e){
+        const manual = prompt("Indsæt tunnel-URL:", input.value || "");
+        if (manual == null) return;
+        setAiUrl(manual);
+        input.value = getAiUrl();
+        status.textContent = "URL indsat og gemt ✅";
+      }
+    });
       status.textContent = "Gemt ✅";
     });
 
@@ -283,8 +328,20 @@
     try{ return (localStorage.getItem(PW_AI_URL_KEY) || "").trim().replace(/\/+$/, ""); }catch(e){ return ""; }
   }
   function setAiUrl(v){
-    try{ localStorage.setItem(PW_AI_URL_KEY, (v||"").trim().replace(/\/+$/, "")); }catch(e){}
+    try{
+      let s = (v||"").trim();
+      // Remove surrounding quotes
+      s = s.replace(/^["']|["']$/g, "").trim();
+      // If user pasted /health, /ask or /speak, strip to base
+      s = s.replace(/\/(health|ask|speak)\s*$/i, "");
+      // Remove trailing slashes
+      s = s.replace(/\/+$/, "");
+      // Assume https if protocol missing
+      if (s && !/^https?:\/\//i.test(s)) s = "https://" + s;
+      localStorage.setItem(PW_AI_URL_KEY, s);
+    }catch(e){}
   }
+
 
   async function testAiUrl(url){
     const base = (url||"").trim().replace(/\/+$/, "");
@@ -305,14 +362,47 @@
     const input = document.getElementById("admAiUrlInput");
     const btnSave = document.getElementById("admAiSave");
     const btnTest = document.getElementById("admAiTest");
+    const btnPaste = document.getElementById("admAiPaste");
     const status = document.getElementById("admAiStatus");
-    if (!input || !btnSave || !btnTest || !status) return;
+    if (!input || !btnSave || !btnTest || !btnPaste || !status) return;
 
     input.value = getAiUrl();
+
+    // Paste URL from clipboard (works best on HTTPS). Fallback to prompt.
+    btnPaste.addEventListener("click", async () => {
+      try{
+        const clip = await navigator.clipboard.readText();
+        setAiUrl(clip);
+        input.value = getAiUrl();
+        status.textContent = "URL indsat og gemt ✅";
+      }catch(e){
+        const manual = prompt("Indsæt tunnel-URL:", input.value || "");
+        if (manual == null) return;
+        setAiUrl(manual);
+        input.value = getAiUrl();
+        status.textContent = "URL indsat og gemt ✅";
+      }
+    });
 
     btnSave.addEventListener("click", () => {
       setAiUrl(input.value);
       input.value = getAiUrl();
+
+    // Paste URL from clipboard (works best on HTTPS). Fallback to prompt.
+    btnPaste.addEventListener("click", async () => {
+      try{
+        const clip = await navigator.clipboard.readText();
+        setAiUrl(clip);
+        input.value = getAiUrl();
+        status.textContent = "URL indsat og gemt ✅";
+      }catch(e){
+        const manual = prompt("Indsæt tunnel-URL:", input.value || "");
+        if (manual == null) return;
+        setAiUrl(manual);
+        input.value = getAiUrl();
+        status.textContent = "URL indsat og gemt ✅";
+      }
+    });
       status.textContent = "Gemt ✅";
     });
 
