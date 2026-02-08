@@ -22,7 +22,61 @@
       } catch(e) {}
       window.location.href = "/rules.html";
     });
-  })();
+  
+  // -----------------------------
+  // AI quick-tunnel helper (LaBA)
+  // -----------------------------
+  const PW_AI_URL_KEY = "pw_ai_url";
+
+  function getAiUrl(){
+    try{ return (localStorage.getItem(PW_AI_URL_KEY) || "").trim().replace(/\/+$/, ""); }catch(e){ return ""; }
+  }
+  function setAiUrl(v){
+    try{ localStorage.setItem(PW_AI_URL_KEY, (v||"").trim().replace(/\/+$/, "")); }catch(e){}
+  }
+
+  async function testAiUrl(url){
+    const base = (url||"").trim().replace(/\/+$/, "");
+    if (!base) return { ok:false, msg:"AI URL mangler." };
+    try{
+      const ctrl = new AbortController();
+      const t = setTimeout(()=>ctrl.abort(), 4000);
+      const r = await fetch(base + "/health", { signal: ctrl.signal, cache:"no-store" });
+      clearTimeout(t);
+      if (!r.ok) return { ok:false, msg:"AI svarede ikke (HTTP " + r.status + ")." };
+      return { ok:true, msg:"AI online ✅" };
+    }catch(e){
+      return { ok:false, msg:"AI offline ❌ (start cloudflared og tjek URL)" };
+    }
+  }
+
+  function initAiQuickTunnelCard(){
+    const input = document.getElementById("admAiUrlInput");
+    const btnSave = document.getElementById("admAiSave");
+    const btnTest = document.getElementById("admAiTest");
+    const status = document.getElementById("admAiStatus");
+    if (!input || !btnSave || !btnTest || !status) return;
+
+    input.value = getAiUrl();
+
+    btnSave.addEventListener("click", () => {
+      setAiUrl(input.value);
+      input.value = getAiUrl();
+      status.textContent = "Gemt ✅";
+    });
+
+    btnTest.addEventListener("click", async () => {
+      const res = await testAiUrl(input.value);
+      status.textContent = res.msg;
+    });
+
+    // Auto-test if there is already a URL
+    if (getAiUrl()){
+      testAiUrl(getAiUrl()).then(r => { status.textContent = r.msg; });
+    }
+  }
+
+})();
 
   function readCookie(name) {
     if (typeof document === "undefined") return "";
@@ -217,5 +271,60 @@
     updatePcLayoutStatus();
     refresh();
     setInterval(refresh, 15000);
+    initAiQuickTunnelCard();
   });
+
+  // -----------------------------
+  // AI quick-tunnel helper (LaBA)
+  // -----------------------------
+  const PW_AI_URL_KEY = "pw_ai_url";
+
+  function getAiUrl(){
+    try{ return (localStorage.getItem(PW_AI_URL_KEY) || "").trim().replace(/\/+$/, ""); }catch(e){ return ""; }
+  }
+  function setAiUrl(v){
+    try{ localStorage.setItem(PW_AI_URL_KEY, (v||"").trim().replace(/\/+$/, "")); }catch(e){}
+  }
+
+  async function testAiUrl(url){
+    const base = (url||"").trim().replace(/\/+$/, "");
+    if (!base) return { ok:false, msg:"AI URL mangler." };
+    try{
+      const ctrl = new AbortController();
+      const t = setTimeout(()=>ctrl.abort(), 4000);
+      const r = await fetch(base + "/health", { signal: ctrl.signal, cache:"no-store" });
+      clearTimeout(t);
+      if (!r.ok) return { ok:false, msg:"AI svarede ikke (HTTP " + r.status + ")." };
+      return { ok:true, msg:"AI online ✅" };
+    }catch(e){
+      return { ok:false, msg:"AI offline ❌ (start cloudflared og tjek URL)" };
+    }
+  }
+
+  function initAiQuickTunnelCard(){
+    const input = document.getElementById("admAiUrlInput");
+    const btnSave = document.getElementById("admAiSave");
+    const btnTest = document.getElementById("admAiTest");
+    const status = document.getElementById("admAiStatus");
+    if (!input || !btnSave || !btnTest || !status) return;
+
+    input.value = getAiUrl();
+
+    btnSave.addEventListener("click", () => {
+      setAiUrl(input.value);
+      input.value = getAiUrl();
+      status.textContent = "Gemt ✅";
+    });
+
+    btnTest.addEventListener("click", async () => {
+      const res = await testAiUrl(input.value);
+      status.textContent = res.msg;
+    });
+
+    // Auto-test if there is already a URL
+    if (getAiUrl()){
+      testAiUrl(getAiUrl()).then(r => { status.textContent = r.msg; });
+    }
+  }
+
 })();

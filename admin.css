@@ -92,3 +92,7 @@
 
 /* Ensure pill buttons match pill links */
 button.pwPill{color:inherit;cursor:pointer;font:inherit}
+
+.adminLabel{ display:block; font-weight:600; margin:10px 0 6px; color:#000; }
+.adminInput{ width:100%; padding:10px 12px; border:1px solid #cfd6df; border-radius:10px; font-size:14px; color:#000; }
+.adminActions{ display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }

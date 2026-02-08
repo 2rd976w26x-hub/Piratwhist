@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v1.0)
+// Piratwhist Online Multiplayer (v1.0.3)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -49,7 +49,7 @@ function applyHandOverlap(cardsEl){
   overlap = Math.max(minOverlap, Math.min(maxOverlap, overlap));
   cardsEl.style.setProperty("--hand-overlap", `${overlap.toFixed(2)}px`);
 }
-const APP_VERSION = "1.0";
+const APP_VERSION = "1.0.3";
 const PW_TELEMETRY = window.PW_TELEMETRY || null;
 const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") === "1");
 const DEBUG_MODE = (new URLSearchParams(window.location.search).get("debug") === "1");
@@ -391,7 +391,7 @@ const PW_DEBUG = (() => {
     });
   }catch(e){ /* ignore */ }
 })();
-// v1.0:
+// v1.0.3:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -499,7 +499,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v1.0: dynamic round-table board (2–8 players) ---
+// --- v1.0.3: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 const __pwPcLayoutTuner = { initialized: false, enabled: false, lastSeatCount: 0 };
 const __pwSeatOverrides = {};
@@ -514,7 +514,7 @@ function readCookie(name) {
 }
 
 function pcLayoutTunerActive(){
-  // v1.0: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
+  // v1.0.3: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
   // Vi bruger det gemte spillernavn (som også bruges på tværs af online sider).
   if (typeof window === "undefined") return false;
   const name = getStoredName();
@@ -523,19 +523,27 @@ function pcLayoutTunerActive(){
 
 // --- AI help (LaBA only in first rollout) ---
 const PW_AI_URL_KEY = "pw_ai_url";
-const PW_AI_DEFAULT_URL = "https://geographic-thus-excess-laptops.trycloudflare.com";
+const PW_AI_DEFAULT_URL = "";
+
+
+function normalizePwAiBaseUrl(u){
+  const v = (u||"").trim();
+  if(!v) return "";
+  return v.replace(/\/+$/, "");
+}
+
 
 function getPwAiBaseUrl(){
   try{
     const raw = (localStorage.getItem(PW_AI_URL_KEY) || "").trim();
-    return raw || PW_AI_DEFAULT_URL;
+    return normalizePwAiBaseUrl(raw || PW_AI_DEFAULT_URL);
   }catch(e){
-    return PW_AI_DEFAULT_URL;
+    return normalizePwAiBaseUrl(PW_AI_DEFAULT_URL);
   }
 }
 
 function setPwAiBaseUrl(v){
-  try{ localStorage.setItem(PW_AI_URL_KEY, (v||"").trim()); }catch(e){}
+  try{ localStorage.setItem(PW_AI_URL_KEY, normalizePwAiBaseUrl(v)); }catch(e){}
 }
 
 function initPwAiHelp(){
@@ -560,16 +568,43 @@ function initPwAiHelp(){
   const ask = el("pwAiAsk");
   const status = el("pwAiStatus");
   const answer = el("pwAiAnswer");
+  const img = el("pwAiImage");
+  const btnTest = el("pwAiTest");
+  const btnCopy = el("pwAiCopy");
 
   const closeAll = () => {
     modal.hidden = true;
     if (status) status.textContent = "";
     if (answer) answer.textContent = "";
+    if (img) { img.hidden = true; img.removeAttribute('src'); img.alt = ""; }
   };
+
+
+  async function pwAiCheckHealth(){
+        if (!baseUrl){
+      if (status) status.textContent = "AI URL mangler. Indsæt din trycloudflare URL ovenfor.";
+      return false;
+    }
+    if (status) status.textContent = "Tester forbindelse…";
+    try{
+      const ctrl = new AbortController();
+      const t = setTimeout(()=>ctrl.abort(), 4000);
+      const r = await fetch(baseUrl + "/health", { signal: ctrl.signal, cache: "no-store" });
+      clearTimeout(t);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const data = await r.json().catch(()=>null);
+      if (status) status.textContent = "AI online ✅" + (data?.time ? " ("+data.time+")" : "");
+      return true;
+    }catch(e){
+      if (status) status.textContent = "AI offline ❌ (tjek at cloudflared kører og URL er opdateret)";
+      return false;
+    }
+  }
 
   const open = () => {
     modal.hidden = false;
     if (urlInput) urlInput.value = getPwAiBaseUrl();
+    pwAiCheckHealth();
     setTimeout(() => { try{ q?.focus(); }catch(e){} }, 0);
   };
 
@@ -586,18 +621,51 @@ function initPwAiHelp(){
 
   urlInput?.addEventListener("change", () => {
     setPwAiBaseUrl(urlInput.value);
+    pwAiCheckHealth();
+  });
+
+  btnTest?.addEventListener("click", () => { pwAiCheckHealth(); });
+
+  btnCopy?.addEventListener("click", async () => {
+    const u = getPwAiBaseUrl();
+    if (!u) return;
+    try{
+      await navigator.clipboard.writeText(u);
+      if (status) status.textContent = "URL kopieret ✅";
+    }catch(e){
+      // Fallback
+      try{
+        const tmp = document.createElement("textarea");
+        tmp.value = u;
+        document.body.appendChild(tmp);
+        tmp.select();
+        document.execCommand("copy");
+        tmp.remove();
+        if (status) status.textContent = "URL kopieret ✅";
+      }catch(e2){}
+    }
   });
 
   ask?.addEventListener("click", async () => {
     const question = (q?.value || "").trim();
+        if (!baseUrl){
+      if (status) status.textContent = "AI URL mangler. Indsæt din trycloudflare URL ovenfor.";
+      return;
+    }
     if (!question) return;
 
-    const base = (urlInput?.value || getPwAiBaseUrl()).trim();
+    const base = normalizePwAiBaseUrl(urlInput?.value || getPwAiBaseUrl());
+    if (!base){
+      if (status) status.textContent = "AI URL mangler. Indsæt din trycloudflare URL ovenfor.";
+      ask.disabled = false;
+      return;
+    }
     if (urlInput) setPwAiBaseUrl(base);
     const askUrl = base.replace(/\/$/, "") + "/ask";
 
     if (status) status.textContent = "AI tænker…";
     if (answer) answer.textContent = "";
+    if (img) { img.hidden = true; img.removeAttribute('src'); img.alt = ""; }
     ask.disabled = true;
 
     try{
@@ -615,7 +683,35 @@ function initPwAiHelp(){
       });
       if (!resp.ok) throw new Error("AI svarer ikke");
       const data = await resp.json();
-      if (answer) answer.textContent = (data?.answer || "Ingen svar.").trim();
+      // Support both formats:
+      // 1) { answer: "...", image: "play-card" }
+      // 2) { answer: "{\"answer\":\"...\",\"image\":\"play-card\"}" }  (some models return JSON as text)
+      let a = (data?.answer || "").trim();
+      let imageId = (data?.image || "").trim();
+      if (a && a.startsWith("{") && a.endsWith("}")){
+        try{
+          const parsed = JSON.parse(a);
+          if (parsed && typeof parsed === "object"){
+            if (typeof parsed.answer === "string") a = parsed.answer.trim();
+            if (typeof parsed.image === "string") imageId = parsed.image.trim();
+          }
+        }catch(e){}
+      }
+      if (!a) a = "Ingen svar.";
+      if (answer) answer.textContent = a;
+
+      if (img){
+        if (imageId){
+          // Images are shipped with the game under /assets/ai-help/<id>.png
+          img.src = `/assets/ai-help/${encodeURIComponent(imageId)}.png`;
+          img.alt = `Hjælpebillede: ${imageId}`;
+          img.hidden = false;
+        }else{
+          img.hidden = true;
+          img.removeAttribute("src");
+          img.alt = "";
+        }
+      }
     }catch(e){
       if (answer) answer.textContent = "AI er ikke tilgængelig lige nu. (Tjek at cloudflared + node serveren kører.)";
     }finally{
@@ -936,7 +1032,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v1.0 Dev + layout: SceneShift for mobile to utilize top space and
+    // v1.0.3 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -2988,7 +3084,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v1.0 PC HUD sync + button wiring
+// v1.0.3 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -3052,7 +3148,7 @@ function alignHandDockToBottomSeat(){
   handDock.classList.add("handDockAuto");
 }
 
-// v1.0 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v1.0.3 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
