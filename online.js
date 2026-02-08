@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v1.0.5)
+// Piratwhist Online Multiplayer (v1.0.7)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -49,7 +49,7 @@ function applyHandOverlap(cardsEl){
   overlap = Math.max(minOverlap, Math.min(maxOverlap, overlap));
   cardsEl.style.setProperty("--hand-overlap", `${overlap.toFixed(2)}px`);
 }
-const APP_VERSION = "1.0.5";
+const APP_VERSION = "1.0.7";
 const PW_TELEMETRY = window.PW_TELEMETRY || null;
 const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") === "1");
 const DEBUG_MODE = (new URLSearchParams(window.location.search).get("debug") === "1");
@@ -358,6 +358,168 @@ const PW_DEBUG = (() => {
 })();
 
 
+
+// -------------------------------
+// PW_AI: situationsbevidst + proaktiv hjælp (ingen støj)
+// - Aktiveres kun hvis pw_ai_url er sat (Admin/LaBA)
+// - Trigger A: ulovlig handling (fx kan ikke spille)
+// - Trigger B: inaktivitet på egen tur (prompt/confirm)
+// -------------------------------
+const PW_AI = (() => {
+  const LS_KEY = "pw_ai_url";
+  const COOLDOWN_MS = 12000;   // max 1 auto-help pr 12 sek
+  const INACTIVITY_MS = 30000; // 30 sek inaktivitet på egen tur
+  let lastAutoHelpAt = 0;
+  let lastUserActionAt = Date.now();
+  let inactivityTimer = null;
+
+  function baseUrl(){
+    let u = (localStorage.getItem(LS_KEY) || "").trim();
+    u = u.replace(/\/+$/,"");
+    u = u.replace(/\/(health|ask|speak)$/i,"");
+    return u;
+  }
+  function enabled(){
+    return !!baseUrl();
+  }
+
+  function toast(msg){
+    // Egen toast (uafhængig af PW_DEBUG)
+    let el = document.getElementById("pwAiToast");
+    if (!el){
+      el = document.createElement("div");
+      el.id = "pwAiToast";
+      el.style.position = "fixed";
+      el.style.left = "12px";
+      el.style.bottom = "12px";
+      el.style.zIndex = "999999";
+      el.style.maxWidth = "82vw";
+      el.style.padding = "10px 12px";
+      el.style.borderRadius = "12px";
+      el.style.background = "rgba(0,0,0,0.78)";
+      el.style.color = "#fff";
+      el.style.font = "13px/1.35 system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+      el.style.boxShadow = "0 6px 22px rgba(0,0,0,0.25)";
+      el.style.pointerEvents = "none";
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.display = "block";
+    clearTimeout(el.__t);
+    el.__t = setTimeout(()=>{ el.style.display="none"; }, 6500);
+  }
+
+  function markUserAction(){
+    lastUserActionAt = Date.now();
+  }
+
+  function snapshot(extra = {}){
+    // online.js har typisk state + mySeat i scope
+    const me = (typeof mySeat === "number") ? mySeat : null;
+    const hand = (state?.hands && me!==null) ? state.hands[me] : null;
+
+    return {
+      phase: state?.phase || null,
+      myTurn: (me!==null && state?.turn===me) || false,
+      turn: state?.turn ?? null,
+      mySeat: me,
+      leadSuit: state?.leadSuit || null,
+      trumpSuit: state?.trumpSuit || null,
+      selectedCard: !!extra.selectedCard,
+      canPlay: !!extra.canPlay,
+      canBid: !!extra.canBid,
+      lastAction: extra.lastAction || null,
+      handCount: Array.isArray(hand) ? hand.length : null,
+      players: state?.n ?? null
+    };
+  }
+
+  async function ask(question, game){
+    const url = baseUrl();
+    if (!url) throw new Error("AI URL mangler");
+    const res = await fetch(url + "/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, game })
+    });
+    if (!res.ok) throw new Error("AI fejl: " + res.status);
+    const data = await res.json();
+    return data.answer || "";
+  }
+
+  async function autoHelp(reason, extra = {}){
+    if (!enabled()) return;
+    const now = Date.now();
+    if (now - lastAutoHelpAt < COOLDOWN_MS) return;
+    lastAutoHelpAt = now;
+
+    const game = snapshot({ ...extra, lastAction: { type:"error", reason } });
+    const q =
+      "Jeg prøvede en handling i Piratwhist som ikke virkede. " +
+      "Forklar helt konkret hvorfor ud fra regler+UI, og hvad jeg skal gøre nu. " +
+      "Skriv kort og nævn hvor jeg skal trykke i UI hvis relevant.";
+
+    try{
+      const answer = await ask(q, game);
+      toast(answer || ("Kan ikke: " + reason));
+    }catch(e){
+      // fail silent (ingen støj)
+    }
+  }
+
+  function startInactivityWatch(){
+    if (inactivityTimer) return;
+    inactivityTimer = setInterval(async () => {
+      try{
+        if (!enabled()) return;
+        const me = (typeof mySeat === "number") ? mySeat : null;
+        if (!state || me===null) return;
+
+        // kun når det er din tur i "playing"
+        if (state.phase !== "playing") return;
+        if (state.turn !== me) return;
+
+        // hvis bruger var aktiv for nyligt → intet
+        const idle = Date.now() - lastUserActionAt;
+        if (idle < INACTIVITY_MS) return;
+
+        // hvis du ikke har kort → intet
+        const hand = state.hands ? state.hands[me] : null;
+        if (!Array.isArray(hand) || hand.length === 0) return;
+
+        // hvis intet kan spilles, giver hjælp ikke mening
+        const anyPlayable = hand.some(c => {
+          try { return getPlayableReason(c) === "OK"; } catch(_) { return false; }
+        });
+        if (!anyPlayable) return;
+
+        lastUserActionAt = Date.now(); // undgå spam
+        const ok = confirm("Vil du have hjælp fra AI? (Det ser ud til at det er din tur)");
+        if (!ok) return;
+
+        const game = snapshot({ canPlay: true, lastAction: { type:"inactivity", reason:"idle_on_turn" } });
+        const q =
+          "Det er min tur i Piratwhist, men jeg er i tvivl. " +
+          "Forklar kort hvad jeg skal gøre nu i spillet, og hvor jeg skal trykke.";
+
+        const answer = await ask(q, game);
+        toast(answer || "AI kunne ikke give hjælp.");
+      }catch(_){}
+    }, 2500);
+  }
+
+  function init(){
+    // user action hooks så inaktivitet kun trigges når man virkelig er idle
+    ["pointerdown","keydown","touchstart","mousedown"].forEach(evt=>{
+      window.addEventListener(evt, markUserAction, { passive:true });
+    });
+    startInactivityWatch();
+  }
+
+  return { init, autoHelp, enabled };
+})();
+
+
 // --- Navigation robustness (mobile): returning from rules page ---
 // On mobile browsers, navigating away to rules.html and coming back can
 // restore the play/bidding page in a stale state (timers/socket/raf not resuming).
@@ -391,7 +553,7 @@ const PW_DEBUG = (() => {
     });
   }catch(e){ /* ignore */ }
 })();
-// v1.0.5:
+// v1.0.7:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -499,7 +661,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v1.0.5: dynamic round-table board (2–8 players) ---
+// --- v1.0.7: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 const __pwPcLayoutTuner = { initialized: false, enabled: false, lastSeatCount: 0 };
 const __pwSeatOverrides = {};
@@ -514,7 +676,7 @@ function readCookie(name) {
 }
 
 function pcLayoutTunerActive(){
-  // v1.0.5: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
+  // v1.0.7: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
   // Vi bruger det gemte spillernavn (som også bruges på tværs af online sider).
   if (typeof window === "undefined") return false;
   const name = getStoredName();
@@ -1034,7 +1196,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v1.0.5 Dev + layout: SceneShift for mobile to utilize top space and
+    // v1.0.7 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -2965,6 +3127,7 @@ function render(){
           const reason = getPlayableReason(c);
           if (reason !== "OK"){
             try{ if (PW_DEBUG?.enabled){ PW_DEBUG.toast("Kan ikke spille: "+reason); } }catch(e){}
+            try{ PW_AI.autoHelp(reason, { selectedCard:true, canPlay:false }); }catch(e){}
             return;
           }
           // Save a precise start position for the fly-in animation (only for your own plays)
@@ -3086,7 +3249,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v1.0.5 PC HUD sync + button wiring
+// v1.0.7 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -3150,7 +3313,7 @@ function alignHandDockToBottomSeat(){
   handDock.classList.add("handDockAuto");
 }
 
-// v1.0.5 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v1.0.7 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
@@ -3266,3 +3429,7 @@ function applyPcNoFlyZoneForSeats(){
     // no-op
   }
 })();
+
+
+// Init proaktiv AI-hjælp (kun aktiv hvis pw_ai_url er sat)
+try{ PW_AI.init(); }catch(e){}

@@ -1,0 +1,103 @@
+{
+  "generated_at": "2026-02-08T21:25:34",
+  "version": "1.0.5",
+  "rules": [
+    {
+      "id": "regler-g-lder-for-b-de-fysisk-og-online-spil",
+      "title": "Regler (gælder for både fysisk og online spil)",
+      "text": "Piratwhist er et whist-lignende stikspil for 2–8 spillere med bud.\n        Reglerne er de samme i fysisk spil og online spil — forskellen er kun,\n        hvordan bud, stik og point registreres."
+    },
+    {
+      "id": "grundregler",
+      "title": "Grundregler",
+      "text": "Spar (♠) er altid trumf . Man skal bekende kulør , hvis man kan. Hvis man ikke kan bekende kulør, må man spille et hvilket som helst kort. Højeste kort vinder stikket i den udspillede kulør, medmindre der spilles trumf."
+    },
+    {
+      "id": "runder-og-antal-kort-52-korts-begr-nsning",
+      "title": "Runder og antal kort (52-korts begrænsning)",
+      "text": "Der bruges ét standard spil (52 kort). Antal kort pr. spiller i en runde må aldrig overstige floor(52 / antal spillere) . Der er altid mindst 1 kort pr. spiller."
+    },
+    {
+      "id": "tur-r-kkef-lge-fast",
+      "title": "Tur-rækkefølge (FAST)",
+      "text": "Kortomgangen går altid med uret (clockwise) set oppefra — på både mobil og PC. I første stik i en runde lægger en ny spiller ud (roterer fra runde til runde). Vinderen af et stik lægger ud i næste stik. Illustration: Rækkefølge med uret (clockwise)"
+    },
+    {
+      "id": "budfase",
+      "title": "Budfase",
+      "text": "Før en runde spilles, afgiver hver spiller et bud på, hvor mange stik de forventer at vinde i runden.\n        Bud kan være fra 0 til antal kort på hånden . Illustration: Budfase (normal runde)"
+    },
+    {
+      "id": "s-rregel-runde-med-1-kort-pr-spiller",
+      "title": "Særregel: Runde med 1 kort pr. spiller",
+      "text": "Når der kun deles 1 kort pr. spiller , gælder en særlig informationsregel før bud : Du kan ikke se dit eget kort før bud (dit kort er skjult/bagside). Du kan se alle modstanderes kort før bud (forsider vises). Reglen gælder for alle spillere (symmetrisk). Illustration: 1-korts-runde (du ser ikke dit eget kort før bud)"
+    },
+    {
+      "id": "spil-af-stik",
+      "title": "Spil af stik",
+      "text": "Spillerne spiller ét kort ad gangen i tur-rækkefølge. Man skal bekende kulør, hvis muligt. Stikket vindes af højeste trumf (hvis trumf er spillet), ellers højeste kort i udspillet kulør. Illustration: Trumf (♠) vinder stikket"
+    },
+    {
+      "id": "point",
+      "title": "Point",
+      "text": "Hvis du rammer dit bud præcist: 10 point + dit bud . Hvis du ikke rammer dit bud: -abs(stik - bud) point (negativt for hver stik du er fra). Totalscoren er summen af alle runder."
+    },
+    {
+      "id": "resultatoversigt",
+      "title": "Resultatoversigt",
+      "text": "Pointoversigten viser én samlet tabel: Total ligger øverst og viser kun point . Dernæst vises runder med seneste runde øverst . Format pr. runde pr. spiller: Bud / Stik (Point) . Illustration: Pointoversigt (Total øverst, seneste runde øverst)"
+    },
+    {
+      "id": "fysisk-spil-indtastning-kun-fysisk-spil",
+      "title": "Fysisk spil – indtastning (KUN fysisk spil)",
+      "text": "I fysisk spil bruger du appen som scoretavle. Her indtastes bud og stik manuelt, og appen beregner point og totaler. Disse indtastninger er ikke relevante i online spil ."
+    },
+    {
+      "id": "online-spil-automatisk",
+      "title": "Online spil – automatisk",
+      "text": "I online spil håndterer spillet automatisk kort, bud, stik og point. Du skal kun afgive bud og spille kort."
+    }
+  ],
+  "ui": [
+    {
+      "id": "startside",
+      "title": "Startside (piratwhist.html)",
+      "text": "Piratwhist.html er startsiden. Her vælger du spiltype: Fysisk spil eller Online spil. Knappen 'Regler' åbner rules.html."
+    },
+    {
+      "id": "online-menu",
+      "title": "Online menu (online.html)",
+      "text": "På Online-siden kan du oprette et online-rum eller join'e et rum. Brug 'Regler' for at læse reglerne."
+    },
+    {
+      "id": "online-lobby",
+      "title": "Online lobby (online_lobby.html)",
+      "text": "I lobbyen venter du på spillere. 'Start spil' starter runden (giver kort), når admin/host er klar. 'Forlad rum' forlader online-rummet."
+    },
+    {
+      "id": "budfase-ui",
+      "title": "Budfase (online_bidding.html)",
+      "text": "I budfasen vælger/indtaster du dit bud (0 til antal kort på hånden) og trykker 'Gem bud'. Når alle har gemt bud, går spillet videre til spil af stik."
+    },
+    {
+      "id": "spil-ui",
+      "title": "Spilsiden (online_play.html)",
+      "text": "På spilsiden kan du trykke på '📖 Regler' for at åbne reglerne, '🚪 Forlad' for at forlade rummet og '🤖 Spørg AI' for at åbne AI-hjælpen. Spillerækkefølgen og kortomgang går med uret (clockwise)."
+    },
+    {
+      "id": "ai-url",
+      "title": "AI URL (Spørg AI modal)",
+      "text": "AI URL gemmes lokalt i browseren for spilleren (kun på denne enhed). Ved quick tunnel (trycloudflare) ændrer URL sig, når du genstarter cloudflared; du skal derfor indsætte den nye URL i AI URL-feltet. 'Test AI' tester /health, 'Spørg' sender spørgsmål til /ask."
+    },
+    {
+      "id": "layout-tuner",
+      "title": "Layout-tuner (PC)",
+      "text": "Layout-tuner knapperne (⬆️⬅️⬇️➡️, Nulstil valgt, Nulstil alle, Kopiér/Indsæt værdier) bruges kun af admin/LaBA til at justere layout. Panelet er skjult for andre spillere."
+    },
+    {
+      "id": "knap-graa",
+      "title": "Når en knap er grå/deaktiveret",
+      "text": "Hvis en knap i online spil er grå, betyder det normalt at handlingen ikke er tilladt i den aktuelle fase (fx ikke din tur, eller du mangler at vælge/gemme bud). Læs beskeden på skærmen eller spørg AI med din fase (den kan forklare hvorfor)."
+    }
+  ]
+}
