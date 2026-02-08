@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v1.0.4)
+// Piratwhist Online Multiplayer (v1.0.5)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -49,7 +49,7 @@ function applyHandOverlap(cardsEl){
   overlap = Math.max(minOverlap, Math.min(maxOverlap, overlap));
   cardsEl.style.setProperty("--hand-overlap", `${overlap.toFixed(2)}px`);
 }
-const APP_VERSION = "1.0.4";
+const APP_VERSION = "1.0.5";
 const PW_TELEMETRY = window.PW_TELEMETRY || null;
 const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") === "1");
 const DEBUG_MODE = (new URLSearchParams(window.location.search).get("debug") === "1");
@@ -391,7 +391,7 @@ const PW_DEBUG = (() => {
     });
   }catch(e){ /* ignore */ }
 })();
-// v1.0.4:
+// v1.0.5:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -499,7 +499,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v1.0.4: dynamic round-table board (2–8 players) ---
+// --- v1.0.5: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 const __pwPcLayoutTuner = { initialized: false, enabled: false, lastSeatCount: 0 };
 const __pwSeatOverrides = {};
@@ -514,7 +514,7 @@ function readCookie(name) {
 }
 
 function pcLayoutTunerActive(){
-  // v1.0.4: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
+  // v1.0.5: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
   // Vi bruger det gemte spillernavn (som også bruges på tværs af online sider).
   if (typeof window === "undefined") return false;
   const name = getStoredName();
@@ -581,6 +581,7 @@ function initPwAiHelp(){
 
 
   async function pwAiCheckHealth(){
+    const baseUrl = normalizePwAiBaseUrl(urlInput?.value || getPwAiBaseUrl());
         if (!baseUrl){
       if (status) status.textContent = "AI URL mangler. Indsæt din trycloudflare URL ovenfor.";
       return false;
@@ -648,13 +649,14 @@ function initPwAiHelp(){
 
   ask?.addEventListener("click", async () => {
     const question = (q?.value || "").trim();
-        if (!baseUrl){
+    const baseUrl = normalizePwAiBaseUrl(urlInput?.value || getPwAiBaseUrl());
+    if (!baseUrl){
       if (status) status.textContent = "AI URL mangler. Indsæt din trycloudflare URL ovenfor.";
       return;
     }
     if (!question) return;
 
-    const base = normalizePwAiBaseUrl(urlInput?.value || getPwAiBaseUrl());
+    const base = baseUrl;
     if (!base){
       if (status) status.textContent = "AI URL mangler. Indsæt din trycloudflare URL ovenfor.";
       ask.disabled = false;
@@ -1032,7 +1034,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v1.0.4 Dev + layout: SceneShift for mobile to utilize top space and
+    // v1.0.5 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -3084,7 +3086,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v1.0.4 PC HUD sync + button wiring
+// v1.0.5 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -3148,7 +3150,7 @@ function alignHandDockToBottomSeat(){
   handDock.classList.add("handDockAuto");
 }
 
-// v1.0.4 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v1.0.5 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
