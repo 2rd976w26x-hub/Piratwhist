@@ -3,15 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v1.0.8 · Start</title>
+  <title>Piratwhist v1.1.0 · Start</title>
   <link rel="stylesheet" href="/pw_mini.css" />
   <link rel="stylesheet" href="/feedback.css" />
+  <link rel="stylesheet" href="/onboarding.css" />
 </head>
 <body class="pwPage">
   <header class="pwHeader">
     <div class="pwBrand">
       <div class="pwTitle">Piratwhist</div>
-      <div class="pwVersion">v1.0.8</div>
+      <div class="pwVersion">v1.1.0</div>
     </div>
     <nav class="pwPills" aria-label="Top navigation">
       <a class="pwPill" href="/rules.html">Regler</a>
@@ -45,13 +46,14 @@
         <div class="pwRow">
           <a class="pwBtn pwBtnSecondary" href="/rules.html">Læs regler</a>
           <a class="pwBtn pwBtnSecondary" href="/guide.html">Guide</a>
+          <button id="pwStartOnboardVideo" class="pwBtn pwBtnPrimary" type="button">Kom i gang (video)</button>
         </div>
       </article>
     </section>
   </main>
 
   <footer class="pwFooter">
-    <div class="pwSubtitle">Piratwhist v1.0.8</div>
+    <div class="pwSubtitle">Piratwhist v1.1.0</div>
     <nav class="pwPills" aria-label="Footer navigation">
       <a class="pwPill" href="/piratwhist.html">Start</a>
       <a class="pwPill" href="/rules.html">Regler</a>
@@ -59,5 +61,11 @@
   </footer>
   <script src="/pw_telemetry.js"></script>
   <script src="/feedback.js"></script>
+  <script>
+    document.getElementById("pwStartOnboardVideo")?.addEventListener("click", ()=>{
+      if (window.PW_OnboardStart) window.PW_OnboardStart("video");
+    });
+  </script>
+  <script src="/onboarding.js"></script>
 </body>
 </html>
