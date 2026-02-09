@@ -1,7 +1,9 @@
-/* Piratwhist Onboarding (Mini-video-mode) v1.1.4 */
+/* Piratwhist Onboarding (Mini-video-mode) v1.1.6 */
 #pwOnboardOverlay{
   position:fixed; inset:0; z-index:999998;
   background:rgba(0,0,0,0.55);
+
+  pointer-events:none;
 }
 #pwOnboardBox{
   position:fixed; z-index:999999;

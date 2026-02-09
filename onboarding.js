@@ -1,10 +1,17 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.1.4
+// Piratwhist Onboarding (Mini-video-mode) v1.1.6
 (function(){
   const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
   const LS_STEP = "pw_onboard_step";          // integer index
   const LS_ACTIVE = "pw_onboard_active";      // "1"/"0"
   const LS_AI_URL = "pw_ai_url";              // already used for AI
   const DEFAULT_MODE = "video";
+
+  function isHost(){
+    try{ return (typeof mySeat !== 'undefined') && (mySeat === 0); }catch(e){ return false; }
+  }
+  function phase(){
+    try{ return (typeof state !== 'undefined' && state && state.phase) ? state.phase : null; }catch(e){ return null; }
+  }
 
   // --- Steps across pages ---
   const steps = [
@@ -14,8 +21,21 @@
       pages:["/piratwhist.html","/"],
       selector:"#pwGoOnline",
       title:"Kom i gang · 1/7",
-      text:"Vælg spiltype. Fysisk spil er under udarbejdelse. For at spille online, tryk på 'Online spil'.",
-      wait:"click",
+      text:"Vælg spiltype. Fysisk spil eller online spil.",
+      wait:"choice",
+      choices:[
+        { selector:"#pwGoPhysical", next:"physical_info" },
+        { selector:"#pwGoOnline", next:"online_create" }
+      ],
+    },
+    // Physical chosen (under development)
+    {
+      id:"physical_info",
+      pages:["/score.html"],
+      selector:"body",
+      title:"Kom i gang · 2/2",
+      text:"Du har valgt fysisk spil. Denne del er under udarbejdelse og kommer senere. Du kan gå tilbage og vælge online spil for at spille nu.",
+      wait:"done"
     },
     // Online lobby page (create/join)
     {
@@ -42,8 +62,15 @@
       pages:["/online_room.html","/online_lobby.html"],
       selector:"#olPlayerCount",
       title:"Kom i gang · 4/7",
-      text:"Vælg antal spillere her. Det bestemmer hvor mange der skal være med i spillet.",
-      wait:"next",
+      textFn:()=>{
+        if (!isHost()){
+          return "Kun værten kan ændre antal spillere. Hvis du ikke er vært, skal du bare vente her.";
+        }
+        return "Vælg antal spillere her. Tryk på feltet og vælg antal spillere.";
+      },
+      ready:()=> (phase()==="lobby") && (typeof mySeat !== 'undefined'),
+      wait:"change",
+      maxWaitMs: 8000,
       delayAfterMs:800
     },
     // Choose cards per player = tricks to bid
@@ -60,11 +87,19 @@
     {
       id:"room_wait",
       pages:["/online_room.html","/online_lobby.html"],
-      selector:"#olRoomStatus",
+      selectorFn:()=> isHost() ? "#olStartOnline" : "#olRoomStatus",
       title:"Kom i gang · 6/7",
-      text:"Nu er rummet klar. Vent til alle spillere er med. Når værten starter spillet, fortsætter guiden automatisk inde i spillet.",
-      wait:"next",
-      delayAfterMs:2300
+      textFn:()=>{
+        if (isHost()){
+          return "Nu er rummet klar. Vent til alle spillere er med. Som vært starter du spillet ved at trykke på 'Start spil'.";
+        }
+        return "Nu er rummet klar. Vent til alle spillere er med. Når værten starter spillet, fortsætter guiden automatisk inde i spillet.";
+      },
+      ready:()=> (typeof state !== 'undefined') && !!state,
+      waitFn:()=> isHost() ? "click" : "next",
+      maxWaitMs: 6000,
+      delayAfterMs:2300,
+      autoClick:false
     },
     // In game page: your hand and help
     {
@@ -232,7 +267,27 @@
     const p = normPath();
     let idx = getStepIdx();
     if (idx >= steps.length) { stop(); return; }
-    const step = steps[idx];
+    const baseStep = steps[idx];
+
+    // Allow dynamic selector/text/wait based on current context
+    let step = baseStep;
+    try{
+      const eff = Object.assign({}, baseStep);
+      if (typeof baseStep.selectorFn === "function") eff.selector = baseStep.selectorFn();
+      if (typeof baseStep.textFn === "function") eff.text = baseStep.textFn();
+      if (typeof baseStep.waitFn === "function") eff.wait = baseStep.waitFn();
+      step = eff;
+    }catch(_){ step = baseStep; }
+
+    // Optional: wait for app state / permissions (e.g., only host can change lobby settings)
+    if (typeof step.ready === "function"){
+      let ok = false;
+      try{ ok = !!step.ready(); }catch(e){ ok = false; }
+      if (!ok){
+        setTimeout(()=>run(), 400);
+        return;
+      }
+    }
 
     // If on wrong page, keep polling until navigation happens (create/join can take time)
     if (!step.pages.includes(p)){
@@ -265,19 +320,27 @@
 
     // Determine progression
     if (step.wait === "click"){
-      // In mini-video-mode we must NOT block on user interaction (mobile friendly).
-      // Instead we auto-advance, and optionally auto-click the highlighted element to demonstrate navigation.
+      // Video mode: allow user to click, but also auto-advance after a short delay (so it never locks)
       if (mode()==="video"){
-        const d = step.delayAfterMs || 900;
-        setTimeout(()=>{
-          if (!isActive() || paused) return;
-          // advance first (so navigation lands on next step)
+        let done = false;
+        const handler = ()=>{
+          if (done) return;
+          done = true;
+          try{ el.removeEventListener("click", handler, true); }catch(e){}
           setStepIdx(idx + 1);
-          // auto-click unless explicitly disabled
+          setTimeout(()=>run(true), 250);
+        };
+        try{ el.addEventListener("click", handler, true); }catch(e){}
+        const d = step.maxWaitMs || step.delayAfterMs || 1800;
+        setTimeout(()=>{
+          if (done || !isActive() || paused) return;
+          done = true;
+          try{ el.removeEventListener("click", handler, true); }catch(e){}
+          setStepIdx(idx + 1);
+          // optional auto-click for navigation/demo
           if (step.autoClick !== false){
             try{ el.click(); }catch(e){}
           }
-          // continue; if navigation happens, next page will resume on DOMContentLoaded
           setTimeout(()=>run(true), 250);
         }, d);
         return;
@@ -293,7 +356,71 @@
       return;
     }
 
-    if (step.wait === "next"){
+    
+    if (step.wait === "choice"){
+      // Choice-based progression (e.g., Physical vs Online). Never auto-picks.
+      const choices = Array.isArray(step.choices) ? step.choices : [];
+      let finished = false;
+
+      const cleanup = ()=>{
+        choices.forEach(ch=>{
+          try{
+            const e = document.querySelector(ch.selector);
+            if (e && ch._handler) e.removeEventListener("click", ch._handler, true);
+          }catch(_){}
+        });
+      };
+
+      choices.forEach(ch=>{
+        try{
+          const e = document.querySelector(ch.selector);
+          if (!e) return;
+          ch._handler = ()=>{
+            if (finished) return;
+            finished = true;
+            cleanup();
+            // jump to step by id
+            const targetId = ch.next;
+            const targetIdx = steps.findIndex(s=>s.id===targetId);
+            if (targetIdx >= 0){
+              setStepIdx(targetIdx);
+            }else{
+              setStepIdx(idx + 1);
+            }
+            setTimeout(()=>run(true), 250);
+          };
+          e.addEventListener("click", ch._handler, true);
+        }catch(_){}
+      });
+
+      return;
+    }
+
+    if (step.wait === "change"){
+      // Wait for user to change a select/input. In video mode, auto-advance after maxWaitMs.
+      let done = false;
+      const handler = ()=>{
+        if (done) return;
+        done = true;
+        try{ el.removeEventListener("change", handler, true); }catch(e){}
+        setStepIdx(idx + 1);
+        setTimeout(()=>run(true), 250);
+      };
+      try{ el.addEventListener("change", handler, true); }catch(e){}
+
+      if (mode()==="video"){
+        const d = step.maxWaitMs || 8000;
+        setTimeout(()=>{
+          if (done || !isActive() || paused) return;
+          done = true;
+          try{ el.removeEventListener("change", handler, true); }catch(e){}
+          setStepIdx(idx + 1);
+          run(true);
+        }, d);
+      }
+      return;
+    }
+if (step.wait === "next"){
       const d = step.delayAfterMs || 800;
       setTimeout(()=>{
         if (!isActive() || paused) return;
