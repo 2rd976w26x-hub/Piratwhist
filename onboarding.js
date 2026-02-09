@@ -1,4 +1,4 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.1.3
+// Piratwhist Onboarding (Mini-video-mode) v1.1.4
 (function(){
   const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
   const LS_STEP = "pw_onboard_step";          // integer index
@@ -29,7 +29,7 @@
     // Online room page: show room code
     {
       id:"room_code",
-      pages:["/online_room.html"],
+      pages:["/online_room.html","/online_lobby.html"],
       selector:"#olRoomLabel",
       title:"Kom i gang · 3/7",
       text:"Her ser du rumkoden. Del rumkoden med de spillere, der skal være med, så de kan joine rummet.",
@@ -39,7 +39,7 @@
     // Choose number of players
     {
       id:"room_players",
-      pages:["/online_room.html"],
+      pages:["/online_room.html","/online_lobby.html"],
       selector:"#olPlayerCount",
       title:"Kom i gang · 4/7",
       text:"Vælg antal spillere her. Det bestemmer hvor mange der skal være med i spillet.",
@@ -49,17 +49,17 @@
     // Choose cards per player = tricks to bid
     {
       id:"room_cardsper",
-      pages:["/online_room.html"],
-      selector:"#olCardsPer",
+      pages:["/online_room.html","/online_lobby.html"],
+      selector:"#olStartOnline",
       title:"Kom i gang · 5/7",
-      text:"Vælg antal stik til bud ved at vælge 'Antal kort pr. spiller'. Det bestemmer hvor mange stik der spilles og bydes på i runden.",
+      text:"Antal stik der bydes på følger antal kort der deles ud i runden. Når spillet starter, kan du se hvor mange kort pr. spiller der deles, og det er også antal stik til bud.",
       wait:"next",
       delayAfterMs:900
     },
     // Wait in room (guide resumes automatically when game starts)
     {
       id:"room_wait",
-      pages:["/online_room.html"],
+      pages:["/online_room.html","/online_lobby.html"],
       selector:"#olRoomStatus",
       title:"Kom i gang · 6/7",
       text:"Nu er rummet klar. Vent til alle spillere er med. Når værten starter spillet, fortsætter guiden automatisk inde i spillet.",
