@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v1.0.7 · Spil</title>
+  <title>Piratwhist v1.0.8 · Spil</title>
   <link rel="stylesheet" href="/piratwhist.css" />
   <link rel="stylesheet" href="/online.css" />
   <link rel="stylesheet" href="/online_pages.css" />
@@ -155,7 +155,7 @@
       <div class="brand">
         <div class="logo">🏴‍☠️</div>
         <div>
-          <div class="title">Piratwhist <span class="ver">v1.0.7</span></div>
+          <div class="title">Piratwhist <span class="ver">v1.0.8</span></div>
           <div class="sub">Online spil · spar er trumf · bekend kulør</div>
         </div>
       </div>
@@ -194,7 +194,11 @@
       <div id="pwAiStatus" class="pwAiModal__status"></div>
       
       <img id="pwAiImage" class="pwAiModal__img" alt="" hidden />
-      <div id="pwAiAnswer" class="pwAiModal__answer"></div>
+<div id="pwAiAnswer" class="pwAiModal__answer"></div>
+<div class="pwAiModal__row" style="margin-top:10px; gap:8px;">
+  <button id="pwAiSpeak" class="ghost" type="button" disabled>🔊 Læs op</button>
+</div>
+<audio id="pwAiAudio" hidden></audio>
     </div>
   </div>
   <script src="/pw_telemetry.js"></script>

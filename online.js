@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v1.0.7)
+// Piratwhist Online Multiplayer (v1.0.8)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -49,7 +49,7 @@ function applyHandOverlap(cardsEl){
   overlap = Math.max(minOverlap, Math.min(maxOverlap, overlap));
   cardsEl.style.setProperty("--hand-overlap", `${overlap.toFixed(2)}px`);
 }
-const APP_VERSION = "1.0.7";
+const APP_VERSION = "1.0.8";
 const PW_TELEMETRY = window.PW_TELEMETRY || null;
 const GUIDE_MODE = (new URLSearchParams(window.location.search).get("guide") === "1");
 const DEBUG_MODE = (new URLSearchParams(window.location.search).get("debug") === "1");
@@ -553,7 +553,7 @@ const PW_AI = (() => {
     });
   }catch(e){ /* ignore */ }
 })();
-// v1.0.7:
+// v1.0.8:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -661,7 +661,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v1.0.7: dynamic round-table board (2–8 players) ---
+// --- v1.0.8: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 const __pwPcLayoutTuner = { initialized: false, enabled: false, lastSeatCount: 0 };
 const __pwSeatOverrides = {};
@@ -676,7 +676,7 @@ function readCookie(name) {
 }
 
 function pcLayoutTunerActive(){
-  // v1.0.7: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
+  // v1.0.8: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
   // Vi bruger det gemte spillernavn (som også bruges på tværs af online sider).
   if (typeof window === "undefined") return false;
   const name = getStoredName();
@@ -733,12 +733,19 @@ function initPwAiHelp(){
   const img = el("pwAiImage");
   const btnTest = el("pwAiTest");
   const btnCopy = el("pwAiCopy");
+  const btnSpeak = el("pwAiSpeak");
+  const audioEl = el("pwAiAudio");
+  let lastAnswerText = "";
 
   const closeAll = () => {
     modal.hidden = true;
     if (status) status.textContent = "";
     if (answer) answer.textContent = "";
     if (img) { img.hidden = true; img.removeAttribute('src'); img.alt = ""; }
+    lastAnswerText = "";
+    if (btnSpeak) btnSpeak.disabled = true;
+    if (audioEl) { try{ audioEl.pause(); }catch(e){} audioEl.removeAttribute("src"); }
+
   };
 
 
@@ -767,6 +774,8 @@ function initPwAiHelp(){
   const open = () => {
     modal.hidden = false;
     if (urlInput) urlInput.value = getPwAiBaseUrl();
+    lastAnswerText = "";
+    if (btnSpeak) btnSpeak.disabled = true;
     pwAiCheckHealth();
     setTimeout(() => { try{ q?.focus(); }catch(e){} }, 0);
   };
@@ -806,6 +815,46 @@ function initPwAiHelp(){
         tmp.remove();
         if (status) status.textContent = "URL kopieret ✅";
       }catch(e2){}
+    }
+  });
+
+
+  btnSpeak?.addEventListener("click", async () => {
+    const baseUrl = normalizePwAiBaseUrl(urlInput?.value || getPwAiBaseUrl());
+    const text = (lastAnswerText || "").trim();
+    if (!baseUrl){
+      if (status) status.textContent = "AI URL mangler. Indsæt din trycloudflare URL ovenfor.";
+      return;
+    }
+    if (!text) return;
+
+    const speakUrl = baseUrl.replace(/\/$/, "") + "/speak";
+    try{
+      btnSpeak.disabled = true;
+      if (status) status.textContent = "Læser op…";
+      const resp = await fetch(speakUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+
+      const blob = await resp.blob(); // audio/wav
+      const url = URL.createObjectURL(blob);
+      if (audioEl){
+        try{ audioEl.pause(); }catch(e){}
+        audioEl.src = url;
+        await audioEl.play();
+        audioEl.onended = () => { try{ URL.revokeObjectURL(url); }catch(e){} };
+      }else{
+        // fallback: open in new tab
+        window.open(url, "_blank");
+      }
+    }catch(e){
+      if (status) status.textContent = "Kunne ikke afspille lyd (tjek at /speak virker).";
+    }finally{
+      btnSpeak.disabled = !lastAnswerText;
+      setTimeout(()=>{ if (status) status.textContent = ""; }, 800);
     }
   });
 
@@ -863,6 +912,8 @@ function initPwAiHelp(){
       }
       if (!a) a = "Ingen svar.";
       if (answer) answer.textContent = a;
+      lastAnswerText = a;
+      if (btnSpeak) btnSpeak.disabled = !lastAnswerText;
 
       if (img){
         if (imageId){
@@ -1196,7 +1247,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v1.0.7 Dev + layout: SceneShift for mobile to utilize top space and
+    // v1.0.8 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -3249,7 +3300,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v1.0.7 PC HUD sync + button wiring
+// v1.0.8 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -3313,7 +3364,7 @@ function alignHandDockToBottomSeat(){
   handDock.classList.add("handDockAuto");
 }
 
-// v1.0.7 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v1.0.8 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");

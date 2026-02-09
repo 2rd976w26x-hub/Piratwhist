@@ -1,4 +1,4 @@
-// Piratwhist Card Gallery – v1.0.7
+// Piratwhist Card Gallery – v1.0.8
 // Shows all 52 cards using the same renderer as the game (no server needed).
 
 (function(){
