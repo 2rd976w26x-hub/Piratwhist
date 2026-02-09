@@ -1,4 +1,4 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.1.0
+// Piratwhist Onboarding (Mini-video-mode) v1.1.1
 (function(){
   const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
   const LS_STEP = "pw_onboard_step";          // integer index
@@ -262,11 +262,28 @@
 
     // Determine progression
     if (step.wait === "click"){
-      // Advance when user clicks the highlighted element (we capture once)
+      // In mini-video-mode we must NOT block on user interaction (mobile friendly).
+      // Instead we auto-advance, and optionally auto-click the highlighted element to demonstrate navigation.
+      if (mode()==="video"){
+        const d = step.delayAfterMs || 900;
+        setTimeout(()=>{
+          if (!isActive() || paused) return;
+          // advance first (so navigation lands on next step)
+          setStepIdx(idx + 1);
+          // auto-click unless explicitly disabled
+          if (step.autoClick !== false){
+            try{ el.click(); }catch(e){}
+          }
+          // continue; if navigation happens, next page will resume on DOMContentLoaded
+          setTimeout(()=>run(true), 250);
+        }, d);
+        return;
+      }
+
+      // Step-by-step mode: wait for user click on the highlighted element
       const handler = ()=>{
         el.removeEventListener("click", handler, true);
         setStepIdx(idx + 1);
-        // allow navigation to happen; if no nav, continue here
         setTimeout(()=>run(true), 250);
       };
       el.addEventListener("click", handler, true);

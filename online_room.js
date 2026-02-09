@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v1.1.0)
+// Piratwhist Online Multiplayer (v1.1.1)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 const ROUND_CARDS = [7,6,5,4,3,2,1,1,2,3,4,5,6,7];
