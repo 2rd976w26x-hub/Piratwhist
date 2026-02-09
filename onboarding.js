@@ -1,4 +1,4 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.1.1
+// Piratwhist Onboarding (Mini-video-mode) v1.1.2
 (function(){
   const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
   const LS_STEP = "pw_onboard_step";          // integer index
@@ -56,14 +56,15 @@
       wait:"next",
       delayAfterMs:900
     },
-    // Start game
+    // Wait in room (guide resumes automatically when game starts)
     {
-      id:"room_start",
+      id:"room_wait",
       pages:["/online_room.html"],
-      selector:"#olStartOnline",
+      selector:"#olRoomStatus",
       title:"Kom i gang · 6/7",
-      text:"Når alle er med og indstillingerne er valgt, tryk på 'Start online spil' for at begynde.",
-      wait:"click",
+      text:"Nu er rummet klar. Vent til alle spillere er med. Når værten starter spillet, fortsætter guiden automatisk inde i spillet.",
+      wait:"next",
+      delayAfterMs:2300
     },
     // In game page: your hand and help
     {
@@ -75,6 +76,7 @@
       wait:"done",
     },
   ];
+
 
   function normPath(){
     const p = location.pathname || "/";
