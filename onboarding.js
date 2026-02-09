@@ -1,4 +1,4 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.1.2
+// Piratwhist Onboarding (Mini-video-mode) v1.1.3
 (function(){
   const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
   const LS_STEP = "pw_onboard_step";          // integer index
@@ -234,8 +234,9 @@
     if (idx >= steps.length) { stop(); return; }
     const step = steps[idx];
 
-    // If on wrong page, wait until navigation happens
+    // If on wrong page, keep polling until navigation happens (create/join can take time)
     if (!step.pages.includes(p)){
+      setTimeout(()=>run(), 400);
       return;
     }
 
