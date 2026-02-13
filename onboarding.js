@@ -1,4 +1,4 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.1.6
+// Piratwhist Onboarding (Mini-video-mode) v1.1.7
 (function(){
   const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
   const LS_STEP = "pw_onboard_step";          // integer index
@@ -152,14 +152,38 @@
         body: JSON.stringify({ text })
       });
       if (!res.ok) return;
-      const blob = await res.blob();
-      const a = new Audio(URL.createObjectURL(blob));
+      const blob = await res.blob(); // audio/wav
+      const objUrl = URL.createObjectURL(blob);
+
+      // Stop previous onboarding audio to avoid overlap
+      try{
+        if (window.__pwOnboardAudio) {
+          window.__pwOnboardAudio.pause();
+          window.__pwOnboardAudio.currentTime = 0;
+        }
+      }catch(e){}
+
+      const a = new Audio(objUrl);
+      window.__pwOnboardAudio = a;
+
+      // Soft start (prevents click at beginning)
+      try{ a.volume = 0; }catch(e){}
+      const __fadeSteps = 6;
+      let __fadeI = 0;
+      const __fadeT = setInterval(() => {
+        __fadeI++;
+        try{ a.volume = Math.min(1, __fadeI/__fadeSteps); }catch(e){}
+        if (__fadeI >= __fadeSteps) clearInterval(__fadeT);
+      }, 10);
       a.play().catch(()=>{});
-      // wait roughly for audio to finish if possible
+
+      // Wait for audio end (with fallback)
       await new Promise(resolve=>{
         a.onended = resolve;
-        setTimeout(resolve, 7000); // fallback
+        setTimeout(resolve, 8000);
       });
+
+      try{ URL.revokeObjectURL(objUrl); }catch(e){}
     }catch(e){}
   }
 

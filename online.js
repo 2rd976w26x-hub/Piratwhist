@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v1.1.6)
+// Piratwhist Online Multiplayer (v1.1.7)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -553,7 +553,7 @@ const PW_AI = (() => {
     });
   }catch(e){ /* ignore */ }
 })();
-// v1.1.6:
+// v1.1.7:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -661,7 +661,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v1.1.6: dynamic round-table board (2–8 players) ---
+// --- v1.1.7: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 const __pwPcLayoutTuner = { initialized: false, enabled: false, lastSeatCount: 0 };
 const __pwSeatOverrides = {};
@@ -676,7 +676,7 @@ function readCookie(name) {
 }
 
 function pcLayoutTunerActive(){
-  // v1.1.6: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
+  // v1.1.7: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
   // Vi bruger det gemte spillernavn (som også bruges på tværs af online sider).
   if (typeof window === "undefined") return false;
   const name = getStoredName();
@@ -844,7 +844,17 @@ function initPwAiHelp(){
       if (audioEl){
         try{ audioEl.pause(); }catch(e){}
         audioEl.src = url;
+        // Soft start (prevents click at beginning)
+        try{ audioEl.volume = 0; }catch(e){}
         await audioEl.play();
+        try{
+          const __fadeSteps = 6; let __fadeI = 0;
+          const __fadeT = setInterval(()=>{
+            __fadeI++;
+            try{ audioEl.volume = Math.min(1, __fadeI/__fadeSteps); }catch(e){}
+            if(__fadeI>=__fadeSteps) clearInterval(__fadeT);
+          },10);
+        }catch(e){}
         audioEl.onended = () => { try{ URL.revokeObjectURL(url); }catch(e){} };
       }else{
         // fallback: open in new tab
@@ -1247,7 +1257,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v1.1.6 Dev + layout: SceneShift for mobile to utilize top space and
+    // v1.1.7 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -3300,7 +3310,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v1.1.6 PC HUD sync + button wiring
+// v1.1.7 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -3364,7 +3374,7 @@ function alignHandDockToBottomSeat(){
   handDock.classList.add("handDockAuto");
 }
 
-// v1.1.6 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v1.1.7 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
