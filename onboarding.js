@@ -1,4 +1,4 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.1.9
+// Piratwhist Onboarding (Mini-video-mode) v1.2.0
 (function(){
   const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
   const LS_STEP = "pw_onboard_step";          // integer index
@@ -507,7 +507,7 @@ if (step.wait === "next"){
 
   
   // Wire start buttons (supports multiple ids across versions)
-  function wireStartButtons(){
+    function wireStartButtons(){
     const ids = ["pwStartOnboardVideo","pwStartOnboard","pwStartGuideVideo","pwStartGuide"];
     ids.forEach(id=>{
       const el = document.getElementById(id);
@@ -518,7 +518,9 @@ if (step.wait === "next"){
     });
   }
 
-  \1 ()=>{
-    if (isActive()) run(true);
+  // Boot on each page: wire start buttons, and resume if active
+  document.addEventListener("DOMContentLoaded", ()=>{
+    try{ wireStartButtons(); }catch(e){}
+    try{ if (isActive()) run(true); }catch(e){}
   });
 })();
