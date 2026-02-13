@@ -1,4 +1,4 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.1.8
+// Piratwhist Onboarding (Mini-video-mode) v1.1.9
 (function(){
   const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
   const LS_STEP = "pw_onboard_step";          // integer index
@@ -505,8 +505,20 @@ if (step.wait === "next"){
     run(true);
   };
 
-  // Auto-continue if active
-  document.addEventListener("DOMContentLoaded", ()=>{
+  
+  // Wire start buttons (supports multiple ids across versions)
+  function wireStartButtons(){
+    const ids = ["pwStartOnboardVideo","pwStartOnboard","pwStartGuideVideo","pwStartGuide"];
+    ids.forEach(id=>{
+      const el = document.getElementById(id);
+      if (el && !el.__pwOnWired){
+        el.__pwOnWired = true;
+        el.addEventListener("click", ()=> window.PW_OnboardStart && window.PW_OnboardStart("video"));
+      }
+    });
+  }
+
+  \1 ()=>{
     if (isActive()) run(true);
   });
 })();
