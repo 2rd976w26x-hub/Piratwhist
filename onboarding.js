@@ -1,4 +1,4 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.1.7
+// Piratwhist Onboarding (Mini-video-mode) v1.1.8
 (function(){
   const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
   const LS_STEP = "pw_onboard_step";          // integer index
@@ -205,7 +205,9 @@
       <div id="pwOnboardTitle"></div>
       <p id="pwOnboardText"></p>
       <div id="pwOnboardControls">
-        <button class="pwOnBtn secondary" id="pwOnPause">⏸ Pause</button>
+        
+        <button class="pwOnBtn secondary" id="pwOnBack">⏮ Tilbage</button>
+<button class="pwOnBtn secondary" id="pwOnPause">⏸ Pause</button>
         <button class="pwOnBtn secondary" id="pwOnResume" style="display:none;">▶️ Fortsæt</button>
         <button class="pwOnBtn secondary" id="pwOnRestart">🔁 Start forfra</button>
         <button class="pwOnBtn" id="pwOnSkip">⏭ Spring over</button>
@@ -214,6 +216,7 @@
     document.body.appendChild(boxEl);
 
     document.getElementById("pwOnSkip").addEventListener("click", stop);
+    document.getElementById("pwOnBack").addEventListener("click", back);
     document.getElementById("pwOnRestart").addEventListener("click", restart);
     document.getElementById("pwOnPause").addEventListener("click", pause);
     document.getElementById("pwOnResume").addEventListener("click", resume);
@@ -240,10 +243,39 @@
     setStepIdx(0);
     cleanup();
   }
-  function restart(){
-    setActive(true);
-    setStepIdx(0);
+  function restart\(\)\{
+    setActive\(true\);
+    setStepIdx\(0\);
     paused = false;
+    run\(true\);
+  \}
+
+  function back(){
+    // Go to previous step and re-render; if previous step lives on another page, navigate there.
+    let idx = getStepIdx();
+    if (idx <= 0) idx = 0;
+    else idx = idx - 1;
+
+    setStepIdx(idx);
+    paused = false;
+    try{
+      // Stop any ongoing onboarding audio
+      if (window.__pwOnboardAudio){
+        window.__pwOnboardAudio.pause();
+        window.__pwOnboardAudio.currentTime = 0;
+      }
+    }catch(e){}
+
+    const step = steps[idx];
+    const p = normPath();
+    if (step && step.pages && !step.pages.includes(p)){
+      // Navigate to the first declared page for that step
+      let target = step.pages[0] || "/piratwhist.html";
+      if (target === "/") target = "/piratwhist.html";
+      // Keep query clean; onboarding will auto-resume on DOMContentLoaded
+      location.href = target;
+      return;
+    }
     run(true);
   }
   function cleanup(){
