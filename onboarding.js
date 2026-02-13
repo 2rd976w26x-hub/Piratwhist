@@ -1,4 +1,4 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.2.0
+// Piratwhist Onboarding (Mini-video-mode) v1.2.1
 (function(){
   const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
   const LS_STEP = "pw_onboard_step";          // integer index
@@ -243,12 +243,12 @@
     setStepIdx(0);
     cleanup();
   }
-  function restart\(\)\{
-    setActive\(true\);
-    setStepIdx\(0\);
+  function restart(){
+    setActive(true);
+    setStepIdx(0);
     paused = false;
-    run\(true\);
-  \}
+    run(true);
+  }
 
   function back(){
     // Go to previous step and re-render; if previous step lives on another page, navigate there.
