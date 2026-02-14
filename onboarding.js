@@ -1,4 +1,4 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.2.2
+// Piratwhist Onboarding (Mini-video-mode) v1.2.3
 (function(){
   const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
   const LS_STEP = "pw_onboard_step";          // integer index

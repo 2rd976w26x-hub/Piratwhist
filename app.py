@@ -5,13 +5,34 @@ import random
 import time
 from typing import Any, Dict, List, Optional
 
-from flask import Flask, send_from_directory, request, abort
+from flask import Flask, send_from_directory, request, abort, jsonify
 from flask_socketio import SocketIO, join_room, leave_room, emit
 
 # --- App setup ---
 app = Flask(__name__, static_folder=".", static_url_path="")
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "piratwhist-secret")
 ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")
+
+# --- Global AI URL (shared for all players) ---
+_AI_URL_FILE = os.path.join(os.path.dirname(__file__), "global_ai_url.json")
+
+def _load_global_ai_url() -> str:
+    try:
+        import json
+        with open(_AI_URL_FILE, "r", encoding="utf-8") as f:
+            j = json.load(f)
+        return str(j.get("aiUrl", "")).strip()
+    except Exception:
+        return ""
+
+def _save_global_ai_url(url: str) -> None:
+    try:
+        import json
+        with open(_AI_URL_FILE, "w", encoding="utf-8") as f:
+            json.dump({"aiUrl": url, "updatedAt": time.time()}, f)
+    except Exception:
+        pass
+
 
 # IMPORTANT (Render + Python 3.13):
 # eventlet currently breaks on Python 3.13 (threading API change).

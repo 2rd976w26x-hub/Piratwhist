@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Piratwhist v1.2.2 · Administrator</title>
+  <title>Piratwhist v1.2.3 · Administrator</title>
   <link rel="stylesheet" href="/pw_mini.css" />
   <link rel="stylesheet" href="/admin.css" />
   <link rel="stylesheet" href="/feedback.css" />
@@ -12,7 +12,7 @@
   <header class="pwHeader">
     <div class="pwBrand">
       <div class="pwTitle">Piratwhist</div>
-      <div class="pwVersion">v1.2.2</div>
+      <div class="pwVersion">v1.2.3</div>
     </div>
     <nav class="pwPills" aria-label="Admin navigation">
             <button id="adminBack" class="pwPill" type="button">← Tilbage</button>
@@ -62,12 +62,17 @@
       </article>
       <article class="adminCard">
         <h2>AI (Quick tunnel)</h2>
-        <div class="adminHint">Gem din nuværende trycloudflare URL her (kun på denne enhed). URL ændrer sig når du genstarter cloudflared.</div>
+        <div class="adminHint">Indsæt AI-URL én gang her. Tryk 'Gem globalt' så virker det automatisk for alle spillere (på alle enheder).</div>
         <label class="adminLabel">AI URL</label>
         <input id="admAiUrlInput" class="adminInput" type="text" placeholder="https://...trycloudflare.com" />
+        
+        <label class="adminLabel">Admin token (kun hvis sat på server)</label>
+        <input id="admAiTokenInput" class="adminInput" type="password" placeholder="(valgfrit)"/>
+
         <div class="adminActions">
           <button id="admAiPaste" class="pwBtn">📋 Indsæt URL</button>
-          <button id="admAiSave" class="pwBtn">Gem</button>
+          <button id="admAiSave" class="pwBtn">Gem lokalt</button>
+          <button id="admAiSaveGlobal" class="pwBtn">Gem globalt</button>
           <button id="admAiTest" class="pwBtn">Test</button>
         </div>
         <div id="admAiStatus" class="adminHint"></div>
@@ -107,7 +112,7 @@
   </main>
 
   <footer class="pwFooter">
-    <div class="pwSubtitle">Piratwhist v1.2.2</div>
+    <div class="pwSubtitle">Piratwhist v1.2.3</div>
     <nav class="pwPills" aria-label="Footer navigation">
       <a class="pwPill" href="/piratwhist.html">Start</a>
       <a class="pwPill" href="/online.html">Online</a>
@@ -115,7 +120,8 @@
     </nav>
   </footer>
 
-  <script src="/pw_telemetry.js"></script>
+  <script src="global_ai.js"></script>
+    <script src="/pw_telemetry.js"></script>
   <script src="/admin.js"></script>
   <script src="/feedback.js"></script>
 </body>

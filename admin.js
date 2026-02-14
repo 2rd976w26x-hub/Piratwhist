@@ -418,3 +418,57 @@
   }
 
 })();
+// -----------------------------
+// Global AI-URL (for ALL players)
+// Uses server endpoints: GET /ai-url  and POST /set-ai-url
+// -----------------------------
+(() => {
+  const input = document.getElementById("admAiUrlInput");
+  const tokenInput = document.getElementById("admAiTokenInput");
+  const btnSaveGlobal = document.getElementById("admAiSaveGlobal");
+  const status = document.getElementById("admAiStatus");
+  if (!input || !btnSaveGlobal || !status) return;
+
+  function norm(u){
+    let s = (u || "").trim();
+    s = s.replace(/^["']|["']$/g, "").trim();
+    s = s.replace(/\/(health|ask|speak)\s*$/i, "");
+    s = s.replace(/\/+$/, "");
+    if (s && !/^https?:\/\//i.test(s)) s = "https://" + s;
+    return s;
+  }
+
+  async function setGlobalAiUrl(aiUrl, token){
+    const r = await fetch("/set-ai-url", {
+      method: "POST",
+      headers: Object.assign(
+        { "Content-Type": "application/json" },
+        token ? { "X-Admin-Token": token } : {}
+      ),
+      body: JSON.stringify({ aiUrl })
+    });
+    if (!r.ok) {
+      const t = await r.text().catch(()=> "");
+      throw new Error("Kunne ikke gemme globalt (HTTP " + r.status + "). " + t);
+    }
+    return true;
+  }
+
+  btnSaveGlobal.addEventListener("click", async () => {
+    const url = norm(input.value);
+    const token = tokenInput ? String(tokenInput.value||"").trim() : "";
+    if (!url) { status.textContent = "AI URL mangler."; return; }
+    status.textContent = "Gemmer globalt…";
+    try{
+      await setGlobalAiUrl(url, token);
+      status.textContent = "Gemt globalt ✅ (gælder for alle spillere)";
+      // Also refresh global cache immediately
+      if (typeof window.PW_getAiBaseUrl === "function") {
+        window.PW_GLOBAL_AI_URL = url;
+        try{ localStorage.setItem("pw_ai_url_global_cache", JSON.stringify({url, at: Date.now()})); }catch(e){}
+      }
+    }catch(e){
+      status.textContent = "Fejl: " + (e.message || e);
+    }
+  });
+})();
