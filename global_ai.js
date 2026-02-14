@@ -30,17 +30,23 @@
     }catch(e){}
   }
 
-  async function refresh(){
+    async function refresh(){
     try{
-      const r = await fetch(ENDPOINT, { cache:"no-store" });
-      if(!r.ok) return;
+      const r = await fetch(ENDPOINT + "?ts=" + Date.now(), { cache:"no-store" });
+      if(!r.ok) return "";
       const j = await r.json();
       const u = norm(j.aiUrl || "");
       if(u){
         window.PW_GLOBAL_AI_URL = u;
         writeCache(u);
+        // Back-compat: some UI still reads the local key
+        try{ localStorage.setItem("pw_ai_url", u); }catch(e){}
+        try{ window.dispatchEvent(new CustomEvent("pw-ai-url-updated", { detail:{ url:u } })); }catch(e){}
       }
-    }catch(e){}
+      return u;
+    }catch(e){
+      return "";
+    }
   }
 
   // Public helper used by other scripts
@@ -61,6 +67,13 @@
     }catch(e){}
 
     return "";
+  };
+
+
+  // Force refresh from server (async)
+  window.PW_refreshAiBaseUrl = async function(){
+    const u = await refresh();
+    return norm(u || window.PW_getAiBaseUrl());
   };
 
   // Kick off refresh (do not block UI)
