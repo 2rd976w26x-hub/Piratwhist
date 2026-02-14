@@ -1,4 +1,4 @@
-// Piratwhist Guide Scenes (v1.2.1)
+// Piratwhist Guide Scenes (v1.2.2)
 // Deterministic demo states for rules illustrations. Used when ?guide=1&scene=...
 (function(){
   const C = (suit, rank)=>({suit, rank});

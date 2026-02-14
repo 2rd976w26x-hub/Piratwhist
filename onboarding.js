@@ -1,10 +1,44 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.2.1
+// Piratwhist Onboarding (Mini-video-mode) v1.2.2
 (function(){
   const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
   const LS_STEP = "pw_onboard_step";          // integer index
   const LS_ACTIVE = "pw_onboard_active";      // "1"/"0"
   const LS_AI_URL = "pw_ai_url";              // already used for AI
   const DEFAULT_MODE = "video";
+  // --- Mobile audio unlock (prevents autoplay blocking) ---
+  let __pwAudioUnlocked = false;
+  async function unlockAudio(){
+    if (__pwAudioUnlocked) return true;
+    try{
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC){
+        const ctx = new AC();
+        if (ctx.state === "suspended") { try{ await ctx.resume(); }catch(e){} }
+        // Play an inaudible blip to unlock
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.value = 0.0001;
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.02);
+        __pwAudioUnlocked = true;
+        return true;
+      }
+    }catch(e){}
+    // Fallback: try to play a muted audio element
+    try{
+      const a = new Audio();
+      a.volume = 0;
+      // Use a tiny data-uri wav header (very short). Some mobiles still require a real file; this is best-effort.
+      a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
+      await a.play();
+      a.pause();
+      __pwAudioUnlocked = true;
+      return true;
+    }catch(e){}
+    return false;
+  }
+
 
   function isHost(){
     try{ return (typeof mySeat !== 'undefined') && (mySeat === 0); }catch(e){ return false; }
@@ -513,7 +547,7 @@ if (step.wait === "next"){
       const el = document.getElementById(id);
       if (el && !el.__pwOnWired){
         el.__pwOnWired = true;
-        el.addEventListener("click", ()=> window.PW_OnboardStart && window.PW_OnboardStart("video"));
+        el.addEventListener("click", async ()=>{ try{ await unlockAudio(); }catch(e){} window.PW_OnboardStart && window.PW_OnboardStart("video"); });
       }
     });
   }
