@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import random
 import time
+import re
 from typing import Any, Dict, List, Optional
 
 from flask import Flask, send_from_directory, request, abort, jsonify
@@ -115,6 +116,41 @@ def online_js():
 def online_css():
     return send_from_directory(".", "online.css")
 
+
+# -----------------------------
+# Global AI URL endpoints
+# Everyone can read: GET /ai-url
+# Admin can set: POST /set-ai-url (optionally protected by ADMIN_TOKEN)
+# -----------------------------
+@app.get("/ai-url")
+def get_ai_url():
+    url = _load_global_ai_url()
+    return jsonify({"aiUrl": url})
+
+
+@app.post("/set-ai-url")
+def set_ai_url():
+    # If ADMIN_TOKEN is set, require it. Otherwise allow (simple mode).
+    if ADMIN_TOKEN:
+        token = request.args.get("token") or request.headers.get("X-Admin-Token")
+        if token != ADMIN_TOKEN:
+            abort(403)
+
+    data = request.get_json(silent=True) or {}
+    url = str(data.get("aiUrl", "")).strip()
+    # normalize
+    url = url.replace('"', "").replace("'", "").strip()
+    url = re.sub(r"/(health|ask|speak)\s*$", "", url, flags=re.I)
+    url = re.sub(r"/+$", "", url)
+    if url and not re.match(r"^https?://", url, flags=re.I):
+        url = "https://" + url
+
+    # basic validation
+    if url and not re.match(r"^https?://", url, flags=re.I):
+        abort(400)
+
+    _save_global_ai_url(url)
+    return jsonify({"ok": True, "aiUrl": url})
 
 @app.get("/<path:path>")
 def static_files(path: str):

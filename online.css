@@ -113,7 +113,7 @@
 .cardbtn:disabled .playingcard{filter: grayscale(.4);}
 .slot .playingcard{transform: scale(.95); transform-origin: left top;}
 
-/* --- v1.2.3: winner sweep + play animation helpers (2s) --- */
+/* --- v1.2.4: winner sweep + play animation helpers (2s) --- */
 .flycard{
   position: fixed;
   z-index: 9999;
@@ -127,7 +127,7 @@
 }
 
 
-/* --- v1.2.3: fixed card back (2 persons + 4 butterflies) --- */
+/* --- v1.2.4: fixed card back (2 persons + 4 butterflies) --- */
 .playingcard.back{
   background-image: var(--cardback-url);
   background-size: cover;
@@ -212,4 +212,18 @@
 .pcLayoutTuner__hint{
   font-size: 11px;
   opacity: .7;
+}
+
+
+/* Readability: form controls in cards */
+.card select, .card input, .card textarea{
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.26);
+  color: rgba(255,255,255,.92);
+}
+.card select:disabled, .card input:disabled, .card textarea:disabled{
+  opacity: 1;
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.70);
+  border-color: rgba(255,255,255,.20);
 }
