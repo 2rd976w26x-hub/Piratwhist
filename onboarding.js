@@ -5,6 +5,33 @@
   const LS_ACTIVE = "pw_onboard_active";      // "1"/"0"
   const LS_AI_URL = "pw_ai_url";              // already used for AI
   const DEFAULT_MODE = "video";
+  let audioUnlocked = false;
+
+  function getOnboardAudio(){
+    if (window.__pwOnboardAudio) return window.__pwOnboardAudio;
+    const a = new Audio();
+    a.setAttribute("playsinline", "");
+    a.preload = "auto";
+    window.__pwOnboardAudio = a;
+    return a;
+  }
+
+  async function unlockAudioFromGesture(){
+    if (audioUnlocked) return true;
+    try{
+      const a = getOnboardAudio();
+      a.muted = true;
+      a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+      await a.play();
+      a.pause();
+      a.currentTime = 0;
+      a.muted = false;
+      audioUnlocked = true;
+      return true;
+    }catch(_){
+      return false;
+    }
+  }
 
   function isHost(){
     try{ return (typeof mySeat !== 'undefined') && (mySeat === 0); }catch(e){ return false; }
@@ -156,15 +183,10 @@
       const objUrl = URL.createObjectURL(blob);
 
       // Stop previous onboarding audio to avoid overlap
-      try{
-        if (window.__pwOnboardAudio) {
-          window.__pwOnboardAudio.pause();
-          window.__pwOnboardAudio.currentTime = 0;
-        }
-      }catch(e){}
-
-      const a = new Audio(objUrl);
-      window.__pwOnboardAudio = a;
+      const a = getOnboardAudio();
+      try{ a.pause(); a.currentTime = 0; }catch(_){}
+      a.src = objUrl;
+      a.load();
 
       // Soft start (prevents click at beginning)
       try{ a.volume = 0; }catch(e){}
@@ -175,7 +197,23 @@
         try{ a.volume = Math.min(1, __fadeI/__fadeSteps); }catch(e){}
         if (__fadeI >= __fadeSteps) clearInterval(__fadeT);
       }, 10);
-      a.play().catch(()=>{});
+      let playbackStarted = false;
+      const startPlayback = ()=> a.play().then(()=>{ playbackStarted = true; }).catch(()=>{});
+      await startPlayback();
+
+      if (!playbackStarted){
+        const retry = async ()=>{
+          try{
+            await unlockAudioFromGesture();
+            await startPlayback();
+          }finally{
+            window.removeEventListener("touchend", retry, true);
+            window.removeEventListener("click", retry, true);
+          }
+        };
+        window.addEventListener("touchend", retry, true);
+        window.addEventListener("click", retry, true);
+      }
 
       // Wait for audio end (with fallback)
       await new Promise(resolve=>{
@@ -513,7 +551,10 @@ if (step.wait === "next"){
       const el = document.getElementById(id);
       if (el && !el.__pwOnWired){
         el.__pwOnWired = true;
-        el.addEventListener("click", ()=> window.PW_OnboardStart && window.PW_OnboardStart("video"));
+        el.addEventListener("click", async ()=>{
+          try{ await unlockAudioFromGesture(); }catch(_){ }
+          window.PW_OnboardStart && window.PW_OnboardStart("video");
+        });
       }
     });
   }
