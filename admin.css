@@ -96,3 +96,49 @@ button.pwPill{color:inherit;cursor:pointer;font:inherit}
 .adminLabel{ display:block; font-weight:600; margin:10px 0 6px; color:#000; }
 .adminInput{ width:100%; padding:10px 12px; border:1px solid #cfd6df; border-radius:10px; font-size:14px; color:#000; }
 .adminActions{ display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+
+
+
+/* --- Button contrast fixes for Admin page (white cards) --- */
+.adminCard .pwBtn{
+  background:#f1f5f9;
+  color:#0f172a;
+  border:1px solid #cbd5e1;
+  opacity:1;
+}
+.adminCard .pwBtn:hover{
+  background:#e2e8f0;
+}
+.adminCard .pwBtn:disabled{
+  background:#e5e7eb;
+  color:#64748b;
+  border:1px solid #cbd5e1;
+  opacity:1;
+  cursor:not-allowed;
+}
+
+/* Primary/secondary actions on admin cards */
+.adminCard .pwBtnPrimary{
+  background:linear-gradient(135deg,#2563eb,#1d4ed8);
+  color:#ffffff;
+  border:none;
+  box-shadow:0 6px 18px rgba(37,99,235,.28);
+}
+.adminCard .pwBtnPrimary:hover{
+  filter:brightness(1.02);
+  box-shadow:0 8px 22px rgba(37,99,235,.35);
+}
+.adminCard .pwBtnPrimary:disabled{
+  background:#cbd5e1;
+  color:#475569;
+  box-shadow:none;
+}
+
+.adminCard .pwBtnSecondary{
+  background:#ffffff;
+  color:#0f172a;
+  border:1px solid #94a3b8;
+}
+.adminCard .pwBtnSecondary:hover{
+  background:#f8fafc;
+}

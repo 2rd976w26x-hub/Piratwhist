@@ -1,4 +1,4 @@
-/* Piratwhist – v1.2.4 (rooms) */
+/* Piratwhist – v1.2.5 (rooms) */
 const APP_NAME = "Piratwhist";
 const APP_VERSION = "1.0.8";
 

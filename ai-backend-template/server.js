@@ -1,5 +1,5 @@
 /*
-  Piratwhist lokal AI backend (Ollama) – template v1.2.4
+  Piratwhist lokal AI backend (Ollama) – template v1.2.5
   - Læser regler + UI-viden fra ./knowledge/piratwhist_knowledge.json
   - Finder de mest relevante afsnit og sender dem med i prompten (RAG light)
 */
