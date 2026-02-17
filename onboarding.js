@@ -104,18 +104,21 @@
         ${hint ? `<div class="pw-guide-hint">${hint}</div>` : ``}
         <div class="pw-guide-buttons">
           <button id="pwGuideBack">Tilbage</button>
+          <button id="pwGuideOff">Slå fra</button>
           <button id="pwGuideNext" class="pw-primary">Næste</button>
         </div>
       </div>
     `;
 
     const backBtn = document.getElementById("pwGuideBack");
+    const offBtn  = document.getElementById("pwGuideOff");
     const nextBtn = document.getElementById("pwGuideNext");
 
     backBtn.disabled = idx <= 0;
 
     // IMPORTANT: clicking Next/Back stops audio first (prevents overlap)
     backBtn.onclick = ()=>{ stopAudio(); setIdx(idx-1); run(true); };
+    if (offBtn){ offBtn.onclick = ()=>{ stopAudio(); try{ window.PW_OnboardingStop(); }catch(e){}; }; }
     nextBtn.onclick = ()=>{ stopAudio(); setIdx(idx+1); run(true); };
 
     return { backBtn, nextBtn };
@@ -309,7 +312,17 @@
       }, 800);
     }
   }
+  // --- Opt-in start/stop (never auto-start) ---
+  const ENABLE_KEY = "pw_onboarding_enabled";
+  function isEnabled(){ return localStorage.getItem(ENABLE_KEY) === "1"; }
+  function setEnabled(v){ localStorage.setItem(ENABLE_KEY, v ? "1" : "0"); }
 
-  window.addEventListener("load", ()=> setTimeout(()=>run(true), 400));
-  window.addEventListener("pageshow", ()=> setTimeout(()=>run(true), 400));
+  // Expose controls for UI buttons
+  window.PW_OnboardingStart = function(){ setEnabled(true); setIdx(0); run(true); };
+  window.PW_OnboardingStop  = function(){ setEnabled(false); stopAudio(); try{ clearHighlights(); }catch(e){};
+    const dlg=document.getElementById("pwGuideDialog"); if(dlg) dlg.remove(); };
+
+  // If user reloads mid-guide and it is enabled, resume; otherwise do nothing
+  window.addEventListener("load", ()=>{ if(isEnabled()) setTimeout(()=>run(true), 250); });
+  window.addEventListener("pageshow", ()=>{ if(isEnabled()) setTimeout(()=>run(true), 250); });
 })();
