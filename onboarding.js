@@ -1,600 +1,315 @@
-// Piratwhist Onboarding (Mini-video-mode) 1.2.7
-(function(){
+// Piratwhist Onboarding v1.2.7 (audio-sync fix)
+// Fix: prevent double speech by pausing previous audio + gating Next while audio plays.
+// Uses pre-generated guide audio files when available (solution A).
 
-  // Guide audio: prefer pre-generated files, fallback to /speak
-  const GUIDE_AUDIO_DIR = "/assets/audio/guide/";
-  const GUIDE_AUDIO = {
-    // Use your existing professional/rolig files if present in assets/audio/guide/
-    // Adjust filenames here if your pack uses different names.
-    step1: "step1_choose_game_type.wav",
-    step2: "step2_online_entry.wav",
-    step3: "step3_room_created.wav",
-    step4: "step4_choose_players.wav",
-    step5: "step5_waiting.wav",
-    step6: "step6_start_game.wav",
-    step7: "step7_in_game.wav"
+(function(){
+  if (window.__PW_ONBOARDING__) return;
+  window.__PW_ONBOARDING__ = true;
+
+  const KEY = "pw_onboarding_step";
+  const AUDIO_DIR = "/assets/audio/guide/";
+  const getIdx = () => parseInt(sessionStorage.getItem(KEY) || "0", 10);
+  const setIdx = (i) => sessionStorage.setItem(KEY, String(Math.max(0, i)));
+
+  const page = () => (location.pathname || "").split("/").pop() || "";
+  const phase = () => (window.state && window.state.phase) || "";
+  const isHost = () => !!(window.state && window.state.isHost);
+
+  // --- Styles (always visible highlights + readable dialog) ---
+  (function injectStyles(){
+    if (document.getElementById("pwOnboardingStyles")) return;
+    const css = `
+      .pw-guide-highlight{ outline: 3px solid #2563eb !important; outline-offset: 4px !important; box-shadow: 0 0 0 6px rgba(37,99,235,.15) !important; border-radius: 10px; }
+      .pw-guide-dialog{ position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 99999; }
+      .pw-guide-card{ background: #ffffff; color:#111827; border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px 12px 10px; box-shadow: 0 10px 30px rgba(0,0,0,.18); max-width: 720px; margin: 0 auto; }
+      .pw-guide-card h3{ margin: 0 0 6px; font-size: 16px; }
+      .pw-guide-card p{ margin: 0 0 10px; font-size: 14px; line-height: 1.35; }
+      .pw-guide-buttons{ display:flex; gap:10px; justify-content:flex-end; align-items:center; flex-wrap: wrap; }
+      .pw-guide-buttons button{ appearance:none; border:1px solid #cbd5e1; background:#f8fafc; color:#0f172a; padding:8px 12px; border-radius: 10px; font-weight:600; cursor:pointer; }
+      .pw-guide-buttons button.pw-primary{ border:none; background: linear-gradient(135deg, #2563eb, #1d4ed8); color:#fff; }
+      .pw-guide-buttons button:disabled{ opacity: .7; cursor:not-allowed; }
+      .pw-guide-hint{ font-size:12px; color:#334155; margin-top:6px; }
+    `;
+    const style = document.createElement("style");
+    style.id = "pwOnboardingStyles";
+    style.textContent = css;
+    document.head.appendChild(style);
+  })();
+
+  // --- One shared audio element (prevents double audio) ---
+  const audio = new Audio();
+  audio.preload = "auto";
+  audio.crossOrigin = "anonymous";
+
+  function stopAudio(){
+    try{
+      audio.pause();
+      audio.currentTime = 0;
+      audio.src = "";
+    }catch(e){}
+  }
+
+  // If file missing, we just don't play (fallback can be added later)
+  function playAudioFile(filename){
+    if (!filename) return;
+    try{
+      audio.pause();
+      audio.currentTime = 0;
+      audio.src = AUDIO_DIR + filename;
+      return audio.play().catch(()=>{});
+    }catch(e){}
+  }
+
+  // Map step -> pre-generated file
+  const AUDIO_MAP = {
+    start_choose: "step1_choose_game_type.wav",
+    physical_info: "step1_choose_game_type.wav",
+    online_entry: "step2_online_entry.wav",
+    room_code: "step3_room_created.wav",
+    room_players: "step4_choose_players.wav",
+    room_wait: "step5_waiting.wav",
+    room_start: "step6_start_game.wav",
+    play_in_game: "step7_in_game.wav"
   };
 
-  async function tryPlayFileThenFallback(stepId, text){
-    const file = GUIDE_AUDIO[stepId];
-    if (!file){
-      return speak(text);
+  function clearHighlights(){
+    document.querySelectorAll(".pw-guide-highlight").forEach(el=>el.classList.remove("pw-guide-highlight"));
+  }
+
+  function resolveTarget(step){
+    if (typeof step.selectorFn === "function"){
+      try{ return document.querySelector(step.selectorFn()); }catch(e){ return null; }
     }
-    // Try local file first
-    return new Promise((resolve)=>{
-      try{
-        const a = new Audio(GUIDE_AUDIO_DIR + file);
-        a.preload = "auto";
-        a.oncanplaythrough = () => {
-          a.play().then(()=>resolve(true)).catch(()=>{
-            // If autoplay blocked, fallback to /speak which is also usually blocked until gesture
-            speak(text).then(()=>resolve(false)).catch(()=>resolve(false));
-          });
-        };
-        a.onerror = () => {
-          speak(text).then(()=>resolve(false)).catch(()=>resolve(false));
-        };
-      }catch(e){
-        speak(text).then(()=>resolve(false)).catch(()=>resolve(false));
-      }
-    });
+    if (!step.selector) return null;
+    try{ return document.querySelector(step.selector); }catch(e){ return null; }
   }
 
-  const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
-  const LS_STEP = "pw_onboard_step";          // integer index
-  const LS_ACTIVE = "pw_onboard_active";      // "1"/"0"
-  const LS_AI_URL = "pw_ai_url";              // already used for AI
-  const DEFAULT_MODE = "video";
-  // --- Mobile audio unlock (prevents autoplay blocking) ---
-  let __pwAudioUnlocked = false;
-  async function unlockAudio(){
-    if (__pwAudioUnlocked) return true;
-    try{
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (AC){
-        const ctx = new AC();
-        if (ctx.state === "suspended") { try{ await ctx.resume(); }catch(e){} }
-        // Play an inaudible blip to unlock
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        gain.gain.value = 0.0001;
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.02);
-        __pwAudioUnlocked = true;
-        return true;
-      }
-    }catch(e){}
-    // Fallback: try to play a muted audio element
-    try{
-      const a = new Audio();
-      a.volume = 0;
-      // Use a tiny data-uri wav header (very short). Some mobiles still require a real file; this is best-effort.
-      a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=";
-      await a.play();
-      a.pause();
-      __pwAudioUnlocked = true;
-      return true;
-    }catch(e){}
-    return false;
+  function showDialog(step, idx){
+    let dlg = document.getElementById("pwGuideDialog");
+    if (!dlg){
+      dlg = document.createElement("div");
+      dlg.id = "pwGuideDialog";
+      dlg.className = "pw-guide-dialog";
+      document.body.appendChild(dlg);
+    }
+
+    const title = step.title || `Kom i gang · ${idx+1}/${steps.length}`;
+    const text = typeof step.textFn === "function" ? step.textFn() : (step.text || "");
+    const hint = step.hint || "";
+
+    dlg.innerHTML = `
+      <div class="pw-guide-card">
+        <h3>${title}</h3>
+        <p>${text}</p>
+        ${hint ? `<div class="pw-guide-hint">${hint}</div>` : ``}
+        <div class="pw-guide-buttons">
+          <button id="pwGuideBack">Tilbage</button>
+          <button id="pwGuideNext" class="pw-primary">Næste</button>
+        </div>
+      </div>
+    `;
+
+    const backBtn = document.getElementById("pwGuideBack");
+    const nextBtn = document.getElementById("pwGuideNext");
+
+    backBtn.disabled = idx <= 0;
+
+    // IMPORTANT: clicking Next/Back stops audio first (prevents overlap)
+    backBtn.onclick = ()=>{ stopAudio(); setIdx(idx-1); run(true); };
+    nextBtn.onclick = ()=>{ stopAudio(); setIdx(idx+1); run(true); };
+
+    return { backBtn, nextBtn };
   }
 
-
-  function isHost(){
-    try{ return (typeof mySeat !== 'undefined') && (mySeat === 0); }catch(e){ return false; }
-  }
-  function phase(){
-    try{ return (typeof state !== 'undefined' && state && state.phase) ? state.phase : null; }catch(e){ return null; }
-  }
-
-  // --- Steps across pages ---
   const steps = [
-    // Start page
     {
       id:"start_choose",
-      pages:["/piratwhist.html","/"],
+      pages:["piratwhist.html",""],
       selector:"#pwGoOnline",
       title:"Kom i gang · 1/7",
       text:"Vælg spiltype. Fysisk spil eller online spil.",
       wait:"choice",
       choices:[
-        { selector:"#pwGoPhysical", next:"physical_info" },
-        { selector:"#pwGoOnline", next:"online_create" }
-      ],
+        { selector:"#pwGoPhysical", nextId:"physical_info" },
+        { selector:"#pwGoOnline", nextId:"online_entry" }
+      ]
     },
-    // Physical chosen (under development)
     {
       id:"physical_info",
-      pages:["/score.html"],
-      selector:"body",
+      pages:["piratwhist.html",""],
+      selector:"#pwGoPhysical",
       title:"Kom i gang · 2/2",
-      text:"Du har valgt fysisk spil. Denne del er under udarbejdelse og kommer senere. Du kan gå tilbage og vælge online spil for at spille nu.",
+      text:"Fysisk spil er under udarbejdelse. Vælg online spil for at spille nu.",
       wait:"done"
     },
-    // Online lobby page (create/join)
     {
-      id:"online_create",
-      pages:["/online.html"],
+      id:"online_entry",
+      pages:["online.html"],
       selector:"#olCreateRoom",
       title:"Kom i gang · 2/7",
-      text:"Tryk på 'Opret online-rum' for at starte et nyt spil som vært. Du får en rumkode, som du kan dele med andre.",
-      wait:"click",
+      text:"Her kan du oprette et online rum eller deltage med en rumkode. Som vært trykker du på 'Opret online-rum'.",
+      wait:"choice",
+      choices:[
+        { selector:"#olCreateRoom", nextId:"room_code" },
+        { selector:"#olJoinRoom", nextId:"room_code" }
+      ]
     },
-    // Online room page: show room code
     {
       id:"room_code",
-      pages:["/online_room.html","/online_lobby.html"],
+      pages:["online_lobby.html","online_room.html","online-room.html"],
       selector:"#olRoomLabel",
       title:"Kom i gang · 3/7",
-      text:"Her ser du rumkoden. Del rumkoden med de spillere, der skal være med, så de kan joine rummet.",
-      wait:"next",
-      delayAfterMs:800
+      text:"Her ser du rumkoden. Del rumkoden med de andre spillere, så de kan joine rummet.",
+      wait:"next"
     },
-    // Choose number of players
     {
       id:"room_players",
-      pages:["/online_room.html","/online_lobby.html"],
+      pages:["online_lobby.html","online_room.html","online-room.html"],
       selector:"#olPlayerCount",
       title:"Kom i gang · 4/7",
-      textFn:()=>{
-        if (!isHost()){
-          return "Kun værten kan ændre antal spillere. Hvis du ikke er vært, skal du bare vente her.";
-        }
-        return "Vælg antal spillere her. Tryk på feltet og vælg antal spillere.";
-      },
-      ready:()=> (phase()==="lobby") && (typeof mySeat !== 'undefined'),
-      wait:"change",
-      maxWaitMs: 8000,
-      delayAfterMs:800
+      textFn:()=> isHost()
+        ? "Som vært kan du vælge antal spillere her."
+        : "Kun værten kan ændre antal spillere. Som deltager skal du bare vente her.",
+      ready:()=> phase()==="lobby" || !phase(),
+      wait:"next"
     },
-    // Choose cards per player = tricks to bid
-    {
-      id:"room_cardsper",
-      pages:["/online_room.html","/online_lobby.html"],
-      selector:"#olStartOnline",
-      title:"Kom i gang · 5/7",
-      text:"Antal stik der bydes på følger antal kort der deles ud i runden. Når spillet starter, kan du se hvor mange kort pr. spiller der deles, og det er også antal stik til bud.",
-      wait:"next",
-      delayAfterMs:900
-    },
-    // Wait in room (guide resumes automatically when game starts)
     {
       id:"room_wait",
-      pages:["/online_room.html","/online_lobby.html"],
+      pages:["online_lobby.html","online_room.html","online-room.html"],
+      selector:"#olNames",
+      title:"Kom i gang · 5/7",
+      textFn:()=> isHost()
+        ? "Vent på at andre spillere joiner. Du kan se spillerlisten her."
+        : "Du er i lobbyen. Vent på at værten starter spillet.",
+      ready:()=> phase()==="lobby" || !phase(),
+      wait:"next"
+    },
+    {
+      id:"room_start",
+      pages:["online_lobby.html","online_room.html","online-room.html"],
       selectorFn:()=> isHost() ? "#olStartOnline" : "#olRoomStatus",
       title:"Kom i gang · 6/7",
-      textFn:()=>{
-        if (isHost()){
-          return "Nu er rummet klar. Vent til alle spillere er med. Som vært starter du spillet ved at trykke på 'Start spil'.";
-        }
-        return "Nu er rummet klar. Vent til alle spillere er med. Når værten starter spillet, fortsætter guiden automatisk inde i spillet.";
-      },
-      ready:()=> (typeof state !== 'undefined') && !!state,
-      waitFn:()=> isHost() ? "click" : "next",
-      maxWaitMs: 6000,
-      delayAfterMs:2300,
-      autoClick:false
+      textFn:()=> isHost()
+        ? "Når alle er klar, tryk på 'Start spil'."
+        : "Når værten starter spillet, fortsætter guiden automatisk.",
+      ready:()=> phase()==="lobby" || !phase(),
+      wait:"next"
     },
-    // In game page: your hand and help
     {
-      id:"play_hand",
-      pages:["/online_play.html","/online_game.html"],
+      id:"play_in_game",
+      pages:["online_bidding.html","online_play.html","online_game.html","online_result.html"],
       selector:"#olHands",
       title:"Kom i gang · 7/7",
-      text:"I spillet ligger dine kort nederst. Når det er din tur, trykker du på et kort for at spille. Hvis du er i tvivl, kan du trykke på 'Spørg AI'.",
-      wait:"done",
-    },
+      text:"Nu er I i spillet. Dine kort ligger nederst. Når det er din tur, trykker du på et kort. Du kan altid trykke 'Spørg AI' hvis du er i tvivl.",
+      wait:"done"
+    }
   ];
 
-
-  function normPath(){
-    const p = location.pathname || "/";
-    return p === "/" ? "/piratwhist.html" : p;
-  }
-  function getStepIdx(){
-    return parseInt(localStorage.getItem(LS_STEP) || "0", 10) || 0;
-  }
-  function setStepIdx(i){
-    localStorage.setItem(LS_STEP, String(i));
-  }
-  function isActive(){
-    return localStorage.getItem(LS_ACTIVE) === "1";
-  }
-  function setActive(v){
-    localStorage.setItem(LS_ACTIVE, v ? "1" : "0");
-  }
-  function mode(){
-    return (localStorage.getItem(LS_MODE) || DEFAULT_MODE);
-  }
-  function setMode(m){
-    localStorage.setItem(LS_MODE, m);
+  function stepMatchesPage(step){
+    const p = page();
+    return step.pages.includes(p) || (p==="" && step.pages.includes(""));
   }
 
-  function baseAiUrl(){
-    const u = (localStorage.getItem(LS_AI_URL) || "").trim().replace(/\/+$/,"");
-    if (!u) return "";
-    return u.replace(/\/(health|ask|speak)$/i,"");
+  function attachChoiceHandlers(step, idx, nextBtn){
+    if (!step.choices || !step.choices.length) return;
+    step.choices.forEach(ch=>{
+      const el = document.querySelector(ch.selector);
+      if (!el) return;
+      if (el.__pw_choice_bound) return;
+      el.__pw_choice_bound = true;
+      el.addEventListener("click", ()=>{
+        // Stop any current audio, then play this step audio (user gesture unlocks)
+        stopAudio();
+
+        const nextIndex = steps.findIndex(s=>s.id===ch.nextId);
+        setIdx(nextIndex >= 0 ? nextIndex : (idx+1));
+        setTimeout(()=>run(true), 250);
+      }, { passive:true });
+    });
   }
 
-  async function speak(text){
-    const url = baseAiUrl();
-    if (!url) return; // silently skip if not set
-    try{
-      const res = await fetch(url + "/speak", {
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({ text })
-      });
-      if (!res.ok) return;
-      const blob = await res.blob(); // audio/wav
-      const objUrl = URL.createObjectURL(blob);
-
-      // Stop previous onboarding audio to avoid overlap
-      try{
-        if (window.__pwOnboardAudio) {
-          window.__pwOnboardAudio.pause();
-          window.__pwOnboardAudio.currentTime = 0;
-        }
-      }catch(e){}
-
-      const a = new Audio(objUrl);
-      window.__pwOnboardAudio = a;
-
-      // Soft start (prevents click at beginning)
-      try{ a.volume = 0; }catch(e){}
-      const __fadeSteps = 6;
-      let __fadeI = 0;
-      const __fadeT = setInterval(() => {
-        __fadeI++;
-        try{ a.volume = Math.min(1, __fadeI/__fadeSteps); }catch(e){}
-        if (__fadeI >= __fadeSteps) clearInterval(__fadeT);
-      }, 10);
-      a.play().catch(()=>{});
-
-      // Wait for audio end (with fallback)
-      await new Promise(resolve=>{
-        a.onended = resolve;
-        setTimeout(resolve, 8000);
-      });
-
-      try{ URL.revokeObjectURL(objUrl); }catch(e){}
-    }catch(e){}
-  }
-
-  // --- UI overlay ---
-  let overlayEl, boxEl, hiEl;
-  function ensureUI(){
-    if (overlayEl) return;
-    overlayEl = document.createElement("div");
-    overlayEl.id = "pwOnboardOverlay";
-    document.body.appendChild(overlayEl);
-
-    hiEl = document.createElement("div");
-    hiEl.id = "pwOnboardHighlight";
-    document.body.appendChild(hiEl);
-
-    boxEl = document.createElement("div");
-    boxEl.id = "pwOnboardBox";
-    boxEl.innerHTML = `
-      <div id="pwOnboardTitle"></div>
-      <p id="pwOnboardText"></p>
-      <div id="pwOnboardControls">
-        
-        <button class="pwOnBtn secondary" id="pwOnBack">⏮ Tilbage</button>
-<button class="pwOnBtn secondary" id="pwOnPause">⏸ Pause</button>
-        <button class="pwOnBtn secondary" id="pwOnResume" style="display:none;">▶️ Fortsæt</button>
-        <button class="pwOnBtn secondary" id="pwOnRestart">🔁 Start forfra</button>
-        <button class="pwOnBtn" id="pwOnSkip">⏭ Spring over</button>
-      </div>
-    `;
-    document.body.appendChild(boxEl);
-
-    document.getElementById("pwOnSkip").addEventListener("click", stop);
-    document.getElementById("pwOnBack").addEventListener("click", back);
-    document.getElementById("pwOnRestart").addEventListener("click", restart);
-    document.getElementById("pwOnPause").addEventListener("click", pause);
-    document.getElementById("pwOnResume").addEventListener("click", resume);
-
-    window.addEventListener("resize", () => positionCurrent(), {passive:true});
-    window.addEventListener("scroll", () => positionCurrent(), {passive:true});
-  }
-
-  let paused = false;
-  function pause(){
-    paused = true;
-    document.getElementById("pwOnPause").style.display = "none";
-    document.getElementById("pwOnResume").style.display = "";
-  }
-  function resume(){
-    paused = false;
-    document.getElementById("pwOnPause").style.display = "";
-    document.getElementById("pwOnResume").style.display = "none";
-    run();
-  }
-
-  function stop(){
-    setActive(false);
-    setStepIdx(0);
-    cleanup();
-  }
-  function restart(){
-    setActive(true);
-    setStepIdx(0);
-    paused = false;
-    run(true);
-  }
-
-  function back(){
-    // Go to previous step and re-render; if previous step lives on another page, navigate there.
-    let idx = getStepIdx();
-    if (idx <= 0) idx = 0;
-    else idx = idx - 1;
-
-    setStepIdx(idx);
-    paused = false;
-    try{
-      // Stop any ongoing onboarding audio
-      if (window.__pwOnboardAudio){
-        window.__pwOnboardAudio.pause();
-        window.__pwOnboardAudio.currentTime = 0;
-      }
-    }catch(e){}
-
+  function run(force=false){
+    const idx = getIdx();
     const step = steps[idx];
-    const p = normPath();
-    if (step && step.pages && !step.pages.includes(p)){
-      // Navigate to the first declared page for that step
-      let target = step.pages[0] || "/piratwhist.html";
-      if (target === "/") target = "/piratwhist.html";
-      // Keep query clean; onboarding will auto-resume on DOMContentLoaded
-      location.href = target;
+    if (!step) return;
+
+    if (!stepMatchesPage(step)){
+      setTimeout(()=>run(), 500);
       return;
     }
-    run(true);
-  }
-  function cleanup(){
-    [overlayEl, boxEl, hiEl].forEach(el=>{ try{ el && el.remove(); }catch(e){} });
-    overlayEl = boxEl = hiEl = null;
-  }
 
-  function positionBoxNear(rect){
-    const margin = 12;
-    const w = boxEl.offsetWidth;
-    const h = boxEl.offsetHeight;
-
-    // Prefer above, else below
-    let top = rect.top - h - 10;
-    if (top < margin) top = rect.bottom + 10;
-    if (top + h > window.innerHeight - margin) top = window.innerHeight - margin - h;
-
-    let left = rect.left;
-    if (left + w > window.innerWidth - margin) left = window.innerWidth - margin - w;
-    if (left < margin) left = margin;
-
-    boxEl.style.top = `${Math.max(margin, top)}px`;
-    boxEl.style.left = `${Math.max(margin, left)}px`;
-  }
-
-  let currentStep = null;
-  function positionCurrent(){
-    if (!currentStep) return;
-    const el = document.querySelector(currentStep.selector);
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-
-    hiEl.style.left = (r.left - 6) + "px";
-    hiEl.style.top = (r.top - 6) + "px";
-    hiEl.style.width = (r.width + 12) + "px";
-    hiEl.style.height = (r.height + 12) + "px";
-
-    positionBoxNear(r);
-  }
-
-  async function run(force=false){
-    if (!isActive()) return;
-    if (paused) return;
-
-    const p = normPath();
-    let idx = getStepIdx();
-    if (idx >= steps.length) { stop(); return; }
-    const baseStep = steps[idx];
-
-    // Allow dynamic selector/text/wait based on current context
-    let step = baseStep;
-    try{
-      const eff = Object.assign({}, baseStep);
-      if (typeof baseStep.selectorFn === "function") eff.selector = baseStep.selectorFn();
-      if (typeof baseStep.textFn === "function") eff.text = baseStep.textFn();
-      if (typeof baseStep.waitFn === "function") eff.wait = baseStep.waitFn();
-      step = eff;
-    }catch(_){ step = baseStep; }
-
-    // Optional: wait for app state / permissions (e.g., only host can change lobby settings)
+    // ready gate with timeout fallback
     if (typeof step.ready === "function"){
       let ok = false;
       try{ ok = !!step.ready(); }catch(e){ ok = false; }
       if (!ok){
+        const safety = step.maxWaitMs || 8000;
+        if (!step.__waitStart) step.__waitStart = Date.now();
+        if (Date.now() - step.__waitStart > safety){
+          step.__waitStart = null;
+          setIdx(idx+1);
+          setTimeout(()=>run(true), 250);
+          return;
+        }
         setTimeout(()=>run(), 400);
         return;
       }
+      step.__waitStart = null;
     }
 
-    // If on wrong page, keep polling until navigation happens (create/join can take time)
-    if (!step.pages.includes(p)){
-      setTimeout(()=>run(), 400);
-      return;
-    }
-
-    const el = document.querySelector(step.selector);
-    if (!el){
-      // element not ready yet, retry
-      setTimeout(()=>run(), 400);
-      return;
-    }
-
-    ensureUI();
-    currentStep = step;
-
-    // Scroll into view
-    try{ el.scrollIntoView({behavior:"smooth", block:"center"}); }catch(e){}
-
-    // Render text
-    document.getElementById("pwOnboardTitle").textContent = step.title || "Kom i gang";
-    document.getElementById("pwOnboardText").textContent = step.text || "";
-    positionCurrent();
-
-    // Speak in video mode
-    if (mode()==="video"){
-      await tryPlayFileThenFallback('step' + (String((idx||0)+1)), step.text || "");
-    }
-
-    // Determine progression
-    if (step.wait === "click"){
-      // Video mode: allow user to click, but also auto-advance after a short delay (so it never locks)
-      if (mode()==="video"){
-        let done = false;
-        const handler = ()=>{
-          if (done) return;
-          done = true;
-          try{ el.removeEventListener("click", handler, true); }catch(e){}
-          setStepIdx(idx + 1);
-          setTimeout(()=>run(true), 250);
-        };
-        try{ el.addEventListener("click", handler, true); }catch(e){}
-        const d = step.maxWaitMs || step.delayAfterMs || 1800;
-        setTimeout(()=>{
-          if (done || !isActive() || paused) return;
-          done = true;
-          try{ el.removeEventListener("click", handler, true); }catch(e){}
-          setStepIdx(idx + 1);
-          // optional auto-click for navigation/demo
-          if (step.autoClick !== false){
-            try{ el.click(); }catch(e){}
-          }
-          setTimeout(()=>run(true), 250);
-        }, d);
+    const target = resolveTarget(step);
+    if (!target){
+      const safety = step.maxWaitMs || 8000;
+      if (!step.__waitStart) step.__waitStart = Date.now();
+      if (Date.now() - step.__waitStart > safety){
+        step.__waitStart = null;
+        setIdx(idx+1);
+        setTimeout(()=>run(true), 250);
         return;
       }
-
-      // Step-by-step mode: wait for user click on the highlighted element
-      const handler = ()=>{
-        el.removeEventListener("click", handler, true);
-        setStepIdx(idx + 1);
-        setTimeout(()=>run(true), 250);
-      };
-      el.addEventListener("click", handler, true);
+      setTimeout(()=>run(), 400);
       return;
     }
+    step.__waitStart = null;
 
-    
-    if (step.wait === "choice"){
-      // Choice-based progression (e.g., Physical vs Online). Never auto-picks.
-      const choices = Array.isArray(step.choices) ? step.choices : [];
-      let finished = false;
+    clearHighlights();
+    target.classList.add("pw-guide-highlight");
+    try{ target.scrollIntoView({ behavior:"smooth", block:"center" }); }catch(e){}
 
-      const cleanup = ()=>{
-        choices.forEach(ch=>{
-          try{
-            const e = document.querySelector(ch.selector);
-            if (e && ch._handler) e.removeEventListener("click", ch._handler, true);
-          }catch(_){}
-        });
-      };
+    const { nextBtn } = showDialog(step, idx);
 
-      choices.forEach(ch=>{
-        try{
-          const e = document.querySelector(ch.selector);
-          if (!e) return;
-          ch._handler = ()=>{
-            if (finished) return;
-            finished = true;
-            cleanup();
-            // jump to step by id
-            const targetId = ch.next;
-            const targetIdx = steps.findIndex(s=>s.id===targetId);
-            if (targetIdx >= 0){
-              setStepIdx(targetIdx);
-            }else{
-              setStepIdx(idx + 1);
-            }
-            setTimeout(()=>run(true), 250);
-          };
-          e.addEventListener("click", ch._handler, true);
-        }catch(_){}
-      });
+    // --- AUDIO SYNC: disable Next while audio plays to avoid overlap ---
+    stopAudio();
+    const file = AUDIO_MAP[step.id];
+    if (file){
+      nextBtn.disabled = true;
+      playAudioFile(file);
+      const enableNext = ()=>{ nextBtn.disabled = false; audio.removeEventListener("ended", enableNext); audio.removeEventListener("error", enableNext); };
+      audio.addEventListener("ended", enableNext);
+      audio.addEventListener("error", enableNext);
 
-      return;
+      // Safety: never block forever
+      setTimeout(()=>{ nextBtn.disabled = false; }, 8000);
     }
 
-    if (step.wait === "change"){
-      // Wait for user to change a select/input. In video mode, auto-advance after maxWaitMs.
-      let done = false;
-      const handler = ()=>{
-        if (done) return;
-        done = true;
-        try{ el.removeEventListener("change", handler, true); }catch(e){}
-        setStepIdx(idx + 1);
-        setTimeout(()=>run(true), 250);
-      };
-      try{ el.addEventListener("change", handler, true); }catch(e){}
+    attachChoiceHandlers(step, idx, nextBtn);
 
-      if (mode()==="video"){
-        const d = step.maxWaitMs || 8000;
-        setTimeout(()=>{
-          if (done || !isActive() || paused) return;
-          done = true;
-          try{ el.removeEventListener("change", handler, true); }catch(e){}
-          setStepIdx(idx + 1);
+    // guest auto-continue when leaving lobby (no auto-advance during audio; we just switch step when phase changes)
+    if (step.id === "room_start" && !isHost()){
+      const t0 = Date.now();
+      const timer = setInterval(()=>{
+        if (!stepMatchesPage(step)){ clearInterval(timer); return; }
+        if (phase() && phase() !== "lobby"){
+          clearInterval(timer);
+          stopAudio();
+          setIdx(idx+1);
           run(true);
-        }, d);
-      }
-      return;
-    }
-if (step.wait === "next"){
-      const d = step.delayAfterMs || 800;
-      setTimeout(()=>{
-        if (!isActive() || paused) return;
-        setStepIdx(idx + 1);
-        run(true);
-      }, d);
-      return;
-    }
-
-    if (step.wait === "done"){
-      // Show final message until user skips/restarts
-      // Auto stop after a short delay in video mode
-      if (mode()==="video"){
-        setTimeout(()=>stop(), 2500);
-      }
-      return;
+        }
+        if (Date.now() - t0 > 30000) clearInterval(timer);
+      }, 800);
     }
   }
 
-  // Public start function
-  window.PW_OnboardStart = function(m){
-    setMode(m || DEFAULT_MODE);
-    setActive(true);
-    setStepIdx(0);
-    paused = false;
-    run(true);
-  };
-
-  
-  // Wire start buttons (supports multiple ids across versions)
-    function wireStartButtons(){
-    const ids = ["pwStartOnboardVideo","pwStartOnboard","pwStartGuideVideo","pwStartGuide"];
-    ids.forEach(id=>{
-      const el = document.getElementById(id);
-      if (el && !el.__pwOnWired){
-        el.__pwOnWired = true;
-        el.addEventListener("click", async ()=>{ try{ await unlockAudio(); }catch(e){} window.PW_OnboardStart && window.PW_OnboardStart("video"); });
-      }
-    });
-  }
-
-  // Boot on each page: wire start buttons, and resume if active
-  document.addEventListener("DOMContentLoaded", ()=>{
-    try{ wireStartButtons(); }catch(e){}
-    try{ if (isActive()) run(true); }catch(e){}
-  });
+  window.addEventListener("load", ()=> setTimeout(()=>run(true), 400));
+  window.addEventListener("pageshow", ()=> setTimeout(()=>run(true), 400));
 })();
