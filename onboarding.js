@@ -319,10 +319,23 @@
 
   // Expose controls for UI buttons
   window.PW_OnboardingStart = function(){ setEnabled(true); setIdx(0); run(true); };
+  
+  // Bind "Kom i gang" button (if present)
+  function bindStartButton(){
+    const btn = document.getElementById("pwStartOnboardVideo") || document.getElementById("pwStartOnboard") || null;
+    if (!btn) return;
+    if (btn.__pw_onb_bound) return;
+    btn.__pw_onb_bound = true;
+    btn.addEventListener("click", (e)=>{
+      try{ e.preventDefault(); e.stopPropagation(); }catch(_){}
+      try{ window.PW_OnboardingStart(); }catch(_){}
+    });
+  }
+
   window.PW_OnboardingStop  = function(){ setEnabled(false); stopAudio(); try{ clearHighlights(); }catch(e){};
     const dlg=document.getElementById("pwGuideDialog"); if(dlg) dlg.remove(); };
 
   // If user reloads mid-guide and it is enabled, resume; otherwise do nothing
-  window.addEventListener("load", ()=>{ if(isEnabled()) setTimeout(()=>run(true), 250); });
-  window.addEventListener("pageshow", ()=>{ if(isEnabled()) setTimeout(()=>run(true), 250); });
+  window.addEventListener("load", ()=>{ bindStartButton(); if(isEnabled()) setTimeout(()=>run(true), 250); });
+window.addEventListener("pageshow", ()=>{ bindStartButton(); if(isEnabled()) setTimeout(()=>run(true), 250); });
 })();
