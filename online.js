@@ -1,4 +1,4 @@
-// Piratwhist Online Multiplayer (v1.3.0)
+// Piratwhist Online Multiplayer (v1.2.6)
 // Online flow: lobby -> bidding -> playing -> between_tricks -> round_finished -> bidding ...
 const SUIT_NAME = {"♠":"spar","♥":"hjerter","♦":"ruder","♣":"klør"};
 // Hand sorting (suit then rank) for the local player's hand.
@@ -439,31 +439,90 @@ const PW_AI = (() => {
     };
   }
 
-  
-function uiSnapshot(){
-  try{
-    const els=[...document.querySelectorAll("button,select,input")].slice(0,30);
-    return {page:location.pathname.split("/").pop(),
-      controls:els.map(e=>({id:e.id,text:e.innerText||e.value,disabled:e.disabled}))};
-  }catch(e){return{};}
-}
+  async function ask(question, game){
+    const url = baseUrl();
+    if (!url) throw new Error("AI URL mangler");
+    const res = await fetch(url + "/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, game })
+    });
+    if (!res.ok) throw new Error("AI fejl: " + res.status);
+    const data = await res.json();
+    return data.answer || "";
+  }
 
-async function ask(question,game){
-  const url=baseUrl();
-  if(!url) throw new Error("AI URL mangler");
-  const res=await fetch(url+"/ask",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      question,game,ui:uiSnapshot(),
-      policy:{noStrategy:true}
-    })
-  });
-  if(!res.ok) throw new Error("AI fejl "+res.status);
-  const data=await res.json();
-  return data.answer||"";
-}
-)();
+  async function autoHelp(reason, extra = {}){
+    if (!enabled()) return;
+    const now = Date.now();
+    if (now - lastAutoHelpAt < COOLDOWN_MS) return;
+    lastAutoHelpAt = now;
+
+    const game = snapshot({ ...extra, lastAction: { type:"error", reason } });
+    const q =
+      "Jeg prøvede en handling i Piratwhist som ikke virkede. " +
+      "Forklar helt konkret hvorfor ud fra regler+UI, og hvad jeg skal gøre nu. " +
+      "Skriv kort og nævn hvor jeg skal trykke i UI hvis relevant.";
+
+    try{
+      const answer = await ask(q, game);
+      toast(answer || ("Kan ikke: " + reason));
+    }catch(e){
+      // fail silent (ingen støj)
+    }
+  }
+
+  function startInactivityWatch(){
+    if (inactivityTimer) return;
+    inactivityTimer = setInterval(async () => {
+      try{
+        if (!enabled()) return;
+        const me = (typeof mySeat === "number") ? mySeat : null;
+        if (!state || me===null) return;
+
+        // kun når det er din tur i "playing"
+        if (state.phase !== "playing") return;
+        if (state.turn !== me) return;
+
+        // hvis bruger var aktiv for nyligt → intet
+        const idle = Date.now() - lastUserActionAt;
+        if (idle < INACTIVITY_MS) return;
+
+        // hvis du ikke har kort → intet
+        const hand = state.hands ? state.hands[me] : null;
+        if (!Array.isArray(hand) || hand.length === 0) return;
+
+        // hvis intet kan spilles, giver hjælp ikke mening
+        const anyPlayable = hand.some(c => {
+          try { return getPlayableReason(c) === "OK"; } catch(_) { return false; }
+        });
+        if (!anyPlayable) return;
+
+        lastUserActionAt = Date.now(); // undgå spam
+        const ok = confirm("Vil du have hjælp fra AI? (Det ser ud til at det er din tur)");
+        if (!ok) return;
+
+        const game = snapshot({ canPlay: true, lastAction: { type:"inactivity", reason:"idle_on_turn" } });
+        const q =
+          "Det er min tur i Piratwhist, men jeg er i tvivl. " +
+          "Forklar kort hvad jeg skal gøre nu i spillet, og hvor jeg skal trykke.";
+
+        const answer = await ask(q, game);
+        toast(answer || "AI kunne ikke give hjælp.");
+      }catch(_){}
+    }, 2500);
+  }
+
+  function init(){
+    // user action hooks så inaktivitet kun trigges når man virkelig er idle
+    ["pointerdown","keydown","touchstart","mousedown"].forEach(evt=>{
+      window.addEventListener(evt, markUserAction, { passive:true });
+    });
+    startInactivityWatch();
+  }
+
+  return { init, autoHelp, enabled };
+})();
 
 
 // --- Navigation robustness (mobile): returning from rules page ---
@@ -499,7 +558,7 @@ async function ask(question,game){
     });
   }catch(e){ /* ignore */ }
 })();
-// v1.3.0:
+// v1.2.6:
 // - Remove winner toast/marking on board (cards sweeping to winner is the cue)
 // - Delay redirect to results by 4s after the last trick in a round
 // so you don't see the sweep start before the played card has landed.
@@ -607,7 +666,7 @@ let joinRetryCount = 0;
 
 function el(id){ return document.getElementById(id); }
 
-// --- v1.3.0: dynamic round-table board (2–8 players) ---
+// --- v1.2.6: dynamic round-table board (2–8 players) ---
 let __pwBoardBuiltFor = null;
 const __pwPcLayoutTuner = { initialized: false, enabled: false, lastSeatCount: 0 };
 const __pwSeatOverrides = {};
@@ -622,7 +681,7 @@ function readCookie(name) {
 }
 
 function pcLayoutTunerActive(){
-  // v1.3.0: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
+  // v1.2.6: Layout-tuner panelet må kun være synligt for spillernavn "LaBA".
   // Vi bruger det gemte spillernavn (som også bruges på tværs af online sider).
   if (typeof window === "undefined") return false;
   const name = getStoredName();
@@ -1218,7 +1277,7 @@ function positionPlayBoard(n){
   // On small screens we use a deterministic "square" layout instead of the trig/ring layout.
   // This prevents overlap and keeps all seats visible inside the board container.
   if (isMobile){
-    // v1.3.0 Dev + layout: SceneShift for mobile to utilize top space and
+    // v1.2.6 Dev + layout: SceneShift for mobile to utilize top space and
     // give more room for the hand/HUD area. Moves the center pile + trick slots
     // and the lower side seats (midLeft/midRight/botLeft/botRight) upward together.
     const sceneShiftVh = (n === 4) ? -7.8 : ((n <= 3) ? -7.2 : -4.0); // v3: extra compression for 3–4p (8p unchanged)
@@ -3271,7 +3330,7 @@ if (el("olMyName")) {
   // does not have to type their name twice (online.html -> lobby/bidding/play).
   if (s && (!cur || cur === "Spiller 1" || cur === "Spiller")) el("olMyName").value = s;
 }
-// v1.3.0 PC HUD sync + button wiring
+// v1.2.6 PC HUD sync + button wiring
 function syncPcHud(){
   const seatLbl = el("olSeatLabel")?.textContent || "-";
   const leader = el("olLeader")?.textContent || "-";
@@ -3335,7 +3394,7 @@ function alignHandDockToBottomSeat(){
   handDock.classList.add("handDockAuto");
 }
 
-// v1.3.0 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
+// v1.2.6 no-fly zone: avoid overlap between hand area and the bottom-left opponent seat on PC
 function applyPcNoFlyZoneForSeats(){
   if (window.innerWidth < 900) return;
   const nf = document.querySelector(".handNoFly");
