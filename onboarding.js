@@ -1,4 +1,4 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.2.7
+// Piratwhist Onboarding (Mini-video-mode) 1.2.7
 (function(){
 
   // Guide audio: prefer pre-generated files, fallback to /speak

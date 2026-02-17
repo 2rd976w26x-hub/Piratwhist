@@ -227,3 +227,20 @@
   color: rgba(255,255,255,.70);
   border-color: rgba(255,255,255,.20);
 }
+
+
+/* --- Fix picklist contrast (v1.2.7) --- */
+select {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+select option {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+select:focus {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}

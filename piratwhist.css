@@ -437,3 +437,20 @@ body.page-rules .figcap{
     font-size: 14px;
   }
 }
+
+
+/* --- Fix picklist contrast (v1.2.7) --- */
+select {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+select option {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+select:focus {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}

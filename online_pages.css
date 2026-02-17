@@ -875,3 +875,20 @@ body.page-play .bottomBar .bottomLeft .pill:first-child{ display:none !important
   color:#6b7280;
   opacity: 1;
 }
+
+
+/* --- Fix picklist contrast (v1.2.7) --- */
+select {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+select option {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+select:focus {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}

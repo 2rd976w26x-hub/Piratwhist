@@ -63,3 +63,20 @@ body.guide-clean .actions{ display:none !important; }
 /* Remove extra padding when headers/footers are hidden */
 body.guide-clean .app{ padding: 0 !important; margin: 0 !important; }
 body.guide-clean .main{ padding-top: 0 !important; }
+
+
+/* --- Fix picklist contrast (v1.2.7) --- */
+select {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+select option {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+select:focus {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}

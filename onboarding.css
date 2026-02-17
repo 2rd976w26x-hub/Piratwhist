@@ -36,3 +36,20 @@
   0%,100%{transform:scale(1);}
   50%{transform:scale(1.01);}
 }
+
+
+/* --- Fix picklist contrast (v1.2.7) --- */
+select {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+select option {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+select:focus {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
