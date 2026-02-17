@@ -1,5 +1,45 @@
-// Piratwhist Onboarding (Mini-video-mode) v1.2.6
+// Piratwhist Onboarding (Mini-video-mode) v1.2.7
 (function(){
+
+  // Guide audio: prefer pre-generated files, fallback to /speak
+  const GUIDE_AUDIO_DIR = "/assets/audio/guide/";
+  const GUIDE_AUDIO = {
+    // Use your existing professional/rolig files if present in assets/audio/guide/
+    // Adjust filenames here if your pack uses different names.
+    step1: "step1_choose_game_type.wav",
+    step2: "step2_online_entry.wav",
+    step3: "step3_room_created.wav",
+    step4: "step4_choose_players.wav",
+    step5: "step5_waiting.wav",
+    step6: "step6_start_game.wav",
+    step7: "step7_in_game.wav"
+  };
+
+  async function tryPlayFileThenFallback(stepId, text){
+    const file = GUIDE_AUDIO[stepId];
+    if (!file){
+      return speak(text);
+    }
+    // Try local file first
+    return new Promise((resolve)=>{
+      try{
+        const a = new Audio(GUIDE_AUDIO_DIR + file);
+        a.preload = "auto";
+        a.oncanplaythrough = () => {
+          a.play().then(()=>resolve(true)).catch(()=>{
+            // If autoplay blocked, fallback to /speak which is also usually blocked until gesture
+            speak(text).then(()=>resolve(false)).catch(()=>resolve(false));
+          });
+        };
+        a.onerror = () => {
+          speak(text).then(()=>resolve(false)).catch(()=>resolve(false));
+        };
+      }catch(e){
+        speak(text).then(()=>resolve(false)).catch(()=>resolve(false));
+      }
+    });
+  }
+
   const LS_MODE = "pw_onboard_mode";          // "video" | "steps"
   const LS_STEP = "pw_onboard_step";          // integer index
   const LS_ACTIVE = "pw_onboard_active";      // "1"/"0"
@@ -405,7 +445,7 @@
 
     // Speak in video mode
     if (mode()==="video"){
-      await speak(step.text || "");
+      await tryPlayFileThenFallback('step' + (String((idx||0)+1)), step.text || "");
     }
 
     // Determine progression

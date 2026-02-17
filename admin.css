@@ -142,3 +142,9 @@ button.pwPill{color:inherit;cursor:pointer;font:inherit}
 .adminCard .pwBtnSecondary:hover{
   background:#f8fafc;
 }
+
+/* v1.2.7 fix: dropdown/picklist options must be readable */
+select option, datalist option {
+  color: #000 !important;
+  background: #fff !important;
+}
