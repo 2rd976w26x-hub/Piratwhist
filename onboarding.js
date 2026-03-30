@@ -96,6 +96,7 @@
   async function playAudioText(text){
     const baseUrl = getAiBaseUrl();
     if (!baseUrl || !text) return false;
+    let objUrl = "";
     try{
       await unlockOnboardingAudio();
       const res = await fetch(baseUrl + "/speak", {
@@ -105,32 +106,44 @@
       });
       if (!res.ok) return false;
       const blob = await res.blob();
-      const objUrl = URL.createObjectURL(blob);
+      objUrl = URL.createObjectURL(blob);
       try{
         audio.pause();
         audio.currentTime = 0;
       }catch(e){}
+      audio.onended = null;
+      audio.onerror = null;
       audio.src = objUrl;
       audio.load();
       await new Promise((resolve) => {
-        if (audio.readyState >= 2) return resolve();
+        if (audio.readyState >= 3) return resolve();
         let done = false;
         const finish = () => {
           if (done) return;
           done = true;
           audio.removeEventListener("loadeddata", finish);
           audio.removeEventListener("canplaythrough", finish);
+          audio.removeEventListener("playing", finish);
           resolve();
         };
         audio.addEventListener("loadeddata", finish, { once:true });
         audio.addEventListener("canplaythrough", finish, { once:true });
-        setTimeout(finish, 250);
+        audio.addEventListener("playing", finish, { once:true });
+        setTimeout(finish, 450);
       });
-      await new Promise((resolve) => setTimeout(resolve, onboardingAudioUnlocked ? 120 : 250));
-      audio.play().catch(()=>{});
-      audio.onended = () => { try{ URL.revokeObjectURL(objUrl); }catch(e){} };
+      await new Promise((resolve) => setTimeout(resolve, onboardingAudioUnlocked ? 220 : 450));
+      await audio.play();
+      audio.onended = () => {
+        try{ URL.revokeObjectURL(objUrl); }catch(e){}
+      };
+      audio.onerror = () => {
+        try{ URL.revokeObjectURL(objUrl); }catch(e){}
+      };
       return true;
     }catch(e){
+      if (objUrl) {
+        try{ URL.revokeObjectURL(objUrl); }catch(_){}
+      }
       return false;
     }
   }
