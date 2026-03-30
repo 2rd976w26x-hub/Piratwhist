@@ -859,11 +859,28 @@ function initPwAiHelp(){
       });
       if (!resp.ok) throw new Error("HTTP " + resp.status);
 
-      const blob = await resp.blob(); // audio/wav
+      const blob = await resp.blob(); // audio blob from /speak
       const url = URL.createObjectURL(blob);
       if (audioEl){
         try{ audioEl.pause(); }catch(e){}
         audioEl.src = url;
+        audioEl.load();
+
+        await new Promise((resolve) => {
+          if (audioEl.readyState >= 2) return resolve();
+          let done = false;
+          const finish = () => {
+            if (done) return;
+            done = true;
+            audioEl.removeEventListener("loadeddata", finish);
+            audioEl.removeEventListener("canplaythrough", finish);
+            resolve();
+          };
+          audioEl.addEventListener("loadeddata", finish, { once:true });
+          audioEl.addEventListener("canplaythrough", finish, { once:true });
+          setTimeout(finish, 250);
+        });
+
         // Soft start (prevents click at beginning)
         try{ audioEl.volume = 0; }catch(e){}
         await audioEl.play();
