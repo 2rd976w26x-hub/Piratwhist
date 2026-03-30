@@ -188,6 +188,21 @@
       a.src = objUrl;
       a.load();
 
+      await new Promise((resolve) => {
+        if (a.readyState >= 2) return resolve();
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          a.removeEventListener("loadeddata", finish);
+          a.removeEventListener("canplaythrough", finish);
+          resolve();
+        };
+        a.addEventListener("loadeddata", finish, { once:true });
+        a.addEventListener("canplaythrough", finish, { once:true });
+        setTimeout(finish, 250);
+      });
+
       // Soft start (prevents click at beginning)
       try{ a.volume = 0; }catch(e){}
       const __fadeSteps = 6;
