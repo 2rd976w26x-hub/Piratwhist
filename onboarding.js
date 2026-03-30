@@ -19,13 +19,13 @@
   async function unlockAudioFromGesture(){
     if (audioUnlocked) return true;
     try{
-      const a = getOnboardAudio();
+      const a = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
+      a.setAttribute("playsinline", "");
+      a.preload = "auto";
       a.muted = true;
-      a.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
       await a.play();
       a.pause();
       a.currentTime = 0;
-      a.muted = false;
       audioUnlocked = true;
       return true;
     }catch(_){
