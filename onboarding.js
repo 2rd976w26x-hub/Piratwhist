@@ -9,9 +9,11 @@
   const KEY = "pw_onboarding_step";
   const AUDIO_DIR = "/assets/audio/guide/";
   const AI_URL_KEY = "pw_ai_url";
+  const PENDING_AUDIO_KEY = "pw_onboarding_pending_audio";
   const getIdx = () => parseInt(sessionStorage.getItem(KEY) || "0", 10);
   const setIdx = (i) => sessionStorage.setItem(KEY, String(Math.max(0, i)));
   let onboardingAudioUnlocked = false;
+  let pendingAudioCleanup = null;
 
   const page = () => (location.pathname || "").split("/").pop() || "";
   const phase = () => (window.state && window.state.phase) || "";
@@ -58,6 +60,27 @@
     }catch(e){}
   }
 
+  function getPendingAudioStepId(){
+    try{
+      return sessionStorage.getItem(PENDING_AUDIO_KEY) || "";
+    }catch(e){
+      return "";
+    }
+  }
+
+  function setPendingAudioStepId(stepId){
+    try{
+      if (stepId) sessionStorage.setItem(PENDING_AUDIO_KEY, stepId);
+      else sessionStorage.removeItem(PENDING_AUDIO_KEY);
+    }catch(e){}
+  }
+
+  function clearPendingAudioRetry(){
+    if (!pendingAudioCleanup) return;
+    try{ pendingAudioCleanup(); }catch(e){}
+    pendingAudioCleanup = null;
+  }
+
   // If file missing, we just don't play (fallback can be added later)
   function playAudioFile(filename){
     if (!filename) return;
@@ -66,8 +89,9 @@
       audio.currentTime = 0;
       audio.src = AUDIO_DIR + filename;
       audio.load();
-      return audio.play().catch(()=>{});
+      return audio.play().then(() => true).catch(()=>false);
     }catch(e){}
+    return Promise.resolve(false);
   }
 
   async function unlockOnboardingAudio(){
@@ -159,6 +183,55 @@
         try{ URL.revokeObjectURL(objUrl); }catch(_){}
       }
       return false;
+    }
+  }
+
+  function armPendingAudioRetry(step, idx, nextBtn, file){
+    if (!step) return;
+    clearPendingAudioRetry();
+    setPendingAudioStepId(step.id);
+
+    const retry = async () => {
+      if (getIdx() !== idx) return cleanup();
+      if (!stepMatchesPage(step)) return cleanup();
+      nextBtn.disabled = true;
+      let played = false;
+      try{
+        const text = typeof step.textFn === "function" ? step.textFn() : (step.text || "");
+        played = await playAudioText(text);
+        if (!played && file) played = await playAudioFile(file);
+      }catch(e){
+        played = false;
+      }
+      if (played){
+        cleanup();
+        const note = document.getElementById("pwGuideRetryHint");
+        if (note) note.remove();
+        return;
+      }
+      nextBtn.disabled = false;
+    };
+
+    const cleanup = () => {
+      ["pointerdown","touchstart","keydown","click"].forEach((eventName) => {
+        document.removeEventListener(eventName, retry, true);
+      });
+      if (getPendingAudioStepId() === step.id) setPendingAudioStepId("");
+      if (pendingAudioCleanup === cleanup) pendingAudioCleanup = null;
+    };
+
+    pendingAudioCleanup = cleanup;
+    ["pointerdown","touchstart","keydown","click"].forEach((eventName) => {
+      document.addEventListener(eventName, retry, { capture:true, once:true, passive:true });
+    });
+
+    const card = document.querySelector("#pwGuideDialog .pw-guide-card");
+    if (card && !document.getElementById("pwGuideRetryHint")){
+      const hint = document.createElement("div");
+      hint.id = "pwGuideRetryHint";
+      hint.className = "pw-guide-hint";
+      hint.textContent = "Tryk en gang på siden, hvis browseren blokerer automatisk oplæsning på dette trin.";
+      card.appendChild(hint);
     }
   }
 
@@ -327,6 +400,8 @@
         stopAudio();
 
         const nextIndex = steps.findIndex(s=>s.id===ch.nextId);
+        const nextStep = nextIndex >= 0 ? steps[nextIndex] : null;
+        if (nextStep && !stepMatchesPage(nextStep)) setPendingAudioStepId(nextStep.id);
         setIdx(nextIndex >= 0 ? nextIndex : (idx+1));
         setTimeout(()=>run(true), 250);
       }, { passive:true });
@@ -384,12 +459,32 @@
     const { nextBtn } = showDialog(step, idx);
 
     // --- AUDIO SYNC: disable Next while audio plays to avoid overlap ---
+    clearPendingAudioRetry();
     stopAudio();
     const file = AUDIO_MAP[step.id];
     if (file || step.text){
       nextBtn.disabled = true;
-      Promise.resolve(playAudioText(step.text || "")).then((usedAiVoice) => {
-        if (!usedAiVoice && file) playAudioFile(file);
+      const wantsRetry = getPendingAudioStepId() === step.id;
+      const text = typeof step.textFn === "function" ? step.textFn() : (step.text || "");
+      Promise.resolve(playAudioText(text)).then((usedAiVoice) => {
+        if (usedAiVoice){
+          setPendingAudioStepId("");
+          const note = document.getElementById("pwGuideRetryHint");
+          if (note) note.remove();
+          return;
+        }
+        Promise.resolve(file ? playAudioFile(file) : false).then((usedFileVoice) => {
+          if (usedFileVoice){
+            setPendingAudioStepId("");
+            const note = document.getElementById("pwGuideRetryHint");
+            if (note) note.remove();
+            return;
+          }
+          if (wantsRetry){
+            armPendingAudioRetry(step, idx, nextBtn, file);
+            nextBtn.disabled = false;
+          }
+        });
       });
       const enableNext = ()=>{ nextBtn.disabled = false; audio.removeEventListener("ended", enableNext); audio.removeEventListener("error", enableNext); };
       audio.addEventListener("ended", enableNext);
