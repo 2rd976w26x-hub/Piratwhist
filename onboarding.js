@@ -8,12 +8,21 @@
 
   const KEY = "pw_onboarding_step";
   const AUDIO_DIR = "/assets/audio/guide/";
+  const AI_URL_KEY = "pw_ai_url";
   const getIdx = () => parseInt(sessionStorage.getItem(KEY) || "0", 10);
   const setIdx = (i) => sessionStorage.setItem(KEY, String(Math.max(0, i)));
+  let onboardingAudioUnlocked = false;
 
   const page = () => (location.pathname || "").split("/").pop() || "";
   const phase = () => (window.state && window.state.phase) || "";
   const isHost = () => !!(window.state && window.state.isHost);
+  const getAiBaseUrl = () => {
+    try{
+      return (localStorage.getItem(AI_URL_KEY) || "").trim().replace(/\/+$/, "");
+    }catch(e){
+      return "";
+    }
+  };
 
   // --- Styles (always visible highlights + readable dialog) ---
   (function injectStyles(){
@@ -56,8 +65,74 @@
       audio.pause();
       audio.currentTime = 0;
       audio.src = AUDIO_DIR + filename;
+      audio.load();
       return audio.play().catch(()=>{});
     }catch(e){}
+  }
+
+  async function unlockOnboardingAudio(){
+    if (onboardingAudioUnlocked) return;
+    const prevSrc = audio.getAttribute("src");
+    const prevMuted = audio.muted;
+    const prevVolume = audio.volume;
+    try{
+      audio.muted = true;
+      audio.volume = 0;
+      audio.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+      audio.load();
+      await audio.play();
+      audio.pause();
+      audio.currentTime = 0;
+      onboardingAudioUnlocked = true;
+    }catch(e){
+    }finally{
+      audio.muted = prevMuted;
+      try{ audio.volume = prevVolume; }catch(e){}
+      if (prevSrc) audio.src = prevSrc;
+      else audio.removeAttribute("src");
+    }
+  }
+
+  async function playAudioText(text){
+    const baseUrl = getAiBaseUrl();
+    if (!baseUrl || !text) return false;
+    try{
+      await unlockOnboardingAudio();
+      const res = await fetch(baseUrl + "/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      if (!res.ok) return false;
+      const blob = await res.blob();
+      const objUrl = URL.createObjectURL(blob);
+      try{
+        audio.pause();
+        audio.currentTime = 0;
+      }catch(e){}
+      audio.src = objUrl;
+      audio.load();
+      await new Promise((resolve) => {
+        if (audio.readyState >= 2) return resolve();
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          audio.removeEventListener("loadeddata", finish);
+          audio.removeEventListener("canplaythrough", finish);
+          resolve();
+        };
+        audio.addEventListener("loadeddata", finish, { once:true });
+        audio.addEventListener("canplaythrough", finish, { once:true });
+        setTimeout(finish, 250);
+      });
+      await new Promise((resolve) => setTimeout(resolve, onboardingAudioUnlocked ? 120 : 250));
+      audio.play().catch(()=>{});
+      audio.onended = () => { try{ URL.revokeObjectURL(objUrl); }catch(e){} };
+      return true;
+    }catch(e){
+      return false;
+    }
   }
 
   // Map step -> pre-generated file
@@ -284,9 +359,11 @@
     // --- AUDIO SYNC: disable Next while audio plays to avoid overlap ---
     stopAudio();
     const file = AUDIO_MAP[step.id];
-    if (file){
+    if (file || step.text){
       nextBtn.disabled = true;
-      playAudioFile(file);
+      Promise.resolve(playAudioText(step.text || "")).then((usedAiVoice) => {
+        if (!usedAiVoice && file) playAudioFile(file);
+      });
       const enableNext = ()=>{ nextBtn.disabled = false; audio.removeEventListener("ended", enableNext); audio.removeEventListener("error", enableNext); };
       audio.addEventListener("ended", enableNext);
       audio.addEventListener("error", enableNext);
@@ -326,8 +403,9 @@
     if (!btn) return;
     if (btn.__pw_onb_bound) return;
     btn.__pw_onb_bound = true;
-    btn.addEventListener("click", (e)=>{
+    btn.addEventListener("click", async (e)=>{
       try{ e.preventDefault(); e.stopPropagation(); }catch(_){}
+      try{ await unlockOnboardingAudio(); }catch(_){}
       try{ window.PW_OnboardingStart(); }catch(_){}
     });
   }

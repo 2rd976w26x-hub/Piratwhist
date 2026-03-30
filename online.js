@@ -746,6 +746,30 @@ function initPwAiHelp(){
   const btnSpeak = el("pwAiSpeak");
   const audioEl = el("pwAiAudio");
   let lastAnswerText = "";
+  let speakAudioUnlocked = false;
+
+  async function unlockSpeakAudio(){
+    if (!audioEl || speakAudioUnlocked) return;
+    const prevSrc = audioEl.getAttribute("src");
+    const prevMuted = audioEl.muted;
+    const prevVolume = audioEl.volume;
+    try{
+      audioEl.muted = true;
+      audioEl.volume = 0;
+      audioEl.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+      audioEl.load();
+      await audioEl.play();
+      audioEl.pause();
+      audioEl.currentTime = 0;
+      speakAudioUnlocked = true;
+    }catch(e){
+    }finally{
+      audioEl.muted = prevMuted;
+      try{ audioEl.volume = prevVolume; }catch(e){}
+      if (prevSrc) audioEl.src = prevSrc;
+      else audioEl.removeAttribute("src");
+    }
+  }
 
   const closeAll = () => {
     modal.hidden = true;
@@ -851,6 +875,7 @@ function initPwAiHelp(){
     const speakUrl = baseUrl.replace(/\/$/, "") + "/speak";
     try{
       btnSpeak.disabled = true;
+      await unlockSpeakAudio();
       if (status) status.textContent = "Læser op…";
       const resp = await fetch(speakUrl, {
         method: "POST",
@@ -880,6 +905,7 @@ function initPwAiHelp(){
           audioEl.addEventListener("canplaythrough", finish, { once:true });
           setTimeout(finish, 250);
         });
+        await new Promise((resolve) => setTimeout(resolve, speakAudioUnlocked ? 120 : 250));
 
         // Soft start (prevents click at beginning)
         try{ audioEl.volume = 0; }catch(e){}
