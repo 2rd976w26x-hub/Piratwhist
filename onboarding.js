@@ -132,7 +132,26 @@
         setTimeout(finish, 450);
       });
       await new Promise((resolve) => setTimeout(resolve, onboardingAudioUnlocked ? 220 : 450));
-      await audio.play();
+      try{
+        audio.muted = false;
+        await audio.play();
+      }catch(playErr){
+        // Some browsers block first autoplay after page navigation.
+        // Start muted, then fade in once playback is running.
+        audio.muted = true;
+        audio.volume = 0;
+        await audio.play();
+        setTimeout(() => {
+          try{ audio.muted = false; }catch(_){}
+          let fadeI = 0;
+          const fadeSteps = 8;
+          const fadeTimer = setInterval(() => {
+            fadeI++;
+            try{ audio.volume = Math.min(1, fadeI / fadeSteps); }catch(_){}
+            if (fadeI >= fadeSteps) clearInterval(fadeTimer);
+          }, 40);
+        }, 420);
+      }
       audio.onended = () => {
         try{ URL.revokeObjectURL(objUrl); }catch(e){}
       };
