@@ -155,22 +155,16 @@
         audio.addEventListener("playing", finish, { once:true });
         setTimeout(finish, 450);
       });
-      await new Promise((resolve) => setTimeout(resolve, onboardingAudioUnlocked ? 320 : 520));
+      await new Promise((resolve) => setTimeout(resolve, onboardingAudioUnlocked ? 280 : 420));
       // Start muted first to satisfy autoplay rules after page navigation,
-      // then fade into audible playback.
+      // then switch straight to full volume before spoken words begin.
       audio.muted = true;
       audio.volume = 0;
       await audio.play();
       setTimeout(() => {
         try{ audio.muted = false; }catch(_){}
-        let fadeI = 0;
-        const fadeSteps = 10;
-        const fadeTimer = setInterval(() => {
-          fadeI++;
-          try{ audio.volume = Math.min(1, fadeI / fadeSteps); }catch(_){}
-          if (fadeI >= fadeSteps) clearInterval(fadeTimer);
-        }, 45);
-      }, 520);
+        try{ audio.volume = 1; }catch(_){}
+      }, 120);
       audio.onended = () => {
         try{ URL.revokeObjectURL(objUrl); }catch(e){}
       };

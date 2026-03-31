@@ -905,19 +905,11 @@ function initPwAiHelp(){
           audioEl.addEventListener("canplaythrough", finish, { once:true });
           setTimeout(finish, 250);
         });
-        await new Promise((resolve) => setTimeout(resolve, speakAudioUnlocked ? 120 : 250));
+        await new Promise((resolve) => setTimeout(resolve, speakAudioUnlocked ? 160 : 280));
 
-        // Soft start (prevents click at beginning)
-        try{ audioEl.volume = 0; }catch(e){}
+        // Start at fixed strength; the previous fade-in was swallowing the first words.
+        try{ audioEl.volume = 1; }catch(e){}
         await audioEl.play();
-        try{
-          const __fadeSteps = 6; let __fadeI = 0;
-          const __fadeT = setInterval(()=>{
-            __fadeI++;
-            try{ audioEl.volume = Math.min(1, __fadeI/__fadeSteps); }catch(e){}
-            if(__fadeI>=__fadeSteps) clearInterval(__fadeT);
-          },10);
-        }catch(e){}
         audioEl.onended = () => { try{ URL.revokeObjectURL(url); }catch(e){} };
       }else{
         // fallback: open in new tab
