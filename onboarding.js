@@ -87,7 +87,7 @@
 
   function getStepSpeechOptions(step){
     if (step && step.id === "start_choose"){
-      return { skipMutedStart: true, readyDelayMs: 360 };
+      return { skipMutedStart: true, readyDelayMs: 560, primePlayback: true };
     }
     return { skipMutedStart: false };
   }
@@ -168,6 +168,14 @@
       });
       const readyDelayMs = Number.isFinite(options.readyDelayMs) ? options.readyDelayMs : (onboardingAudioUnlocked ? 280 : 420);
       await new Promise((resolve) => setTimeout(resolve, readyDelayMs));
+      if (options.primePlayback){
+        audio.muted = true;
+        audio.volume = 0;
+        await audio.play();
+        await new Promise((resolve) => setTimeout(resolve, Number.isFinite(options.primePlaybackMs) ? options.primePlaybackMs : 140));
+        audio.pause();
+        audio.currentTime = 0;
+      }
       if (options.skipMutedStart){
         audio.muted = false;
         audio.volume = 1;
@@ -211,7 +219,7 @@
       try{
         const text = getStepText(step);
         played = await playAudioText(text, getStepSpeechOptions(step));
-        if (!played && file) played = await playAudioFile(file);
+        if (!played && file && shouldUseFileFallback(step)) played = await playAudioFile(file);
       }catch(e){
         played = false;
       }
@@ -265,10 +273,19 @@
 
   function resolveTarget(step){
     if (typeof step.selectorFn === "function"){
-      try{ return document.querySelector(step.selectorFn()); }catch(e){ return null; }
+      try{
+        const target = step.selectorFn();
+        if (!target) return null;
+        if (typeof target === "string") return document.querySelector(target);
+        return target;
+      }catch(e){ return null; }
     }
     if (!step.selector) return null;
     try{ return document.querySelector(step.selector); }catch(e){ return null; }
+  }
+
+  function shouldUseFileFallback(step){
+    return !getAiBaseUrl();
   }
 
   function showDialog(step, idx){
@@ -379,7 +396,9 @@
     {
       id:"room_start",
       pages:["online_lobby.html","online_room.html","online-room.html"],
-      selectorFn:()=> isHost() ? "#olStartOnline" : "#olRoomStatus",
+      selectorFn:()=> isHost()
+        ? (document.getElementById("olStartOnline") || document.querySelector(".lobby-setup #olStartOnline") || "#olStartOnline")
+        : "#olRoomStatus",
       title:"Kom i gang · 6/8",
       textFn:()=> isHost()
         ? "Når alle er klar, trykker du på 'Start spil'. Så deles kortene ud, og budfasen begynder."
@@ -495,7 +514,7 @@
           if (note) note.remove();
           return;
         }
-        Promise.resolve(file ? playAudioFile(file) : false).then((usedFileVoice) => {
+        Promise.resolve(file && shouldUseFileFallback(step) ? playAudioFile(file) : false).then((usedFileVoice) => {
           if (usedFileVoice){
             setPendingAudioStepId("");
             const note = document.getElementById("pwGuideRetryHint");
