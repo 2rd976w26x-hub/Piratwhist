@@ -81,6 +81,17 @@
     pendingAudioCleanup = null;
   }
 
+  function getStepText(step){
+    return typeof step.textFn === "function" ? step.textFn() : (step.text || "");
+  }
+
+  function getStepSpeechOptions(step){
+    if (step && step.id === "start_choose"){
+      return { skipMutedStart: true, readyDelayMs: 360 };
+    }
+    return { skipMutedStart: false };
+  }
+
   // If file missing, we just don't play (fallback can be added later)
   function playAudioFile(filename){
     if (!filename) return;
@@ -117,7 +128,7 @@
     }
   }
 
-  async function playAudioText(text){
+  async function playAudioText(text, options = {}){
     const baseUrl = getAiBaseUrl();
     if (!baseUrl || !text) return false;
     let objUrl = "";
@@ -155,16 +166,23 @@
         audio.addEventListener("playing", finish, { once:true });
         setTimeout(finish, 450);
       });
-      await new Promise((resolve) => setTimeout(resolve, onboardingAudioUnlocked ? 280 : 420));
-      // Start muted first to satisfy autoplay rules after page navigation,
-      // then switch straight to full volume before spoken words begin.
-      audio.muted = true;
-      audio.volume = 0;
-      await audio.play();
-      setTimeout(() => {
-        try{ audio.muted = false; }catch(_){}
-        try{ audio.volume = 1; }catch(_){}
-      }, 120);
+      const readyDelayMs = Number.isFinite(options.readyDelayMs) ? options.readyDelayMs : (onboardingAudioUnlocked ? 280 : 420);
+      await new Promise((resolve) => setTimeout(resolve, readyDelayMs));
+      if (options.skipMutedStart){
+        audio.muted = false;
+        audio.volume = 1;
+        await audio.play();
+      } else {
+        // Start muted first to satisfy autoplay rules after page navigation,
+        // then switch straight to full volume before spoken words begin.
+        audio.muted = true;
+        audio.volume = 0;
+        await audio.play();
+        setTimeout(() => {
+          try{ audio.muted = false; }catch(_){}
+          try{ audio.volume = 1; }catch(_){}
+        }, Number.isFinite(options.unmuteDelayMs) ? options.unmuteDelayMs : 120);
+      }
       audio.onended = () => {
         try{ URL.revokeObjectURL(objUrl); }catch(e){}
       };
@@ -191,8 +209,8 @@
       nextBtn.disabled = true;
       let played = false;
       try{
-        const text = typeof step.textFn === "function" ? step.textFn() : (step.text || "");
-        played = await playAudioText(text);
+        const text = getStepText(step);
+        played = await playAudioText(text, getStepSpeechOptions(step));
         if (!played && file) played = await playAudioFile(file);
       }catch(e){
         played = false;
@@ -263,7 +281,7 @@
     }
 
     const title = step.title || `Kom i gang · ${idx+1}/${steps.length}`;
-    const text = typeof step.textFn === "function" ? step.textFn() : (step.text || "");
+    const text = getStepText(step);
     const hint = step.hint || "";
 
     dlg.innerHTML = `
@@ -296,10 +314,10 @@
   const steps = [
     {
       id:"start_choose",
-      pages:["piratwhist.html",""],
+      pages:["piratwhist.html",""] ,
       selector:"#pwGoOnline",
-      title:"Kom i gang · 1/7",
-      text:"Vælg spiltype. Fysisk spil eller online spil.",
+      title:"Kom i gang · 1/8",
+      text:"Tryk på 'Online spil' for at spille med andre. 'Fysisk spil' bruger du kun som pointtavle.",
       wait:"choice",
       choices:[
         { selector:"#pwGoPhysical", nextId:"physical_info" },
@@ -308,7 +326,7 @@
     },
     {
       id:"physical_info",
-      pages:["piratwhist.html",""],
+      pages:["piratwhist.html",""] ,
       selector:"#pwGoPhysical",
       title:"Kom i gang · 2/2",
       text:"Fysisk spil er under udarbejdelse. Vælg online spil for at spille nu.",
@@ -318,8 +336,8 @@
       id:"online_entry",
       pages:["online.html"],
       selector:"#olCreateRoom",
-      title:"Kom i gang · 2/7",
-      text:"Her kan du oprette et online rum eller deltage med en rumkode. Som vært trykker du på 'Opret online-rum'.",
+      title:"Kom i gang · 2/8",
+      text:"Her starter du online-spillet. Tryk på 'Opret online-rum' hvis du er vært, eller 'Join online-rum' hvis du har fået en rumkode.",
       wait:"choice",
       choices:[
         { selector:"#olCreateRoom", nextId:"room_code" },
@@ -330,18 +348,20 @@
       id:"room_code",
       pages:["online_lobby.html","online_room.html","online-room.html"],
       selector:"#olRoomLabel",
-      title:"Kom i gang · 3/7",
-      text:"Her ser du rumkoden. Del rumkoden med de andre spillere, så de kan joine rummet.",
+      title:"Kom i gang · 3/8",
+      textFn:()=> isHost()
+        ? "Her ser du rumkoden. Del den med de andre spillere, så de kan joine dit rum."
+        : "Her kan du se, at du er kommet ind i det rigtige rum. Tjek rumkoden, hvis I vil sikre jer, at alle er samme sted.",
       wait:"next"
     },
     {
       id:"room_players",
       pages:["online_lobby.html","online_room.html","online-room.html"],
       selector:"#olPlayerCount",
-      title:"Kom i gang · 4/7",
+      title:"Kom i gang · 4/8",
       textFn:()=> isHost()
-        ? "Som vært kan du vælge antal spillere her."
-        : "Kun værten kan ændre antal spillere. Som deltager skal du bare vente her.",
+        ? "Som vært vælger du her, hvor mange spillere der skal være med i alt."
+        : "Kun værten kan ændre antal spillere. Som deltager skal du bare vente på, at rummet bliver gjort klar.",
       ready:()=> phase()==="lobby" || !phase(),
       wait:"next"
     },
@@ -349,10 +369,10 @@
       id:"room_wait",
       pages:["online_lobby.html","online_room.html","online-room.html"],
       selector:"#olNames",
-      title:"Kom i gang · 5/7",
+      title:"Kom i gang · 5/8",
       textFn:()=> isHost()
-        ? "Vent på at andre spillere joiner. Du kan se spillerlisten her."
-        : "Du er i lobbyen. Vent på at værten starter spillet.",
+        ? "Her kan du se, hvem der er med. Vent til de andre er kommet ind, før du starter spillet."
+        : "Her kan du se spillerlisten. Vent i lobbyen, til værten starter spillet.",
       ready:()=> phase()==="lobby" || !phase(),
       wait:"next"
     },
@@ -360,23 +380,31 @@
       id:"room_start",
       pages:["online_lobby.html","online_room.html","online-room.html"],
       selectorFn:()=> isHost() ? "#olStartOnline" : "#olRoomStatus",
-      title:"Kom i gang · 6/7",
+      title:"Kom i gang · 6/8",
       textFn:()=> isHost()
-        ? "Når alle er klar, tryk på 'Start spil'."
-        : "Når værten starter spillet, fortsætter guiden automatisk.",
+        ? "Når alle er klar, trykker du på 'Start spil'. Så deles kortene ud, og budfasen begynder."
+        : "Når værten trykker på 'Start spil', går I videre til budfasen automatisk.",
       ready:()=> phase()==="lobby" || !phase(),
       wait:"next"
     },
     {
+      id:"round_bid",
+      pages:["online_bidding.html"],
+      selector:"#olBidSubmit",
+      title:"Kom i gang · 7/8",
+      text:"Vælg dit bud her og tryk på 'Gem bud'. Når alle har gemt deres bud, starter spillet automatisk.",
+      ready:()=> phase()==="bidding" || !phase(),
+      wait:"next"
+    },
+    {
       id:"play_in_game",
-      pages:["online_bidding.html","online_play.html","online_game.html","online_result.html"],
+      pages:["online_play.html","online_game.html","online_result.html"],
       selector:"#olHands",
-      title:"Kom i gang · 7/7",
-      text:"Nu er I i spillet. Dine kort ligger nederst. Når det er din tur, trykker du på et kort. Du kan altid trykke 'Spørg AI' hvis du er i tvivl.",
+      title:"Kom i gang · 8/8",
+      text:"Dine kort ligger nederst. Når det er din tur, trykker du på et kort. Hvis du kan bekende kulør, skal du gøre det. Brug 'Regler' eller 'Spørg AI', hvis du er i tvivl.",
       wait:"done"
     }
   ];
-
   function stepMatchesPage(step){
     const p = page();
     return step.pages.includes(p) || (p==="" && step.pages.includes(""));
@@ -459,8 +487,8 @@
     if (file || step.text){
       nextBtn.disabled = true;
       const wantsRetry = getPendingAudioStepId() === step.id;
-      const text = typeof step.textFn === "function" ? step.textFn() : (step.text || "");
-      Promise.resolve(playAudioText(text)).then((usedAiVoice) => {
+      const text = getStepText(step);
+      Promise.resolve(playAudioText(text, getStepSpeechOptions(step))).then((usedAiVoice) => {
         if (usedAiVoice){
           setPendingAudioStepId("");
           const note = document.getElementById("pwGuideRetryHint");
@@ -491,11 +519,24 @@
     attachChoiceHandlers(step, idx, nextBtn);
 
     // guest auto-continue when leaving lobby (no auto-advance during audio; we just switch step when phase changes)
-    if (step.id === "room_start" && !isHost()){
+    if (step.id === "room_start"){
       const t0 = Date.now();
       const timer = setInterval(()=>{
         if (!stepMatchesPage(step)){ clearInterval(timer); return; }
         if (phase() && phase() !== "lobby"){
+          clearInterval(timer);
+          stopAudio();
+          setIdx(idx+1);
+          run(true);
+        }
+        if (Date.now() - t0 > 30000) clearInterval(timer);
+      }, 800);
+    }
+    if (step.id === "round_bid"){
+      const t0 = Date.now();
+      const timer = setInterval(()=>{
+        if (!stepMatchesPage(step)){ clearInterval(timer); return; }
+        if (phase() && phase() !== "bidding"){
           clearInterval(timer);
           stopAudio();
           setIdx(idx+1);
