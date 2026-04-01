@@ -13,6 +13,7 @@
   const getIdx = () => parseInt(sessionStorage.getItem(KEY) || "0", 10);
   const setIdx = (i) => sessionStorage.setItem(KEY, String(Math.max(0, i)));
   let onboardingAudioUnlocked = false;
+  let onboardingAiPrimed = false;
   let pendingAudioCleanup = null;
 
   const page = () => (location.pathname || "").split("/").pop() || "";
@@ -203,6 +204,58 @@
         try{ URL.revokeObjectURL(objUrl); }catch(_){}
       }
       return false;
+    }
+  }
+
+  async function primeOnboardingAiAudio(){
+    if (onboardingAiPrimed) return true;
+    const baseUrl = getAiBaseUrl();
+    if (!baseUrl) return false;
+    let objUrl = "";
+    try{
+      await unlockOnboardingAudio();
+      const res = await fetch(baseUrl + "/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: "Klar." })
+      });
+      if (!res.ok) return false;
+      const blob = await res.blob();
+      objUrl = URL.createObjectURL(blob);
+      audio.pause();
+      audio.currentTime = 0;
+      audio.src = objUrl;
+      audio.load();
+      await new Promise((resolve) => {
+        if (audio.readyState >= 3) return resolve();
+        const finish = () => {
+          audio.removeEventListener("loadeddata", finish);
+          audio.removeEventListener("canplaythrough", finish);
+          resolve();
+        };
+        audio.addEventListener("loadeddata", finish, { once:true });
+        audio.addEventListener("canplaythrough", finish, { once:true });
+        setTimeout(finish, 400);
+      });
+      audio.muted = true;
+      audio.volume = 0;
+      await audio.play();
+      await new Promise((resolve) => setTimeout(resolve, 180));
+      audio.pause();
+      audio.currentTime = 0;
+      onboardingAiPrimed = true;
+      return true;
+    }catch(e){
+      return false;
+    }finally{
+      try{ audio.pause(); }catch(_){}
+      try{ audio.currentTime = 0; }catch(_){}
+      try{ audio.muted = false; }catch(_){}
+      try{ audio.volume = 1; }catch(_){}
+      if (objUrl) {
+        try{ URL.revokeObjectURL(objUrl); }catch(_){}
+      }
+      try{ audio.removeAttribute("src"); }catch(_){}
     }
   }
 
@@ -582,6 +635,7 @@
     btn.addEventListener("click", async (e)=>{
       try{ e.preventDefault(); e.stopPropagation(); }catch(_){}
       try{ await unlockOnboardingAudio(); }catch(_){}
+      try{ await primeOnboardingAiAudio(); }catch(_){}
       try{ window.PW_OnboardingStart(); }catch(_){}
     });
   }
