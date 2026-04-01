@@ -93,6 +93,17 @@
     return { skipMutedStart: false };
   }
 
+  function isLikelyIOS(){
+    try{
+      const ua = navigator.userAgent || "";
+      const platform = navigator.platform || "";
+      const touchMac = platform === "MacIntel" && navigator.maxTouchPoints > 1;
+      return /iPad|iPhone|iPod/.test(ua) || touchMac;
+    }catch(e){
+      return false;
+    }
+  }
+
   // If file missing, we just don't play (fallback can be added later)
   function playAudioFile(filename){
     if (!filename) return;
@@ -280,6 +291,8 @@
         cleanup();
         const note = document.getElementById("pwGuideRetryHint");
         if (note) note.remove();
+        const btn = document.getElementById("pwGuideRetryBtn");
+        if (btn) btn.remove();
         return;
       }
       nextBtn.disabled = false;
@@ -303,8 +316,20 @@
       const hint = document.createElement("div");
       hint.id = "pwGuideRetryHint";
       hint.className = "pw-guide-hint";
-      hint.textContent = "Tryk en gang på siden, hvis browseren blokerer automatisk oplæsning på dette trin.";
+      hint.textContent = isLikelyIOS()
+        ? "På iPad og iPhone kræver næste trin ofte et tryk for at starte oplæsning."
+        : "Tryk en gang på siden, hvis browseren blokerer automatisk oplæsning på dette trin.";
       card.appendChild(hint);
+    }
+    if (card && !document.getElementById("pwGuideRetryBtn")){
+      const btn = document.createElement("button");
+      btn.id = "pwGuideRetryBtn";
+      btn.type = "button";
+      btn.className = "pw-primary";
+      btn.textContent = isLikelyIOS() ? "Tryk for oplæsning" : "Afspil oplæsning";
+      btn.addEventListener("click", () => { retry(); });
+      const buttonRow = card.querySelector(".pw-guide-buttons");
+      if (buttonRow) buttonRow.prepend(btn);
     }
   }
 
@@ -565,6 +590,8 @@
           setPendingAudioStepId("");
           const note = document.getElementById("pwGuideRetryHint");
           if (note) note.remove();
+          const btn = document.getElementById("pwGuideRetryBtn");
+          if (btn) btn.remove();
           return;
         }
         Promise.resolve(file && shouldUseFileFallback(step) ? playAudioFile(file) : false).then((usedFileVoice) => {
@@ -572,6 +599,8 @@
             setPendingAudioStepId("");
             const note = document.getElementById("pwGuideRetryHint");
             if (note) note.remove();
+            const btn = document.getElementById("pwGuideRetryBtn");
+            if (btn) btn.remove();
             return;
           }
           if (wantsRetry){
